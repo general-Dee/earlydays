@@ -23,9 +23,44 @@ declare global {
 }
 
 const TERMS = ["Term 1", "Term 2", "Term 3"];
+const VERIFY_RETRY_DELAYS_MS = [1000, 2000];
 
 type ParentStatus = "idle" | "loading" | "ready" | "missing";
 type PayStatus = "idle" | "starting" | "verifying" | "success" | "error";
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function verifyPayment(idToken: string, reference: string): Promise<{ status?: string }> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= VERIFY_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const res = await fetch("/api/paystack/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ reference }),
+      });
+
+      if (res.ok) {
+        return await res.json();
+      }
+      if (res.status < 500) {
+        return await res.json();
+      }
+      lastError = new Error(`Verify request failed with status ${res.status}`);
+    } catch (err) {
+      lastError = err;
+    }
+
+    if (attempt < VERIFY_RETRY_DELAYS_MS.length) {
+      await sleep(VERIFY_RETRY_DELAYS_MS[attempt]);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Verify request failed");
+}
 
 export default function PayPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -80,16 +115,16 @@ export default function PayPanel() {
       window.PaystackPop.resumeTransaction(data.accessCode, {
         onSuccess: async () => {
           setPayStatus("verifying");
-          const verifyRes = await fetch("/api/paystack/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
-            body: JSON.stringify({ reference: data.reference }),
-          });
-          const verifyData = await verifyRes.json();
-          if (verifyData.status === "success") {
-            setPayStatus("success");
-            setMessage("Payment confirmed — thank you!");
-          } else {
+          try {
+            const verifyData = await verifyPayment(idToken, data.reference);
+            if (verifyData.status === "success") {
+              setPayStatus("success");
+              setMessage("Payment confirmed — thank you!");
+            } else {
+              setPayStatus("error");
+              setMessage("We couldn't confirm this payment yet. Contact the school if you were charged.");
+            }
+          } catch {
             setPayStatus("error");
             setMessage("We couldn't confirm this payment yet. Contact the school if you were charged.");
           }
