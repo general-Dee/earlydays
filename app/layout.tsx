@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import { AuthProvider } from "@/lib/firebase/AuthProvider";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -33,10 +34,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${fraunces.variable} ${manrope.variable} ${plexMono.variable}`}>
       <body className="font-body">
-        <Navbar />
-        {children}
-        <Footer />
-        <WhatsAppFloat />
+        <AuthProvider>
+          <Navbar />
+          {children}
+          <Footer />
+          <WhatsAppFloat />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Minimal starting point, not a full security audit — review before
+// launch. Payment writes only ever happen via the Admin SDK (server
+// routes bypass these rules), so `payments` is client-write:false here.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /parents/{uid} {
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+
+      match /payments/{reference} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

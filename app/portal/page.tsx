@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import PortalLoginForm from "@/components/PortalLoginForm";
+import PortalPanel from "@/components/PortalPanel";
 
 export const metadata: Metadata = {
   title: "Parent Portal — Earlydays",
@@ -32,7 +32,7 @@ export default function PortalPage() {
           ))}
         </div>
 
-        <PortalLoginForm />
+        <PortalPanel />
       </div>
     </main>
   );
