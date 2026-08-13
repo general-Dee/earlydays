@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/firestore";
 import { signOut, type User } from "firebase/auth";
-import { auth, db } from "@/lib/firebase/client";
+import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
 function formatNaira(amountKobo: number) {
@@ -28,14 +28,14 @@ export default function PortalDashboard({ user }: { user: User }) {
     async function load() {
       setLoading(true);
       try {
-        const parentSnap = await getDoc(doc(db, "parents", user.uid));
+        const parentSnap = await getDoc(doc(getFirebaseDb(), "parents", user.uid));
         if (!parentSnap.exists()) {
           if (!cancelled) setNotFound(true);
           return;
         }
 
         const paymentsSnap = await getDocs(
-          query(collection(db, "parents", user.uid, "payments"), orderBy("createdAt", "desc"))
+          query(collection(getFirebaseDb(), "parents", user.uid, "payments"), orderBy("createdAt", "desc"))
         );
 
         if (!cancelled) {
@@ -62,7 +62,7 @@ export default function PortalDashboard({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Welcome back</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(auth)} className="btn btn-ghost btn-sm">
+        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
           Log Out
         </button>
       </div>

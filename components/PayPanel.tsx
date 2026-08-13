@@ -5,7 +5,7 @@ import Script from "next/script";
 import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "@/lib/firebase/AuthProvider";
-import { db } from "@/lib/firebase/client";
+import { getFirebaseDb } from "@/lib/firebase/client";
 import type { Parent } from "@/lib/firebase/types";
 
 declare global {
@@ -44,7 +44,7 @@ export default function PayPanel() {
     }
 
     setParentStatus("loading");
-    getDoc(doc(db, "parents", user.uid))
+    getDoc(doc(getFirebaseDb(), "parents", user.uid))
       .then((snap) => {
         if (!snap.exists()) {
           setParentStatus("missing");

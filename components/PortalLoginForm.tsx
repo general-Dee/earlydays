@@ -6,7 +6,7 @@ import {
   signInWithEmailAndPassword,
   type AuthError,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 
 function friendlyError(error: AuthError): string {
   switch (error.code) {
@@ -39,7 +39,7 @@ export default function PortalLoginForm() {
     setSubmitting(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
     } catch (err) {
       setError(friendlyError(err as AuthError));
     } finally {
@@ -57,7 +57,7 @@ export default function PortalLoginForm() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(getFirebaseAuth(), email);
       setResetMessage("Password reset email sent — check your inbox.");
     } catch (err) {
       setError(friendlyError(err as AuthError));
