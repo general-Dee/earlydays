@@ -10,6 +10,7 @@ export const site = {
   whatsapp: "2340000000000", // TODO: replace with real WhatsApp number
   phone: "+234 000 000 0000", // TODO: replace
   email: "hello@earlydays.example", // TODO: replace
+  url: "https://earlydays.example", // TODO: replace with the real domain
 };
 
 export function waLink(message: string) {

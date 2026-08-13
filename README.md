@@ -93,6 +93,7 @@ test/, e2e/                  Vitest unit tests and Playwright smoke tests.
 4. **`components/TeacherGrid.tsx` / `lib/data.ts` → `teachers`** — swap placeholder initials for real staff photos (add an `<Image>` per teacher once photos exist).
 5. **`components/GalleryGrid.tsx` / `lib/data.ts` → `galleryCells`** — swap gradient placeholder tiles for real campus photography.
 6. **Firebase + Paystack** — see "Environment setup" above; nothing here is live until real credentials are provided.
+7. **`lib/data.ts` → `site.url`** — placeholder domain; the sitemap, `robots.txt`, and OpenGraph/canonical links all resolve off this, so they won't be correct until it's the real production domain.
 
 ## Design tokens
 

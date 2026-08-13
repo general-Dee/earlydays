@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { AuthProvider } from "@/lib/firebase/AuthProvider";
+import { site } from "@/lib/data";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -24,10 +25,22 @@ const plexMono = IBM_Plex_Mono({
   weight: ["500", "600"],
 });
 
+const description =
+  "One school, one journey — from Creche to Primary 6, on a single campus in Kaduna, Nigeria.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
   title: "Earlydays Nursery & Primary School — Kaduna",
-  description:
-    "One school, one journey — from Creche to Primary 6, on a single campus in Kaduna, Nigeria.",
+  description,
+  openGraph: {
+    type: "website",
+    siteName: site.fullName,
+    title: "Earlydays Nursery & Primary School — Kaduna",
+    description,
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
