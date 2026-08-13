@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import SectionHeader from "@/components/SectionHeader";
 import Button from "@/components/Button";
+import ContactForm from "@/components/ContactForm";
 import { site, waLink } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -45,6 +46,8 @@ export default function ContactPage() {
             </Button>
           </div>
         </div>
+
+        <ContactForm />
       </div>
     </main>
   );
