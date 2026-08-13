@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
+import { sendContactNotification } from "@/lib/email/notify";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,17 @@ export async function POST(req: NextRequest) {
       status: "new",
       createdAt: Date.now(),
     });
+
+  try {
+    await sendContactNotification({
+      name: trimmedName,
+      email: trimmedEmail || null,
+      phone: trimmedPhone || null,
+      message: trimmedMessage,
+    });
+  } catch (err) {
+    console.error("Failed to send contact notification email", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -27,3 +27,15 @@ export type PaymentRecord = {
   paidAt?: number;
   channel?: string;
 };
+
+export type InquiryStatus = "new";
+
+export type Inquiry = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  message: string;
+  status: InquiryStatus;
+  createdAt: number;
+};
