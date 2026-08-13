@@ -9,7 +9,7 @@ export default function BlogList({ limit }: { limit?: number }) {
       {posts.map((p) => (
         <Link key={p.slug} href={`/blog/${p.slug}`} className="card overflow-hidden block hover:-translate-y-1 transition-transform">
           <div className="h-[130px]" style={{ background: p.gradient }} />
-          <div className="p-5.5 p-6">
+          <div className="p-6">
             <span className="font-mono text-[0.68rem] uppercase text-leaf font-semibold tracking-wider">
               {p.category}
             </span>

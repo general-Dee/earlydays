@@ -163,12 +163,12 @@ export const galleryCells: GalleryCell[] = [
   { label: "Nap Room", tall: true, gradient: "linear-gradient(135deg,#3F7D58,#F5A623)" },
 ];
 
-export type Testimonial = { quote: string; name: string; area: string; initial: string };
+export type Testimonial = { id: string; quote: string; name: string; area: string; initial: string };
 
 export const testimonials: Testimonial[] = [
-  { quote: "My daughter moved from Nursery 2 to Primary 1 without a single tear — same building, same faces she trusted already.", name: "Aisha B.", area: "Parent, Barnawa", initial: "A" },
-  { quote: "I get a WhatsApp message the same day if anything happens. That alone is worth the switch from her old school.", name: "Emeka O.", area: "Parent, Malali", initial: "E" },
-  { quote: "Two kids, one gate, one uniform, one calendar. It sounds small until you've lived the alternative.", name: "Fatima S.", area: "Parent, Sabon Tasha", initial: "F" },
+  { id: "aisha-b", quote: "My daughter moved from Nursery 2 to Primary 1 without a single tear — same building, same faces she trusted already.", name: "Aisha B.", area: "Parent, Barnawa", initial: "A" },
+  { id: "emeka-o", quote: "I get a WhatsApp message the same day if anything happens. That alone is worth the switch from her old school.", name: "Emeka O.", area: "Parent, Malali", initial: "E" },
+  { id: "fatima-s", quote: "Two kids, one gate, one uniform, one calendar. It sounds small until you've lived the alternative.", name: "Fatima S.", area: "Parent, Sabon Tasha", initial: "F" },
 ];
 
 export type BlogPost = {
@@ -217,13 +217,13 @@ export const blogPosts: BlogPost[] = [
   },
 ];
 
-export type EventItem = { day: string; month: string; title: string; desc: string; tag: string; color: string };
+export type EventItem = { id: string; day: string; month: string; title: string; desc: string; tag: string; color: string };
 
 export const events: EventItem[] = [
-  { day: "14", month: "SEP", title: "Term 1 Resumption", desc: "All students return · full uniform required.", tag: "All Stages", color: "#3F7D58" },
-  { day: "03", month: "OCT", title: "Open Day for Prospective Parents", desc: "Campus tour, meet the teachers, Q&A session.", tag: "Admissions", color: "#C4522A" },
-  { day: "21", month: "NOV", title: "Nursery Sports Day", desc: "Fun races and team games — parents welcome.", tag: "Nursery", color: "#F5A623" },
-  { day: "09", month: "DEC", title: "Primary 6 Graduation", desc: "Closing ceremony for our graduating class.", tag: "Primary", color: "#16213E" },
+  { id: "term1-resumption", day: "14", month: "SEP", title: "Term 1 Resumption", desc: "All students return · full uniform required.", tag: "All Stages", color: "#3F7D58" },
+  { id: "open-day", day: "03", month: "OCT", title: "Open Day for Prospective Parents", desc: "Campus tour, meet the teachers, Q&A session.", tag: "Admissions", color: "#C4522A" },
+  { id: "nursery-sports-day", day: "21", month: "NOV", title: "Nursery Sports Day", desc: "Fun races and team games — parents welcome.", tag: "Nursery", color: "#F5A623" },
+  { id: "primary6-graduation", day: "09", month: "DEC", title: "Primary 6 Graduation", desc: "Closing ceremony for our graduating class.", tag: "Primary", color: "#16213E" },
 ];
 
 export type FeeRow = { stage: string; age: string; amount: string };

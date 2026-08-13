@@ -5,7 +5,7 @@ export default function EventsList() {
     <div className="border-t border-line">
       {events.map((e) => (
         <div
-          key={e.title}
+          key={e.id}
           className="grid grid-cols-[70px_1fr] sm:grid-cols-[110px_1fr_auto] gap-4 sm:gap-6 items-center py-5.5 border-b border-line"
         >
           <div className="bg-ink text-white rounded-[10px] text-center py-2.5">
