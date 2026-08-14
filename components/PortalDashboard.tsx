@@ -5,6 +5,7 @@ import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/fires
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
+import AnnouncementsFeed from "@/components/AnnouncementsFeed";
 
 function formatNaira(amountKobo: number) {
   return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
@@ -66,6 +67,8 @@ export default function PortalDashboard({ user }: { user: User }) {
           Log Out
         </button>
       </div>
+
+      <AnnouncementsFeed />
 
       {loading && <p className="text-sm text-slate mt-5">Loading your records…</p>}
 

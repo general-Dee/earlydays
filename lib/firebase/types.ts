@@ -39,3 +39,11 @@ export type Inquiry = {
   status: InquiryStatus;
   createdAt: number;
 };
+
+export type Announcement = {
+  id: string;
+  title: string;
+  body: string;
+  createdBy: string;
+  createdAt: number;
+};

@@ -24,7 +24,7 @@ export async function requireAdminEmail(req: NextRequest): Promise<{ email: stri
     return NextResponse.json({ error: "Invalid or expired session" }, { status: 401 });
   }
 
-  if (!isAdminEmail(email)) {
+  if (!email || !isAdminEmail(email)) {
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
 
