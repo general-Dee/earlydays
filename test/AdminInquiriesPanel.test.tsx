@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminInquiriesPanel from "@/components/AdminInquiriesPanel";
 
@@ -67,6 +68,41 @@ describe("AdminInquiriesPanel", () => {
       "/api/admin/inquiries",
       expect.objectContaining({ headers: { Authorization: "Bearer tok" } })
     );
+  });
+
+  it("updates an inquiry's status via the status control", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          inquiries: [
+            { id: "i1", name: "Aisha", email: "a@b.com", phone: null, message: "Book a tour", status: "new", createdAt: Date.now() },
+          ],
+        }),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminInquiriesPanel />);
+
+    await screen.findByText("Aisha");
+    const select = screen.getByRole("combobox", { name: "Status for Aisha" });
+    await userEvent.selectOptions(select, "contacted");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/inquiries/i1",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: { Authorization: "Bearer tok", "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "contacted" }),
+      })
+    );
+    expect(select).toHaveValue("contacted");
   });
 
   it("shows a not-authorized message on a 403", async () => {

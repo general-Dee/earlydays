@@ -28,7 +28,7 @@ export type PaymentRecord = {
   channel?: string;
 };
 
-export type InquiryStatus = "new";
+export type InquiryStatus = "new" | "contacted" | "resolved";
 
 export type Inquiry = {
   id: string;

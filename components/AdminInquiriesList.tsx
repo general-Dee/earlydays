@@ -3,13 +3,48 @@
 import { useEffect, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import type { Inquiry } from "@/lib/firebase/types";
+import type { Inquiry, InquiryStatus } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
+
+const STATUS_OPTIONS: InquiryStatus[] = ["new", "contacted", "resolved"];
+
+const statusStyle: Record<InquiryStatus, string> = {
+  new: "bg-sun-soft text-clay",
+  contacted: "bg-leaf-soft text-leaf",
+  resolved: "bg-chalk text-slate",
+};
 
 export default function AdminInquiriesList({ user }: { user: User }) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  async function updateStatus(id: string, status: InquiryStatus) {
+    const previous = inquiries;
+    setUpdatingId(id);
+    setInquiries((current) => current.map((inquiry) => (inquiry.id === id ? { ...inquiry, status } : inquiry)));
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/inquiries/${id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) {
+        setInquiries(previous);
+      }
+    } catch {
+      setInquiries(previous);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +124,24 @@ export default function AdminInquiriesList({ user }: { user: User }) {
                 {[inquiry.email, inquiry.phone].filter(Boolean).join(" · ") || "No contact info given"}
               </div>
               <p className="text-sm mt-2 mb-0">{inquiry.message}</p>
+              <div className="flex items-center gap-2.5 mt-2.5">
+                <span className={`text-[0.7rem] font-bold px-2.5 py-1 rounded-full ${statusStyle[inquiry.status]}`}>
+                  {inquiry.status}
+                </span>
+                <select
+                  aria-label={`Status for ${inquiry.name}`}
+                  value={inquiry.status}
+                  disabled={updatingId === inquiry.id}
+                  onChange={(e) => updateStatus(inquiry.id, e.target.value as InquiryStatus)}
+                  className="text-xs rounded-md border border-slate/20 bg-white px-2 py-1"
+                >
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </li>
           ))}
         </ul>
