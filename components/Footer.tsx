@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { site, waLink } from "@/lib/data";
 
@@ -7,7 +8,12 @@ export default function Footer() {
       <div className="wrap">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-10">
           <div>
-            <div className="font-display font-medium text-lg text-ink mb-3.5">{site.name}</div>
+            <div className="flex items-center gap-2.5 mb-3.5">
+              <span className="flex bg-[#f3f5fe] rounded-md p-1">
+                <Image src="/logo.png" alt="Earlydays" width={22} height={22} className="block" />
+              </span>
+              <span className="font-display font-medium text-lg text-ink">{site.name}</span>
+            </div>
             <p className="text-ink-soft text-sm">
               Nursery &amp; Primary School — {site.location}.<br />
               One journey, Creche through Primary 6.
