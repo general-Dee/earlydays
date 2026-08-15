@@ -38,7 +38,7 @@ export default function AnnouncementsFeed() {
 
   return (
     <div className="mt-6">
-      <h5 className="text-[0.78rem] font-bold text-slate uppercase tracking-wider mb-2.5">Announcements</h5>
+      <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">Announcements</h5>
 
       {state === "loading" && <p className="text-sm text-slate">Loading announcements…</p>}
 

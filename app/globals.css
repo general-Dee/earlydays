@@ -7,8 +7,11 @@ html {
 }
 
 body {
-  background: #FBF7F0;
-  color: #16213E;
+  background:
+    radial-gradient(1200px 720px at 82% -160px, rgba(43, 39, 65, 0.75), transparent 60%),
+    radial-gradient(1100px 800px at -10% 100%, rgba(0, 0, 0, 0.3), transparent 55%),
+    #161826;
+  color: #e9e9ed;
 }
 
 @layer components {
@@ -17,11 +20,11 @@ body {
   }
 
   .eyebrow {
-    @apply font-mono text-[0.72rem] tracking-[0.14em] uppercase text-clay font-semibold inline-block mb-3.5;
+    @apply font-mono text-[0.72rem] tracking-[0.08em] uppercase text-sun font-medium inline-block mb-3.5;
   }
 
   .btn {
-    @apply inline-flex items-center gap-2 rounded-full font-bold text-[0.95rem] px-6 py-3.5 transition-transform duration-150 hover:-translate-y-0.5 cursor-pointer;
+    @apply inline-flex items-center gap-2 rounded-lg font-medium text-[0.95rem] px-6 py-3 border transition-colors duration-150 cursor-pointer;
   }
 
   .btn-sm {
@@ -29,19 +32,19 @@ body {
   }
 
   .btn-primary {
-    @apply bg-leaf text-white shadow-[0_8px_20px_-8px_rgba(63,125,88,0.55)];
+    @apply bg-transparent text-sun border-sun hover:bg-sun/[0.12];
   }
 
   .btn-clay {
-    @apply bg-clay text-white shadow-[0_8px_20px_-8px_rgba(196,82,42,0.55)];
+    @apply bg-transparent text-clay border-clay hover:bg-clay/[0.12];
   }
 
   .btn-ghost {
-    @apply bg-transparent text-ink border-[1.5px] border-ink;
+    @apply bg-transparent text-ink border-line hover:bg-ink/[0.08];
   }
 
   .card {
-    @apply bg-paper border border-line rounded-card;
+    @apply bg-paper border border-line rounded-lg;
   }
 
   .section-head {
@@ -50,7 +53,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2.5px solid #C4522A;
+  outline: 2.5px solid #9184d9;
   outline-offset: 3px;
 }
 

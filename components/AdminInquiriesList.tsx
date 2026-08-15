@@ -133,7 +133,7 @@ export default function AdminInquiriesList({ user }: { user: User }) {
                   value={inquiry.status}
                   disabled={updatingId === inquiry.id}
                   onChange={(e) => updateStatus(inquiry.id, e.target.value as InquiryStatus)}
-                  className="text-xs rounded-md border border-slate/20 bg-white px-2 py-1"
+                  className="text-xs rounded-md border border-slate/20 bg-chalk text-ink px-2 py-1"
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option} value={option}>

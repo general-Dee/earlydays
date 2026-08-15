@@ -16,14 +16,14 @@ export default function SafetyPage() {
         <div className="wrap">
           <SectionHeader
             eyebrow="Safety & Trust"
-            title="What we won't compromise on"
-            desc="The questions every Kaduna parent asks before enrolling — answered up front, not after you ask."
+            title="The safety questions that keep Kaduna parents up at night"
+            desc="You're trusting us with your most important person. Here's exactly how we earn that trust — before you have to ask."
           />
           <SafetyGrid />
         </div>
       </section>
 
-      <section className="py-20 bg-paper">
+      <section className="py-20">
         <div className="wrap">
           <SectionHeader
             eyebrow="Meet the Teachers"
@@ -39,7 +39,7 @@ export default function SafetyPage() {
           <SectionHeader
             eyebrow="Campus Tour"
             title="Around Earlydays"
-            desc="Placeholder tiles — swap in real campus photography for launch."
+            desc="Placeholder tiles — drop in real campus photography for launch."
           />
           <GalleryGrid />
         </div>

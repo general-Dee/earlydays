@@ -4,38 +4,60 @@ import PathwayVisualizer from "@/components/PathwayVisualizer";
 import SafetyGrid from "@/components/SafetyGrid";
 import TestimonialRow from "@/components/TestimonialRow";
 import Button from "@/components/Button";
-import { waLink } from "@/lib/data";
+import { waLink, howItWorksSteps } from "@/lib/data";
 
 export default function HomePage() {
   return (
     <main>
       <Hero />
 
-      <section className="bg-ink py-24" id="pathway">
+      <section className="py-20" id="plan">
         <div className="wrap">
-          <span className="eyebrow text-sun">The Earlydays Difference</span>
-          <h2 className="font-display font-semibold text-3xl md:text-4xl text-white">
-            The pathway your child never has to leave
+          <SectionHeader eyebrow="How It Works" title="Three steps to one continuous journey" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-10">
+            {howItWorksSteps.map((step) => (
+              <div key={step.number}>
+                <span className="font-mono text-sun text-sm font-medium">{step.number}</span>
+                <h4 className="font-display font-medium text-lg text-ink mt-2 mb-1.5">{step.title}</h4>
+                <p className="text-sm text-ink/[0.78] mb-0">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="py-24"
+        id="pathway"
+        style={{
+          background: "radial-gradient(900px 420px at 85% -40%, rgba(53,59,128,0.7), transparent 64%), #262a60",
+        }}
+      >
+        <div className="wrap">
+          <span className="eyebrow">The Earlydays Difference</span>
+          <h2 className="font-display font-medium text-3xl md:text-4xl text-ink">
+            The only school transition your child will ever need
           </h2>
-          <p className="text-[#B9C2D6] max-w-[560px] mt-3">
-            Most families juggle two schools and two culture shocks. At Earlydays it&apos;s one continuous
-            pathway. Tap a stage to see what that year actually looks like.
+          <p className="text-ink/[0.78] max-w-[560px] mt-3">
+            Most families juggle two schools and two culture shocks — a new gate, new teachers, new rules,
+            right when consistency matters most. At Earlydays it&apos;s one continuous pathway. Tap a stage
+            below to see exactly what that year looks like.
           </p>
           <PathwayVisualizer />
           <div className="mt-10">
-            <Button href="/journey" variant="ghost" className="border-white text-white">
+            <Button href="/journey" variant="ghost">
               Explore the full journey
             </Button>
           </div>
         </div>
       </section>
 
-      <section className="py-24 bg-paper">
+      <section className="py-24">
         <div className="wrap">
           <SectionHeader
             eyebrow="Safety & Trust"
-            title="What we won't compromise on"
-            desc="The questions every Kaduna parent asks before enrolling — answered up front, not after you ask."
+            title="The safety questions that keep Kaduna parents up at night"
+            desc="You're trusting us with your most important person. Here's exactly how we earn that trust — before you have to ask."
           />
           <SafetyGrid />
         </div>
@@ -50,15 +72,18 @@ export default function HomePage() {
 
       <section className="pb-24">
         <div className="wrap">
-          <div className="rounded-[20px] bg-clay text-white p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="rounded-card bg-ground-card border border-line p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
-              <h3 className="font-display text-white text-2xl md:text-3xl mb-1.5">
-                Come see the campus for yourself
+              <h3 className="font-display font-medium text-ink text-2xl md:text-3xl mb-1.5">
+                Your child&apos;s next nine years start with one visit
               </h3>
-              <p className="text-white/85 mb-0">Book a visit in under a minute — no forms, just WhatsApp.</p>
+              <p className="text-ink/[0.78] mb-0">
+                Book a visit in under a minute — no forms, just WhatsApp. See the campus, meet the team,
+                picture what&apos;s next.
+              </p>
             </div>
             <Button href={waLink("Hi, I'd like to book a tour for my child")} external variant="primary">
-              📲 Book a Visit
+              Book a Visit
             </Button>
           </div>
         </div>

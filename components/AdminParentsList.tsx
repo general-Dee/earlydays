@@ -40,12 +40,12 @@ function ChildRowFields({
         value={child.name}
         onChange={(e) => onChange({ name: e.target.value })}
         required
-        className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2 flex-1"
+        className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2 flex-1"
       />
       <select
         value={child.stage}
         onChange={(e) => onChange({ stage: e.target.value })}
-        className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+        className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
       >
         {stages.map((stage) => (
           <option key={stage.code} value={stage.code}>
@@ -58,7 +58,7 @@ function ChildRowFields({
         placeholder="Admission no. (optional)"
         value={child.admissionNo}
         onChange={(e) => onChange({ admissionNo: e.target.value })}
-        className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2 w-40"
+        className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2 w-40"
       />
       <button type="button" onClick={onRemove} disabled={removeDisabled} className="btn btn-ghost btn-sm">
         Remove
@@ -82,7 +82,7 @@ function InviteBanner({
     <div className="flex flex-col gap-2">
       <span>{notSentIntro}</span>
       <div className="flex items-center gap-2">
-        <code className="text-xs bg-white px-2 py-1 rounded break-all">{resetLink}</code>
+        <code className="text-xs bg-chalk text-ink px-2 py-1 rounded break-all">{resetLink}</code>
         <button type="button" onClick={onCopy} className="btn btn-ghost btn-sm">
           {copied ? "Copied" : "Copy Link"}
         </button>
@@ -349,7 +349,7 @@ export default function AdminParentsList({ user }: { user: User }) {
           value={guardianName}
           onChange={(e) => setGuardianName(e.target.value)}
           required
-          className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
         />
         <input
           type="email"
@@ -357,14 +357,14 @@ export default function AdminParentsList({ user }: { user: User }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
         />
         <input
           type="text"
           placeholder="Phone (optional)"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
         />
 
         <div className="flex flex-col gap-2 mt-1.5">
@@ -434,14 +434,14 @@ export default function AdminParentsList({ user }: { user: User }) {
                       value={editForm.guardianName}
                       onChange={(e) => setEditForm((form) => (form ? { ...form, guardianName: e.target.value } : form))}
                       required
-                      className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
                     />
                     <input
                       type="text"
                       placeholder="Phone (optional)"
                       value={editForm.phone}
                       onChange={(e) => setEditForm((form) => (form ? { ...form, phone: e.target.value } : form))}
-                      className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
                     />
                     <div className="flex flex-col gap-2">
                       {editForm.children.map((child, index) => (
@@ -486,7 +486,7 @@ export default function AdminParentsList({ user }: { user: User }) {
                     </p>
                     <div className="flex flex-wrap gap-1.5 mt-2.5">
                       {parent.children.map((child) => (
-                        <span key={child.id} className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white text-ink">
+                        <span key={child.id} className="text-xs font-semibold px-2.5 py-1 rounded-full bg-chalk text-ink">
                           {child.name} ({child.stage})
                         </span>
                       ))}

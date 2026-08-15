@@ -15,7 +15,7 @@ export default function FeesTable() {
           <tr key={f.stage}>
             <td className={`px-4.5 py-4 text-sm ${i < fees.length - 1 ? "border-b border-line" : ""}`}>{f.stage}</td>
             <td className={`px-4.5 py-4 text-sm ${i < fees.length - 1 ? "border-b border-line" : ""}`}>{f.age}</td>
-            <td className={`px-4.5 py-4 text-sm font-bold text-ink ${i < fees.length - 1 ? "border-b border-line" : ""}`}>₦{f.amount}</td>
+            <td className={`px-4.5 py-4 text-sm font-medium text-ink ${i < fees.length - 1 ? "border-b border-line" : ""}`}>₦{f.amount}</td>
           </tr>
         ))}
       </tbody>

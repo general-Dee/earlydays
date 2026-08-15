@@ -57,10 +57,10 @@ export default function PortalDashboard({ user }: { user: User }) {
   }, [user.uid]);
 
   return (
-    <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+    <div className="card p-8 md:p-9">
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
-          <h4 className="font-display text-xl mb-0.5">Welcome back</h4>
+          <h4 className="font-display font-medium text-xl mb-0.5 text-ink">Welcome back</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
         <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
@@ -81,7 +81,7 @@ export default function PortalDashboard({ user }: { user: User }) {
       {!loading && parent && (
         <>
           <div className="mt-5">
-            <h5 className="text-[0.78rem] font-bold text-slate uppercase tracking-wider mb-2.5">Children</h5>
+            <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">Children</h5>
             {parent.children.length === 0 ? (
               <p className="text-sm text-slate">No children linked to this account yet.</p>
             ) : (
@@ -97,7 +97,7 @@ export default function PortalDashboard({ user }: { user: User }) {
           </div>
 
           <div className="mt-6">
-            <h5 className="text-[0.78rem] font-bold text-slate uppercase tracking-wider mb-2.5">Payment history</h5>
+            <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">Payment history</h5>
             {payments.length === 0 ? (
               <p className="text-sm text-slate">No payments yet.</p>
             ) : (

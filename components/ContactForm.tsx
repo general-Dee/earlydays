@@ -50,11 +50,11 @@ export default function ContactForm() {
 
   return (
     <div className="card p-8 mt-6">
-      <h4 className="font-display text-xl mb-0.5">Send an inquiry</h4>
+      <h4 className="font-display font-medium text-xl mb-0.5 text-ink">Send an inquiry</h4>
       <p className="text-[0.85rem] text-slate">Prefer not to switch apps? Send us a message here instead.</p>
 
       <form onSubmit={handleSubmit}>
-        <label htmlFor="cName" className="block text-[0.78rem] font-bold text-slate mt-4 mb-1.5">
+        <label htmlFor="cName" className="block text-[0.78rem] font-medium text-slate mt-4 mb-1.5">
           Name
         </label>
         <input
@@ -64,10 +64,10 @@ export default function ContactForm() {
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
           required
-          className="w-full px-3.5 py-3 rounded-lg border-[1.5px] border-line text-[0.94rem]"
+          className="w-full px-3.5 py-3 rounded-lg border border-line bg-chalk text-ink text-[0.94rem]"
         />
 
-        <label htmlFor="cEmail" className="block text-[0.78rem] font-bold text-slate mt-4 mb-1.5">
+        <label htmlFor="cEmail" className="block text-[0.78rem] font-medium text-slate mt-4 mb-1.5">
           Email
         </label>
         <input
@@ -77,10 +77,10 @@ export default function ContactForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
           autoComplete="email"
-          className="w-full px-3.5 py-3 rounded-lg border-[1.5px] border-line text-[0.94rem]"
+          className="w-full px-3.5 py-3 rounded-lg border border-line bg-chalk text-ink text-[0.94rem]"
         />
 
-        <label htmlFor="cPhone" className="block text-[0.78rem] font-bold text-slate mt-4 mb-1.5">
+        <label htmlFor="cPhone" className="block text-[0.78rem] font-medium text-slate mt-4 mb-1.5">
           Phone
         </label>
         <input
@@ -89,10 +89,10 @@ export default function ContactForm() {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           autoComplete="tel"
-          className="w-full px-3.5 py-3 rounded-lg border-[1.5px] border-line text-[0.94rem]"
+          className="w-full px-3.5 py-3 rounded-lg border border-line bg-chalk text-ink text-[0.94rem]"
         />
 
-        <label htmlFor="cMessage" className="block text-[0.78rem] font-bold text-slate mt-4 mb-1.5">
+        <label htmlFor="cMessage" className="block text-[0.78rem] font-medium text-slate mt-4 mb-1.5">
           Message
         </label>
         <textarea
@@ -101,7 +101,7 @@ export default function ContactForm() {
           onChange={(e) => setMessage(e.target.value)}
           rows={4}
           required
-          className="w-full px-3.5 py-3 rounded-lg border-[1.5px] border-line text-[0.94rem]"
+          className="w-full px-3.5 py-3 rounded-lg border border-line bg-chalk text-ink text-[0.94rem]"
         />
 
         <input

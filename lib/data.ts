@@ -109,6 +109,14 @@ export const stages: Stage[] = [
   },
 ];
 
+export type HowItWorksStep = { number: string; title: string; desc: string };
+
+export const howItWorksSteps: HowItWorksStep[] = [
+  { number: "01", title: "Book a visit", desc: "Tour the campus and meet the team on WhatsApp — it takes one message." },
+  { number: "02", title: "Enroll your child", desc: "Pick the stage. We handle placement, fees, and the paperwork." },
+  { number: "03", title: "Watch them grow, uninterrupted", desc: "From Creche to Primary 6 — same campus, same trusted teachers, same relationship with your family." },
+];
+
 export type DayStep = { time: string; title: string; desc: string };
 export type DaySchedule = { name: string; schedule: DayStep[] };
 
@@ -138,30 +146,30 @@ export const daySchedules: DaySchedule[] = [
 ];
 
 export const safetyPoints = [
-  { icon: "◉", title: "Full CCTV coverage", desc: "Every classroom, corridor, and gate — monitored throughout the school day." },
-  { icon: "✓", title: "Vetted staff, always", desc: "Background checks, reference calls, and a probation term before any teacher leads a class." },
-  { icon: "🔑", title: "Verified pickup only", desc: "Children are released only to guardians on a signed, photo-ID pickup list — no exceptions." },
-  { icon: "☎", title: "Same-day communication", desc: "Incidents, however small, reach parents the same day — by phone and WhatsApp." },
+  { icon: "video-camera", title: "Full CCTV coverage", desc: "Every classroom, corridor, and gate — monitored throughout the school day." },
+  { icon: "check-circle", title: "Vetted staff, always", desc: "Background checks, reference calls, and a probation term before any teacher leads a class." },
+  { icon: "key", title: "Verified pickup only", desc: "Children are released only to guardians on a signed, photo-ID pickup list — no exceptions." },
+  { icon: "phone-call", title: "Same-day communication", desc: "Incidents, however small, reach parents the same day — by phone and WhatsApp." },
 ];
 
 export type Teacher = { name: string; role: string; color: string };
 
 export const teachers: Teacher[] = [
-  { name: "Mrs. Grace A.", role: "Head of Nursery, 8 yrs exp.", color: "#3F7D58" },
-  { name: "Mr. Yusuf I.", role: "Primary 4 Class Teacher, 6 yrs exp.", color: "#C4522A" },
-  { name: "Mrs. Chidinma O.", role: "Literacy Coordinator, 10 yrs exp.", color: "#F5A623" },
-  { name: "Mr. Suleiman B.", role: "Head of Primary, 12 yrs exp.", color: "#16213E" },
+  { name: "Mrs. Grace A.", role: "Head of Nursery, 8 yrs exp.", color: "#423a6a" },
+  { name: "Mr. Yusuf I.", role: "Primary 4 Class Teacher, 6 yrs exp.", color: "#2b2741" },
+  { name: "Mrs. Chidinma O.", role: "Literacy Coordinator, 10 yrs exp.", color: "#5d5294" },
+  { name: "Mr. Suleiman B.", role: "Head of Primary, 12 yrs exp.", color: "#3f424d" },
 ];
 
 export type GalleryCell = { label: string; tall?: boolean; gradient: string };
 
 export const galleryCells: GalleryCell[] = [
-  { label: "Classrooms", tall: true, gradient: "linear-gradient(135deg,#F5A623,#C4522A)" },
-  { label: "Playground", gradient: "linear-gradient(135deg,#3F7D58,#16213E)" },
-  { label: "Library Corner", gradient: "linear-gradient(135deg,#16213E,#3E4C72)" },
-  { label: "Art Studio", gradient: "linear-gradient(135deg,#C4522A,#F5A623)" },
-  { label: "Assembly Hall", gradient: "linear-gradient(135deg,#3E4C72,#F5A623)" },
-  { label: "Nap Room", tall: true, gradient: "linear-gradient(135deg,#3F7D58,#F5A623)" },
+  { label: "Classrooms", tall: true, gradient: "linear-gradient(135deg,#232532,#292b31)" },
+  { label: "Playground", gradient: "linear-gradient(135deg,#232532,#292b31)" },
+  { label: "Library Corner", gradient: "linear-gradient(135deg,#232532,#292b31)" },
+  { label: "Art Studio", gradient: "linear-gradient(135deg,#232532,#292b31)" },
+  { label: "Assembly Hall", gradient: "linear-gradient(135deg,#232532,#292b31)" },
+  { label: "Nap Room", tall: true, gradient: "linear-gradient(135deg,#232532,#292b31)" },
 ];
 
 export type Testimonial = { id: string; quote: string; name: string; area: string; initial: string };
@@ -192,7 +200,7 @@ export const blogPosts: BlogPost[] = [
       "Arrive a few minutes early so your child isn't rushed into the room, and let a teacher greet them by name at the door. Familiar faces build confidence fast.",
       "Expect a rough day two or three before things settle. That dip is normal, not a sign something is wrong.",
     ],
-    gradient: "linear-gradient(135deg,#F5A623,#C4522A)",
+    gradient: "linear-gradient(135deg,#232532,#292b31)",
   },
   {
     slug: "what-school-readiness-really-means-at-4",
@@ -203,7 +211,7 @@ export const blogPosts: BlogPost[] = [
       "Parents often worry about whether their child knows the alphabet before Primary 1. In practice, five habits matter more: following two-step instructions, sitting through a short story, sharing with peers, using the toilet independently, and expressing needs in words.",
       "Letters and numbers are taught well within the first term. The habits above are much harder to build quickly, which is why Nursery 2 focuses on them deliberately.",
     ],
-    gradient: "linear-gradient(135deg,#3F7D58,#16213E)",
+    gradient: "linear-gradient(135deg,#232532,#292b31)",
   },
   {
     slug: "reading-at-home-without-turning-it-into-homework",
@@ -214,7 +222,7 @@ export const blogPosts: BlogPost[] = [
       "The single best predictor of reading progress isn't a workbook — it's ten unhurried minutes a night where reading feels like a treat, not a task.",
       "Let your child pick the book, even if it's below their level or read for the fifth time. Familiarity builds fluency and confidence, which matters more than difficulty at this stage.",
     ],
-    gradient: "linear-gradient(135deg,#C4522A,#FCE3B4)",
+    gradient: "linear-gradient(135deg,#232532,#292b31)",
   },
 ];
 

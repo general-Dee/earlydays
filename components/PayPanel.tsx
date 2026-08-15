@@ -140,33 +140,38 @@ export default function PayPanel() {
   const canPay = user && parentStatus === "ready" && childId && payStatus !== "starting" && payStatus !== "verifying";
 
   return (
-    <div className="rounded-[20px] p-8 md:p-11 grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-7 text-white bg-gradient-to-br from-[#0F2E22] to-[#1B4C38]">
+    <div
+      className="rounded-card p-8 md:p-11 grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-7 text-ink"
+      style={{
+        background: "radial-gradient(900px 420px at 85% -40%, rgba(53,59,128,0.7), transparent 64%), #262a60",
+      }}
+    >
       <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />
       <div>
-        <span className="font-mono text-[0.7rem] bg-white/10 px-3 py-1.5 rounded-full inline-block mb-3.5">
+        <span className="font-mono text-[0.7rem] bg-sun/[0.16] text-accent-light px-3 py-1.5 rounded-full inline-block mb-3.5">
           Secure Payment
         </span>
-        <h3 className="font-display text-white text-2xl mb-1.5">
+        <h3 className="font-display font-medium text-ink text-2xl mb-1.5">
           Pay school fees online, from anywhere
         </h3>
-        <p className="text-[#CBE3D6] mb-3.5">
+        <p className="text-ink/[0.78] mb-3.5">
           No more bank branch visits or lost receipts — pay termly fees directly and get an instant confirmation.
         </p>
 
         {!authLoading && !user && (
-          <Link href="/portal" className="text-sm font-semibold underline text-white">
+          <Link href="/portal" className="text-sm font-medium underline text-accent-light">
             Log in to pay fees →
           </Link>
         )}
 
         {user && parentStatus === "missing" && (
-          <p className="text-sm text-[#CBE3D6]">
+          <p className="text-sm text-ink/[0.78]">
             We couldn&rsquo;t find a parent record for this account. Contact the school office to have your children linked.
           </p>
         )}
 
         {user && parentStatus === "ready" && parent && parent.children.length === 0 && (
-          <p className="text-sm text-[#CBE3D6]">No children linked to your account yet — contact the school office.</p>
+          <p className="text-sm text-ink/[0.78]">No children linked to your account yet — contact the school office.</p>
         )}
 
         {user && parentStatus === "ready" && parent && parent.children.length > 0 && (
@@ -174,7 +179,7 @@ export default function PayPanel() {
             <select
               value={childId}
               onChange={(e) => setChildId(e.target.value)}
-              className="px-3 py-2 rounded-lg text-ink text-sm"
+              className="px-3 py-2 rounded-lg bg-chalk border border-line text-ink text-sm"
             >
               {parent.children.map((child) => (
                 <option key={child.id} value={child.id}>
@@ -182,7 +187,11 @@ export default function PayPanel() {
                 </option>
               ))}
             </select>
-            <select value={term} onChange={(e) => setTerm(e.target.value)} className="px-3 py-2 rounded-lg text-ink text-sm">
+            <select
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-chalk border border-line text-ink text-sm"
+            >
               {TERMS.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -192,10 +201,10 @@ export default function PayPanel() {
           </div>
         )}
 
-        {message && <p className="text-sm text-[#CBE3D6] mt-3">{message}</p>}
+        {message && <p className="text-sm text-ink/[0.78] mt-3">{message}</p>}
       </div>
 
-      <button onClick={handlePay} disabled={!canPay} className="btn btn-clay disabled:opacity-60">
+      <button onClick={handlePay} disabled={!canPay} className="btn btn-primary disabled:opacity-60">
         {payStatus === "starting" || payStatus === "verifying" ? "Processing…" : "Pay Fees Now →"}
       </button>
     </div>

@@ -27,10 +27,10 @@ export default function DayInLife() {
           <button
             key={d.name}
             onClick={() => setDayIndex(i)}
-            className={`px-4.5 py-2.5 rounded-full border-[1.5px] font-bold text-sm transition-colors ${
+            className={`px-4 py-2 rounded-full border font-medium text-sm transition-colors ${
               i === dayIndex
-                ? "bg-ink text-white border-ink"
-                : "bg-paper text-slate border-line"
+                ? "bg-sun/[0.16] border-sun text-accent-light"
+                : "bg-transparent text-ink border-line"
             }`}
           >
             {d.name}
@@ -39,10 +39,10 @@ export default function DayInLife() {
       </div>
 
       <div className="card grid grid-cols-1 md:grid-cols-[0.5fr_1.5fr] gap-4 md:gap-10 p-6 md:p-10">
-        <div className="font-mono text-4xl text-clay font-semibold">{step.time}</div>
+        <div className="font-mono text-4xl text-accent-light font-medium">{step.time}</div>
         <div>
-          <h4 className="font-display text-xl mb-2">{step.title}</h4>
-          <p className="mb-0">{step.desc}</p>
+          <h4 className="font-display font-medium text-xl mb-2 text-ink">{step.title}</h4>
+          <p className="mb-0 text-ink/[0.78]">{step.desc}</p>
         </div>
       </div>
     </div>

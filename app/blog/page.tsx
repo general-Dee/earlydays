@@ -13,8 +13,8 @@ export default function BlogPage() {
       <div className="wrap">
         <SectionHeader
           eyebrow="From Earlydays"
-          title="Notes for parents"
-          desc="Short, practical reads — placeholder posts, ready for your first real articles."
+          title="Straight answers for Kaduna parents, no fluff"
+          desc="Real questions from real parents — settling in, school readiness, and everything between naptime and Primary 6."
         />
         <BlogList />
       </div>

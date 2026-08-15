@@ -15,24 +15,29 @@ export default function JourneyPage() {
         <div className="wrap">
           <SectionHeader
             eyebrow="The Earlydays Difference"
-            title="The pathway your child never has to leave"
-            desc="Most families juggle two schools and two culture shocks. At Earlydays it's one continuous pathway. Tap a stage to see what that year actually looks like."
+            title="The only school transition your child will ever need"
+            desc="Most families juggle two schools and two culture shocks — a new gate, new teachers, new rules, right when consistency matters most. At Earlydays it's one continuous pathway from Creche to Primary 6. Tap a stage to see exactly what that year looks like."
           />
         </div>
       </section>
 
-      <section className="bg-ink py-20">
+      <section
+        className="py-20"
+        style={{
+          background: "radial-gradient(900px 420px at 85% -40%, rgba(53,59,128,0.7), transparent 64%), #262a60",
+        }}
+      >
         <div className="wrap">
           <PathwayVisualizer />
         </div>
       </section>
 
-      <section className="py-24 bg-paper">
+      <section className="py-24">
         <div className="wrap">
           <SectionHeader
             eyebrow="A Day at Earlydays"
-            title="What your child's day actually looks like"
-            desc="Pick a stage. See the real rhythm — not a brochure promise."
+            title="See the real rhythm, not a brochure promise"
+            desc="This is what actually happens on campus every day, hour by hour. Pick a stage and see for yourself."
           />
           <DayInLife />
         </div>

@@ -126,7 +126,7 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
         />
         <textarea
           placeholder="Announcement details"
@@ -134,7 +134,7 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
           onChange={(e) => setBody(e.target.value)}
           required
           rows={3}
-          className="text-sm rounded-md border border-slate/20 bg-white px-3 py-2"
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
         />
         {postError && <p className="text-[0.8rem] text-clay mb-0">{postError}</p>}
         <button type="submit" disabled={posting} className="btn btn-primary btn-sm self-start">

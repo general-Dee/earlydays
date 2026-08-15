@@ -65,12 +65,12 @@ export default function PortalLoginForm() {
   }
 
   return (
-    <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
-      <h4 className="font-display text-xl mb-0.5">Parent Login</h4>
+    <div className="card p-8 md:p-9">
+      <h4 className="font-display font-medium text-xl mb-0.5 text-ink">Parent Login</h4>
       <p className="text-[0.85rem] text-slate">Log in with the email and password the school issued you.</p>
 
       <form onSubmit={handleSubmit}>
-        <label htmlFor="pEmail" className="block text-[0.78rem] font-bold text-slate mt-4 mb-1.5">
+        <label htmlFor="pEmail" className="block text-[0.78rem] font-medium text-slate mt-4 mb-1.5">
           Email
         </label>
         <input
@@ -81,10 +81,10 @@ export default function PortalLoginForm() {
           placeholder="you@example.com"
           autoComplete="email"
           required
-          className="w-full px-3.5 py-3 rounded-lg border-[1.5px] border-line text-[0.94rem]"
+          className="w-full px-3.5 py-3 rounded-lg border border-line bg-chalk text-ink text-[0.94rem]"
         />
 
-        <label htmlFor="pPass" className="block text-[0.78rem] font-bold text-slate mt-4 mb-1.5">
+        <label htmlFor="pPass" className="block text-[0.78rem] font-medium text-slate mt-4 mb-1.5">
           Password
         </label>
         <input
@@ -95,10 +95,10 @@ export default function PortalLoginForm() {
           placeholder="••••••••"
           autoComplete="current-password"
           required
-          className="w-full px-3.5 py-3 rounded-lg border-[1.5px] border-line text-[0.94rem]"
+          className="w-full px-3.5 py-3 rounded-lg border border-line bg-chalk text-ink text-[0.94rem]"
         />
 
-        <button type="button" onClick={handleForgotPassword} className="mt-2.5 text-[0.8rem] text-leaf font-semibold">
+        <button type="button" onClick={handleForgotPassword} className="mt-2.5 text-[0.8rem] text-accent-light font-medium">
           Forgot password?
         </button>
 
