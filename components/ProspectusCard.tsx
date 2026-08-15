@@ -9,7 +9,6 @@ export default function ProspectusCard() {
           Curriculum, daily schedule, uniform list, and full fee breakdown in one PDF.
         </p>
       </div>
-      {/* TODO: replace href with a real prospectus PDF, e.g. /prospectus.pdf in /public */}
       <a href="/prospectus.pdf" className="btn btn-primary btn-sm mt-5 justify-center">
         Download Prospectus
       </a>

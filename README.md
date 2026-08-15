@@ -97,4 +97,4 @@ test/, e2e/                  Vitest unit tests and Playwright smoke tests.
 
 ## Design tokens
 
-Colors, fonts, and radii live in `tailwind.config.ts`. Fonts (Fraunces, Manrope, IBM Plex Mono) are loaded via `next/font/google` in `app/layout.tsx` — no external font requests at runtime.
+Colors, fonts, and radii live in `tailwind.config.ts`. Fonts (Inter) are loaded via `next/font/google` in `app/layout.tsx` — no external font requests at runtime.
