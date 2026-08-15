@@ -32,3 +32,34 @@ export async function sendContactNotification(inquiry: ContactInquiry) {
     ].join("\n"),
   });
 }
+
+type ParentInvite = {
+  guardianName: string;
+  email: string;
+};
+
+export async function sendParentInviteEmail(parent: ParentInvite, resetLink: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: parent.email,
+    subject: "Your Earlydays parent portal account",
+    text: [
+      `Hi ${parent.guardianName},`,
+      "",
+      "The school has set up your Earlydays parent portal account. Use the link below to set your password and log in:",
+      "",
+      resetLink,
+      "",
+      "This link expires in 1 hour. If it has expired, use \"Forgot password\" on the portal login page instead.",
+    ].join("\n"),
+  });
+
+  return true;
+}
