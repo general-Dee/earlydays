@@ -253,4 +253,5 @@ export const navLinks = [
   { href: "/events", label: "Events" },
   { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
+  { href: "/portal", label: "Portal" },
 ];
