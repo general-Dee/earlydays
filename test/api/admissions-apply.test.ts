@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetRateLimits } from "@/lib/rate-limit";
 
 const collectionAdd = vi.fn();
 const collection = vi.fn();
@@ -15,10 +16,10 @@ vi.mock("@/lib/email/notify", () => ({
 
 collection.mockImplementation(() => ({ add: collectionAdd }));
 
-function jsonRequest(body: unknown) {
+function jsonRequest(body: unknown, headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/admissions/apply", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
 }
@@ -33,6 +34,7 @@ const validBody = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRateLimits();
   collection.mockImplementation(() => ({ add: collectionAdd }));
   collectionAdd.mockResolvedValue(undefined);
   sendApplicationNotification.mockResolvedValue(undefined);
@@ -110,5 +112,23 @@ describe("POST /api/admissions/apply", () => {
     expect(res.status).toBe(200);
     expect(json).toEqual({ ok: true });
     expect(collectionAdd).toHaveBeenCalled();
+  });
+
+  it("rate limits repeated requests from the same IP", async () => {
+    const { POST } = await import("@/app/api/admissions/apply/route");
+    const headers = { "x-forwarded-for": "1.2.3.4" };
+
+    for (let i = 0; i < 3; i++) {
+      const res = await POST(jsonRequest(validBody, headers));
+      expect(res.status).toBe(200);
+    }
+
+    collectionAdd.mockClear();
+    const res = await POST(jsonRequest(validBody, headers));
+    const json = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(json).toEqual({ error: "Too many requests. Please try again later." });
+    expect(collectionAdd).not.toHaveBeenCalled();
   });
 });

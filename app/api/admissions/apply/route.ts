@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendApplicationNotification } from "@/lib/email/notify";
 import { stages } from "@/lib/data";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,11 @@ const MAX_NOTES_LENGTH = 2000;
 const VALID_STAGE_CODES = stages.map((s) => s.code);
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`admissions:${ip}`, { max: 3, windowMs: 10 * 60 * 1000 })) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const { childName, childDob, desiredStage, guardianName, email, phone, notes, hp } = (await req.json()) as {
     childName?: string;
     childDob?: string;
