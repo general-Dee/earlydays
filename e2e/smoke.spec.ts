@@ -37,3 +37,21 @@ test("robots.txt is reachable", async ({ page }) => {
   const response = await page.goto("/robots.txt");
   expect(response?.status()).toBe(200);
 });
+
+const adminRoutes = [
+  { path: "/admin/announcements", heading: "Announcements" },
+  { path: "/admin/applications", heading: "Applications" },
+  { path: "/admin/inquiries", heading: "Inquiries" },
+  { path: "/admin/parents", heading: "Parent Accounts" },
+];
+
+for (const { path, heading } of adminRoutes) {
+  test(`${path} shows the login gate when logged out`, async ({ page }) => {
+    const response = await page.goto(path);
+    expect(response?.status()).toBeLessThan(400);
+    await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Log In" })).toBeVisible();
+    await expect(page.getByLabel("Email")).toBeVisible();
+    await expect(page.getByLabel("Password")).toBeVisible();
+  });
+}
