@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { requireAdminEmail } from "@/lib/firebase/admin-auth";
-import type { ApplicationStatus } from "@/lib/firebase/types";
+import { sendApplicationStatusEmail } from "@/lib/email/notify";
+import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  await getAdminDb().collection("applications").doc(params.id).update({ status });
+  const ref = getAdminDb().collection("applications").doc(params.id);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    return NextResponse.json({ error: "Application not found" }, { status: 404 });
+  }
 
-  return NextResponse.json({ ok: true });
+  await ref.update({ status });
+
+  const application = snapshot.data() as Application;
+  let emailSent = false;
+  try {
+    emailSent = await sendApplicationStatusEmail(
+      {
+        guardianName: application.guardianName,
+        childName: application.childName,
+        desiredStage: application.desiredStage,
+        email: application.email,
+      },
+      status as ApplicationStatus
+    );
+  } catch (err) {
+    console.error("Failed to send application status email", err);
+  }
+
+  return NextResponse.json({ ok: true, emailSent });
 }

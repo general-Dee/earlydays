@@ -1,4 +1,10 @@
 import { Resend } from "resend";
+import { stages } from "@/lib/data";
+import type { ApplicationStatus } from "@/lib/firebase/types";
+
+function stageLabel(code: string): string {
+  return stages.find((s) => s.code === code)?.name ?? code;
+}
 
 type ContactInquiry = {
   name: string;
@@ -94,6 +100,91 @@ export async function sendParentInviteEmail(parent: ParentInvite, resetLink: str
       "",
       "This link expires in 1 hour. If it has expired, use \"Forgot password\" on the portal login page instead.",
     ].join("\n"),
+  });
+
+  return true;
+}
+
+type ApplicationStatusUpdate = {
+  guardianName: string;
+  childName: string;
+  desiredStage: string;
+  email: string | null;
+};
+
+function statusEmailContent(
+  status: ApplicationStatus,
+  application: ApplicationStatusUpdate
+): { subject: string; text: string } | null {
+  const stage = stageLabel(application.desiredStage);
+
+  switch (status) {
+    case "accepted":
+      return {
+        subject: `Great news about ${application.childName}'s application`,
+        text: [
+          `Hi ${application.guardianName},`,
+          "",
+          `We're delighted to let you know that ${application.childName}'s application for ${stage} at Earlydays has been accepted.`,
+          "",
+          "Our admissions team will be in touch shortly with next steps, including enrollment paperwork and payment details.",
+          "",
+          "Warmly,",
+          "The Earlydays Admissions Team",
+        ].join("\n"),
+      };
+    case "waitlisted":
+      return {
+        subject: `Update on ${application.childName}'s application`,
+        text: [
+          `Hi ${application.guardianName},`,
+          "",
+          `Thank you for your patience while we reviewed ${application.childName}'s application for ${stage}.`,
+          "",
+          `At this time, ${application.childName} has been placed on our waitlist. We'll reach out as soon as a place becomes available.`,
+          "",
+          "Warmly,",
+          "The Earlydays Admissions Team",
+        ].join("\n"),
+      };
+    case "declined":
+      return {
+        subject: `Update on ${application.childName}'s application`,
+        text: [
+          `Hi ${application.guardianName},`,
+          "",
+          `Thank you for your interest in Earlydays and for applying for ${application.childName} to join our ${stage} program.`,
+          "",
+          "After careful review, we're unable to offer a place at this time. We appreciate your interest and wish your family all the best.",
+          "",
+          "Warmly,",
+          "The Earlydays Admissions Team",
+        ].join("\n"),
+      };
+    default:
+      return null;
+  }
+}
+
+export async function sendApplicationStatusEmail(
+  application: ApplicationStatusUpdate,
+  status: ApplicationStatus
+): Promise<boolean> {
+  const content = statusEmailContent(status, application);
+  if (!content || !application.email) return false;
+
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: application.email,
+    subject: content.subject,
+    text: content.text,
   });
 
   return true;
