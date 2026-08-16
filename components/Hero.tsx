@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Button from "./Button";
 import { waLink } from "@/lib/data";
 
@@ -39,8 +40,15 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="relative h-[280px] lg:h-[420px] rounded-card overflow-hidden order-first lg:order-last bg-paper mix-blend-lighten flex items-center justify-center">
-          <span className="text-ink-soft text-sm">Drop a campus or classroom photo</span>
+        <div className="relative h-[280px] lg:h-[420px] rounded-card overflow-hidden order-first lg:order-last border border-line">
+          <Image
+            src="/ct01.PNG"
+            alt="Sunflower-painted welcome entrance and gate at the Earlydays campus in Kaduna"
+            fill
+            priority
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            className="object-cover"
+          />
         </div>
       </div>
     </section>

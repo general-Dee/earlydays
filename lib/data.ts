@@ -161,15 +161,67 @@ export const teachers: Teacher[] = [
   { name: "Mr. Suleiman B.", role: "Head of Primary, 12 yrs exp.", color: "#3f424d" },
 ];
 
-export type GalleryCell = { label: string; tall?: boolean; gradient: string };
+export type GalleryImage = {
+  src: string;
+  alt: string;
+  category: "Campus & Grounds" | "Classrooms" | "Play & Discovery";
+  tall?: boolean;
+};
 
-export const galleryCells: GalleryCell[] = [
-  { label: "Classrooms", tall: true, gradient: "linear-gradient(135deg,#232532,#292b31)" },
-  { label: "Playground", gradient: "linear-gradient(135deg,#232532,#292b31)" },
-  { label: "Library Corner", gradient: "linear-gradient(135deg,#232532,#292b31)" },
-  { label: "Art Studio", gradient: "linear-gradient(135deg,#232532,#292b31)" },
-  { label: "Assembly Hall", gradient: "linear-gradient(135deg,#232532,#292b31)" },
-  { label: "Nap Room", tall: true, gradient: "linear-gradient(135deg,#232532,#292b31)" },
+export const galleryImages: GalleryImage[] = [
+  {
+    src: "/ct01.PNG",
+    alt: "Sunflower-painted welcome entrance and gate at the Earlydays campus",
+    category: "Campus & Grounds",
+    tall: true,
+  },
+  {
+    src: "/ct02.PNG",
+    alt: "Classroom block with a covered walkway and green safety fencing",
+    category: "Campus & Grounds",
+  },
+  {
+    src: "/ct03.PNG",
+    alt: "Hand-painted mural running along the perimeter fence of the school",
+    category: "Campus & Grounds",
+  },
+  {
+    src: "/ct04.PNG",
+    alt: "Yellow and green Nursery classroom with a hand-lettered \"Welcome to School\" whiteboard",
+    category: "Classrooms",
+  },
+  {
+    src: "/ct05.PNG",
+    alt: "Pink and yellow classroom decorated with a shapes and numbers wall display and a wall-mounted TV",
+    category: "Classrooms",
+  },
+  {
+    src: "/ct06.PNG",
+    alt: "Yellow and purple classroom with an alphabet wall display and the message \"Learning sets you free\"",
+    category: "Classrooms",
+    tall: true,
+  },
+  {
+    src: "/ct07.PNG",
+    alt: "Yellow and green classroom with shapes and numbers 1 to 29 displayed on the wall",
+    category: "Classrooms",
+  },
+  {
+    src: "/ct08.PNG",
+    alt: "Primary classroom with blue and pink desks and a motivational quote on the wall",
+    category: "Classrooms",
+  },
+  {
+    src: "/ct09.PNG",
+    alt: "Outdoor play area with a foosball table, painted hopscotch grid, and tyre play equipment",
+    category: "Play & Discovery",
+    tall: true,
+  },
+  {
+    src: "/ct10.PNG",
+    alt: "Primary classroom with blue desks and a motivational quote painted on the wall",
+    category: "Classrooms",
+  },
 ];
 
 export type Testimonial = { id: string; quote: string; name: string; area: string; initial: string };
@@ -226,13 +278,58 @@ export const blogPosts: BlogPost[] = [
   },
 ];
 
-export type EventItem = { id: string; day: string; month: string; title: string; desc: string; tag: string; color: string };
+export type EventItem = {
+  id: string;
+  day: string;
+  month: string;
+  title: string;
+  desc: string;
+  tag: string;
+  image: string;
+  imageAlt: string;
+};
 
 export const events: EventItem[] = [
-  { id: "term1-resumption", day: "14", month: "SEP", title: "Term 1 Resumption", desc: "All students return · full uniform required.", tag: "All Stages", color: "#3F7D58" },
-  { id: "open-day", day: "03", month: "OCT", title: "Open Day for Prospective Parents", desc: "Campus tour, meet the teachers, Q&A session.", tag: "Admissions", color: "#C4522A" },
-  { id: "nursery-sports-day", day: "21", month: "NOV", title: "Nursery Sports Day", desc: "Fun races and team games — parents welcome.", tag: "Nursery", color: "#F5A623" },
-  { id: "primary6-graduation", day: "09", month: "DEC", title: "Primary 6 Graduation", desc: "Closing ceremony for our graduating class.", tag: "Primary", color: "#16213E" },
+  {
+    id: "term1-resumption",
+    day: "14",
+    month: "SEP",
+    title: "Term 1 Resumption",
+    desc: "All students return · full uniform required.",
+    tag: "All Stages",
+    image: "/ct04.PNG",
+    imageAlt: "Yellow and green Nursery classroom with a hand-lettered \"Welcome to School\" whiteboard",
+  },
+  {
+    id: "open-day",
+    day: "03",
+    month: "OCT",
+    title: "Open Day for Prospective Parents",
+    desc: "Campus tour, meet the teachers, Q&A session.",
+    tag: "Admissions",
+    image: "/ct01.PNG",
+    imageAlt: "Sunflower-painted welcome entrance and gate at the Earlydays campus",
+  },
+  {
+    id: "nursery-sports-day",
+    day: "21",
+    month: "NOV",
+    title: "Nursery Sports Day",
+    desc: "Fun races and team games — parents welcome.",
+    tag: "Nursery",
+    image: "/ct09.PNG",
+    imageAlt: "Outdoor play area with a foosball table, painted hopscotch grid, and tyre play equipment",
+  },
+  {
+    id: "primary6-graduation",
+    day: "09",
+    month: "DEC",
+    title: "Primary 6 Graduation",
+    desc: "Closing ceremony for our graduating class.",
+    tag: "Primary",
+    image: "/ct08.PNG",
+    imageAlt: "Primary classroom with blue and pink desks and a motivational quote on the wall",
+  },
 ];
 
 export type FeeRow = { stage: string; age: string; amount: string };
@@ -249,6 +346,7 @@ export const fees: FeeRow[] = [
 export const navLinks = [
   { href: "/journey", label: "The Journey" },
   { href: "/safety", label: "Safety" },
+  { href: "/gallery", label: "Gallery" },
   { href: "/admissions", label: "Admissions" },
   { href: "/events", label: "Events" },
   { href: "/blog", label: "Blog" },

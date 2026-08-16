@@ -3,6 +3,7 @@ import SectionHeader from "@/components/SectionHeader";
 import SafetyGrid from "@/components/SafetyGrid";
 import TeacherGrid from "@/components/TeacherGrid";
 import GalleryGrid from "@/components/GalleryGrid";
+import Button from "@/components/Button";
 
 export const metadata: Metadata = {
   title: "Safety & Trust — Earlydays",
@@ -39,9 +40,14 @@ export default function SafetyPage() {
           <SectionHeader
             eyebrow="Campus Tour"
             title="Around Earlydays"
-            desc="Placeholder tiles — drop in real campus photography for launch."
+            desc="A glimpse of the grounds and classrooms your child will spend their days in."
           />
           <GalleryGrid />
+          <div className="mt-8">
+            <Button href="/gallery" variant="ghost">
+              View Full Gallery →
+            </Button>
+          </div>
         </div>
       </section>
     </main>

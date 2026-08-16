@@ -34,6 +34,7 @@ export default function Footer() {
           <div>
             <h4 className="text-ink text-sm font-medium mb-3.5">Explore</h4>
             <Link href="/journey" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">The Journey</Link>
+            <Link href="/gallery" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Gallery</Link>
             <Link href="/admissions" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Admissions &amp; Fees</Link>
             <Link href="/events" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Events</Link>
           </div>

@@ -5,6 +5,7 @@ const routes = [
   "/",
   "/journey",
   "/safety",
+  "/gallery",
   "/admissions",
   "/events",
   "/blog",

@@ -57,7 +57,8 @@ behavior only.
 app/
   page.tsx                Home
   journey/page.tsx         The Pathway visualizer + Day in the Life
-  safety/page.tsx          Safety & Trust, Meet the Teachers, Campus Gallery
+  safety/page.tsx          Safety & Trust, Meet the Teachers, Campus Tour teaser
+  gallery/page.tsx         Full campus photo gallery (filterable, with lightbox)
   admissions/page.tsx      Fees table, prospectus download, online payment
   events/page.tsx          Term dates & events calendar
   blog/page.tsx            Blog index
@@ -91,7 +92,7 @@ test/, e2e/                  Vitest unit tests and Playwright smoke tests.
 2. **`lib/fees.ts` → `FEE_BY_STAGE`** — sample Naira figures, replace with the confirmed fee schedule (keep `lib/data.ts` → `fees` in sync for the fees table display).
 3. **`components/ProspectusCard.tsx`** — points to `/prospectus.pdf`; a placeholder PDF ships in `/public/prospectus.pdf` — replace it with the real prospectus.
 4. **`components/TeacherGrid.tsx` / `lib/data.ts` → `teachers`** — swap placeholder initials for real staff photos (add an `<Image>` per teacher once photos exist).
-5. **`components/GalleryGrid.tsx` / `lib/data.ts` → `galleryCells`** — swap gradient placeholder tiles for real campus photography.
+5. ~~`components/GalleryGrid.tsx` / `lib/data.ts` → `galleryCells`~~ — done: real campus photography now lives in `lib/data.ts` → `galleryImages`, with a full `/gallery` page (`components/Gallery.tsx`) and a teaser grid on the Safety page.
 6. **Firebase + Paystack** — see "Environment setup" above; nothing here is live until real credentials are provided.
 7. **`lib/data.ts` → `site.url`** — placeholder domain; the sitemap, `robots.txt`, and OpenGraph/canonical links all resolve off this, so they won't be correct until it's the real production domain.
 

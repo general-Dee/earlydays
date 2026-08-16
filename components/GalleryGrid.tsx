@@ -1,17 +1,28 @@
-import { galleryCells } from "@/lib/data";
+import Image from "next/image";
+import { galleryImages } from "@/lib/data";
+
+const TEASER_SRCS = ["/ct01.PNG", "/ct04.PNG", "/ct09.PNG", "/ct06.PNG", "/ct02.PNG", "/ct08.PNG"];
 
 export default function GalleryGrid() {
+  const teaser = TEASER_SRCS.map((src) => galleryImages.find((g) => g.src === src)).filter(
+    (g): g is NonNullable<typeof g> => Boolean(g)
+  );
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 auto-rows-[130px]">
-      {galleryCells.map((g) => (
+      {teaser.map((g) => (
         <div
-          key={g.label}
-          className={`rounded-xl flex items-center justify-center text-white font-mono text-xs uppercase tracking-wider opacity-90 ${
-            g.tall ? "row-span-2" : ""
-          }`}
-          style={{ background: g.gradient }}
+          key={g.src}
+          className={`relative rounded-xl overflow-hidden border border-line ${g.tall ? "row-span-2" : ""}`}
         >
-          {g.label}
+          <Image
+            src={g.src}
+            alt={g.alt}
+            fill
+            sizes="(min-width: 1024px) 25vw, 50vw"
+            className="object-cover"
+            loading="lazy"
+          />
         </div>
       ))}
     </div>
