@@ -40,6 +40,21 @@ export type Inquiry = {
   createdAt: number;
 };
 
+export type ApplicationStatus = "new" | "reviewing" | "accepted" | "waitlisted" | "declined";
+
+export type Application = {
+  id: string;
+  childName: string;
+  childDob: string;
+  desiredStage: string;
+  guardianName: string;
+  email: string | null;
+  phone: string | null;
+  notes: string;
+  status: ApplicationStatus;
+  createdAt: number;
+};
+
 export type Announcement = {
   id: string;
   title: string;

@@ -7,6 +7,7 @@ const routes = [
   "/safety",
   "/gallery",
   "/admissions",
+  "/admissions/apply",
   "/events",
   "/blog",
   `/blog/${blogPosts[0].slug}`,

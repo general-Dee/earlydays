@@ -33,6 +33,41 @@ export async function sendContactNotification(inquiry: ContactInquiry) {
   });
 }
 
+type ApplicationSubmission = {
+  childName: string;
+  childDob: string;
+  desiredStage: string;
+  guardianName: string;
+  email: string | null;
+  phone: string | null;
+  notes: string;
+};
+
+export async function sendApplicationNotification(application: ApplicationSubmission) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.CONTACT_NOTIFY_EMAIL;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !to || !from) return;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to,
+    subject: `New admission application: ${application.childName}`,
+    text: [
+      `Child: ${application.childName} (DOB: ${application.childDob})`,
+      `Desired stage: ${application.desiredStage}`,
+      `Guardian: ${application.guardianName}`,
+      `Email: ${application.email ?? "—"}`,
+      `Phone: ${application.phone ?? "—"}`,
+      "",
+      application.notes || "(no additional notes)",
+    ].join("\n"),
+  });
+}
+
 type ParentInvite = {
   guardianName: string;
   email: string;
