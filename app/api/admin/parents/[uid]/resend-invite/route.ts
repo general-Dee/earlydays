@@ -8,7 +8,7 @@ import type { Parent } from "@/lib/firebase/types";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest, { params }: { params: { uid: string } }) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "parents");
   if (admin instanceof NextResponse) return admin;
 
   const snapshot = await getAdminDb().collection("parents").doc(params.uid).get();

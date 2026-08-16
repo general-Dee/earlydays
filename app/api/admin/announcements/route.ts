@@ -8,7 +8,7 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_BODY_LENGTH = 2000;
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "announcements");
   if (admin instanceof NextResponse) return admin;
 
   const snapshot = await getAdminDb().collection("announcements").orderBy("createdAt", "desc").get();
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "announcements");
   if (admin instanceof NextResponse) return admin;
 
   const { title, body } = (await req.json()) as { title?: string; body?: string };

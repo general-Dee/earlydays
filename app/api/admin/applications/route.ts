@@ -5,7 +5,7 @@ import { requireAdminEmail } from "@/lib/firebase/admin-auth";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "applications");
   if (admin instanceof NextResponse) return admin;
 
   const snapshot = await getAdminDb().collection("applications").orderBy("createdAt", "desc").get();

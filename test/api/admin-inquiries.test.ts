@@ -26,6 +26,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.ADMIN_EMAILS;
+  delete process.env.ADMIN_EMAILS_INQUIRIES;
 });
 
 describe("GET /api/admin/inquiries", () => {
@@ -72,5 +73,16 @@ describe("GET /api/admin/inquiries", () => {
     ]);
     expect(collection).toHaveBeenCalledWith("inquiries");
     expect(orderBy).toHaveBeenCalledWith("createdAt", "desc");
+  });
+
+  it("returns inquiries for an email allow-listed only for this area", async () => {
+    process.env.ADMIN_EMAILS_INQUIRIES = "frontdesk@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "frontdesk@earlydays.example" });
+    get.mockResolvedValue({ docs: [] });
+
+    const { GET } = await import("@/app/api/admin/inquiries/route");
+    const res = await GET(request({ authorization: "Bearer ok" }));
+
+    expect(res.status).toBe(200);
   });
 });

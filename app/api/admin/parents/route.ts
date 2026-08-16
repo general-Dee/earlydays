@@ -10,7 +10,7 @@ import type { Parent } from "@/lib/firebase/types";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "parents");
   if (admin instanceof NextResponse) return admin;
 
   const snapshot = await getAdminDb().collection("parents").orderBy("createdAt", "desc").get();
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "parents");
   if (admin instanceof NextResponse) return admin;
 
   const { guardianName, email, phone, children } = (await req.json()) as {

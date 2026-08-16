@@ -37,6 +37,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.ADMIN_EMAILS;
+  delete process.env.ADMIN_EMAILS_PARENTS;
 });
 
 describe("PATCH /api/admin/parents/[uid]", () => {

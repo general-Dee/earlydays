@@ -34,6 +34,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.ADMIN_EMAILS;
+  delete process.env.ADMIN_EMAILS_ANNOUNCEMENTS;
 });
 
 describe("DELETE /api/admin/announcements/[id]", () => {

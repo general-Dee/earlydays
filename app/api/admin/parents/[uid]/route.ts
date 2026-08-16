@@ -6,7 +6,7 @@ import { validateChildren, validateGuardianName, validatePhone } from "../valida
 export const runtime = "nodejs";
 
 export async function PATCH(req: NextRequest, { params }: { params: { uid: string } }) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "parents");
   if (admin instanceof NextResponse) return admin;
 
   const { guardianName, phone, children } = (await req.json()) as {

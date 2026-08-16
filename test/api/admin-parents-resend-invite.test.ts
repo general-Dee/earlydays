@@ -38,6 +38,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.ADMIN_EMAILS;
+  delete process.env.ADMIN_EMAILS_PARENTS;
 });
 
 describe("POST /api/admin/parents/[uid]/resend-invite", () => {

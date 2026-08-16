@@ -50,6 +50,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete process.env.ADMIN_EMAILS;
+  delete process.env.ADMIN_EMAILS_APPLICATIONS;
 });
 
 describe("PATCH /api/admin/applications/[id]", () => {

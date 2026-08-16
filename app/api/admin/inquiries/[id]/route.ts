@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 const VALID_STATUSES: InquiryStatus[] = ["new", "contacted", "resolved"];
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = await requireAdminEmail(req);
+  const admin = await requireAdminEmail(req, "inquiries");
   if (admin instanceof NextResponse) return admin;
 
   const { status } = (await req.json()) as { status?: string };
