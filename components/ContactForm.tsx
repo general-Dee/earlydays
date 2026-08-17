@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@vercel/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -27,6 +28,7 @@ export default function ContactForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong — please try again.");
 
+      track("contact_submitted");
       setStatus("success");
       setName("");
       setEmail("");

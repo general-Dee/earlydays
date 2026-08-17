@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { List, X } from "@phosphor-icons/react";
+import { track } from "@vercel/analytics";
 import { navLinks, waLink } from "@/lib/data";
 import Button from "./Button";
 
@@ -33,6 +34,7 @@ export default function Navbar() {
             href={waLink("Hi, I'd like to book a tour for my child")}
             external
             size="sm"
+            onClick={() => track("book_visit_click", { source: "navbar" })}
           >
             Book a Visit
           </Button>

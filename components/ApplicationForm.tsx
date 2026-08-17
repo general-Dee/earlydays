@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@vercel/analytics";
 import { stages } from "@/lib/data";
 
 type Status = "idle" | "submitting" | "success" | "error";
@@ -37,6 +38,7 @@ export default function ApplicationForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong — please try again.");
 
+      track("application_submitted");
       setStatus("success");
       setChildName("");
       setChildDob("");

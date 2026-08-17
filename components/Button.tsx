@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ReactNode } from "react";
 
@@ -10,6 +12,7 @@ export default function Button({
   external = false,
   children,
   className = "",
+  onClick,
 }: {
   href: string;
   variant?: Variant;
@@ -17,6 +20,7 @@ export default function Button({
   external?: boolean;
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
 }) {
   const variantClass =
     variant === "primary" ? "btn-primary" : variant === "clay" ? "btn-clay" : "btn-ghost";
@@ -25,14 +29,14 @@ export default function Button({
 
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={classes}>
+      <a href={href} target="_blank" rel="noopener noreferrer" className={classes} onClick={onClick}>
         {children}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={classes}>
+    <Link href={href} className={classes} onClick={onClick}>
       {children}
     </Link>
   );

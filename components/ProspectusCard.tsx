@@ -1,3 +1,6 @@
+"use client";
+
+import { track } from "@vercel/analytics";
 import { waLink } from "@/lib/data";
 
 export default function ProspectusCard() {
@@ -9,13 +12,18 @@ export default function ProspectusCard() {
           Curriculum, daily schedule, uniform list, and full fee breakdown in one PDF.
         </p>
       </div>
-      <a href="/prospectus.pdf" className="btn btn-primary btn-sm mt-5 justify-center">
+      <a
+        href="/prospectus.pdf"
+        onClick={() => track("prospectus_download")}
+        className="btn btn-primary btn-sm mt-5 justify-center"
+      >
         Download Prospectus
       </a>
       <a
         href={waLink("Hi, I'd like to start an admission inquiry")}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => track("book_visit_click", { source: "prospectus_card" })}
         className="btn btn-ghost btn-sm mt-2.5 justify-center"
       >
         Start Inquiry on WhatsApp

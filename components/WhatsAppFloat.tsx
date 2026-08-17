@@ -1,3 +1,6 @@
+"use client";
+
+import { track } from "@vercel/analytics";
 import { waLink } from "@/lib/data";
 
 export default function WhatsAppFloat() {
@@ -6,6 +9,7 @@ export default function WhatsAppFloat() {
       href={waLink("Hi, I'd like to know more about Earlydays")}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => track("book_visit_click", { source: "whatsapp_float" })}
       aria-label="Chat on WhatsApp"
       className="fixed bottom-6 right-6 z-[60] w-[60px] h-[60px] rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-[0_10px_30px_-8px_rgba(0,0,0,0.4)]"
     >
