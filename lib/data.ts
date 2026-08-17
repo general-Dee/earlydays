@@ -278,60 +278,6 @@ export const blogPosts: BlogPost[] = [
   },
 ];
 
-export type EventItem = {
-  id: string;
-  day: string;
-  month: string;
-  title: string;
-  desc: string;
-  tag: string;
-  image: string;
-  imageAlt: string;
-};
-
-export const events: EventItem[] = [
-  {
-    id: "term1-resumption",
-    day: "14",
-    month: "SEP",
-    title: "Term 1 Resumption",
-    desc: "All students return · full uniform required.",
-    tag: "All Stages",
-    image: "/ct04.PNG",
-    imageAlt: "Yellow and green Nursery classroom with a hand-lettered \"Welcome to School\" whiteboard",
-  },
-  {
-    id: "open-day",
-    day: "03",
-    month: "OCT",
-    title: "Open Day for Prospective Parents",
-    desc: "Campus tour, meet the teachers, Q&A session.",
-    tag: "Admissions",
-    image: "/ct01.PNG",
-    imageAlt: "Sunflower-painted welcome entrance and gate at the Earlydays campus",
-  },
-  {
-    id: "nursery-sports-day",
-    day: "21",
-    month: "NOV",
-    title: "Nursery Sports Day",
-    desc: "Fun races and team games — parents welcome.",
-    tag: "Nursery",
-    image: "/ct09.PNG",
-    imageAlt: "Outdoor play area with a foosball table, painted hopscotch grid, and tyre play equipment",
-  },
-  {
-    id: "primary6-graduation",
-    day: "09",
-    month: "DEC",
-    title: "Primary 6 Graduation",
-    desc: "Closing ceremony for our graduating class.",
-    tag: "Primary",
-    image: "/ct08.PNG",
-    imageAlt: "Primary classroom with blue and pink desks and a motivational quote on the wall",
-  },
-];
-
 export type FeeRow = { stage: string; age: string; amount: string };
 
 // Sample termly figures in Naira — replace with confirmed fee schedule.

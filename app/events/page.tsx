@@ -14,7 +14,7 @@ export default function EventsPage() {
         <SectionHeader
           eyebrow="What's Coming Up"
           title="Term dates & events"
-          desc="Sample entries — connect to your school calendar to keep this live."
+          desc="Resumption dates, open days, and school events, kept up to date by the school office."
         />
         <EventsList />
       </div>

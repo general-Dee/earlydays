@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase/admin";
 
-export type AdminArea = "announcements" | "applications" | "inquiries" | "parents";
+export type AdminArea = "announcements" | "applications" | "inquiries" | "parents" | "events";
 
 function parseEmailList(raw: string | undefined): string[] {
   return (raw ?? "")

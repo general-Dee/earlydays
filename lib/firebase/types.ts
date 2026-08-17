@@ -62,3 +62,13 @@ export type Announcement = {
   createdBy: string;
   createdAt: number;
 };
+
+export type CalendarEvent = {
+  id: string;
+  title: string;
+  date: string;
+  tag: string;
+  desc: string;
+  createdBy: string;
+  createdAt: number;
+};
