@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
+import { sendPaymentReceiptEmail } from "@/lib/email/notify";
+import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
@@ -29,15 +31,35 @@ export async function POST(req: NextRequest) {
     const uid = metadata?.uid;
 
     if (uid && reference) {
-      await getAdminDb().doc(`parents/${uid}/payments/${reference}`).set(
-        {
-          status: "success",
-          paidAt: Date.now(),
-          channel,
-          amountKobo: amount,
-        },
-        { merge: true }
-      );
+      const paymentRef = getAdminDb().doc(`parents/${uid}/payments/${reference}`);
+      const existing = await paymentRef.get();
+
+      if (!existing.exists || (existing.data() as PaymentRecord).status !== "success") {
+        await paymentRef.set(
+          {
+            status: "success",
+            paidAt: Date.now(),
+            channel,
+            amountKobo: amount,
+          },
+          { merge: true }
+        );
+
+        try {
+          const payment = { ...(existing.data() as PaymentRecord | undefined), amountKobo: amount };
+          const parentSnap = await getAdminDb().doc(`parents/${uid}`).get();
+
+          if (parentSnap.exists && payment.childName && payment.term) {
+            const parent = parentSnap.data() as Parent;
+            await sendPaymentReceiptEmail(
+              { guardianName: parent.guardianName, email: parent.email },
+              { childName: payment.childName, term: payment.term, amountKobo: amount, reference }
+            );
+          }
+        } catch (err) {
+          console.error("Failed to send payment receipt email", err);
+        }
+      }
     }
   }
 

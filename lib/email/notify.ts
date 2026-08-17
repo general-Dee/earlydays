@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { stages } from "@/lib/data";
+import { getFeeKobo } from "@/lib/fees";
 import type { ApplicationStatus } from "@/lib/firebase/types";
 
 function stageLabel(code: string): string {
@@ -185,6 +186,101 @@ export async function sendApplicationStatusEmail(
     to: application.email,
     subject: content.subject,
     text: content.text,
+  });
+
+  return true;
+}
+
+function formatNaira(amountKobo: number): string {
+  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
+}
+
+type PaymentReceipt = {
+  childName: string;
+  term: string;
+  amountKobo: number;
+  reference: string;
+};
+
+export async function sendPaymentReceiptEmail(
+  parent: { guardianName: string; email: string },
+  payment: PaymentReceipt
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: parent.email,
+    subject: `Payment received for ${payment.childName}`,
+    text: [
+      `Hi ${parent.guardianName},`,
+      "",
+      `We've received your ${payment.term} fee payment of ${formatNaira(payment.amountKobo)} for ${payment.childName}. Thank you!`,
+      "",
+      `Reference: ${payment.reference}`,
+      "",
+      "Keep this email for your records.",
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n"),
+  });
+
+  return true;
+}
+
+type UnpaidChild = {
+  name: string;
+  stage: string;
+};
+
+export async function sendFeeReminderEmail(
+  parent: { guardianName: string; email: string },
+  unpaidChildren: UnpaidChild[],
+  term: string
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from || unpaidChildren.length === 0) return false;
+
+  const resend = new Resend(apiKey);
+
+  const childList = unpaidChildren
+    .map((c) => {
+      let amount: string;
+      try {
+        amount = formatNaira(getFeeKobo(c.stage));
+      } catch {
+        amount = "contact the school for the fee amount";
+      }
+      return `- ${c.name} (${stageLabel(c.stage)}): ${amount}`;
+    })
+    .join("\n");
+
+  await resend.emails.send({
+    from,
+    to: parent.email,
+    subject: `${term} fee reminder`,
+    text: [
+      `Hi ${parent.guardianName},`,
+      "",
+      `This is a friendly reminder that ${term} fees are still outstanding for:`,
+      "",
+      childList,
+      "",
+      "You can pay securely through the parent portal.",
+      "",
+      "If you've already paid, please disregard this message.",
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n"),
   });
 
   return true;

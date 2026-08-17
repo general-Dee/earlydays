@@ -14,6 +14,11 @@ vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ doc, collection }),
 }));
 
+const sendPaymentReceiptEmail = vi.fn();
+vi.mock("@/lib/email/notify", () => ({
+  sendPaymentReceiptEmail: (...args: unknown[]) => sendPaymentReceiptEmail(...args),
+}));
+
 doc.mockImplementation(() => ({ get: docGet, set: docSet }));
 collection.mockImplementation(() => ({ add: collectionAdd }));
 
@@ -33,6 +38,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   doc.mockImplementation(() => ({ get: docGet, set: docSet }));
   collection.mockImplementation(() => ({ add: collectionAdd }));
+  sendPaymentReceiptEmail.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -254,8 +260,18 @@ describe("POST /api/paystack/webhook", () => {
     expect(res.status).toBe(401);
   });
 
-  it("records a successful charge from a validly signed event", async () => {
+  it("records a successful charge from a validly signed event and emails a receipt", async () => {
     process.env.PAYSTACK_SECRET_KEY = "sk_test";
+    docGet
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ status: "pending", childName: "Kid", term: "Term 1" }),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ guardianName: "Aisha", email: "a@b.com" }),
+      });
+
     const { POST } = await import("@/app/api/paystack/webhook/route");
     const req = signedRequest("sk_test", {
       event: "charge.success",
@@ -270,5 +286,53 @@ describe("POST /api/paystack/webhook", () => {
       expect.objectContaining({ status: "success", channel: "card", amountKobo: 6_000_000 }),
       { merge: true }
     );
+    expect(sendPaymentReceiptEmail).toHaveBeenCalledWith(
+      { guardianName: "Aisha", email: "a@b.com" },
+      { childName: "Kid", term: "Term 1", amountKobo: 6_000_000, reference: "edy_1" }
+    );
+  });
+
+  it("doesn't re-process or re-email an already-successful payment", async () => {
+    process.env.PAYSTACK_SECRET_KEY = "sk_test";
+    docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ status: "success", childName: "Kid", term: "Term 1" }),
+    });
+
+    const { POST } = await import("@/app/api/paystack/webhook/route");
+    const req = signedRequest("sk_test", {
+      event: "charge.success",
+      data: { reference: "edy_1", amount: 6_000_000, channel: "card", metadata: { uid: "u1" } },
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(docSet).not.toHaveBeenCalled();
+    expect(sendPaymentReceiptEmail).not.toHaveBeenCalled();
+  });
+
+  it("still returns received:true when the receipt email fails to send", async () => {
+    process.env.PAYSTACK_SECRET_KEY = "sk_test";
+    docGet
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ status: "pending", childName: "Kid", term: "Term 1" }),
+      })
+      .mockResolvedValueOnce({
+        exists: true,
+        data: () => ({ guardianName: "Aisha", email: "a@b.com" }),
+      });
+    sendPaymentReceiptEmail.mockRejectedValue(new Error("resend down"));
+
+    const { POST } = await import("@/app/api/paystack/webhook/route");
+    const req = signedRequest("sk_test", {
+      event: "charge.success",
+      data: { reference: "edy_1", amount: 6_000_000, channel: "card", metadata: { uid: "u1" } },
+    });
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.received).toBe(true);
   });
 });
