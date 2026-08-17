@@ -25,4 +25,4 @@ export function getFeeKobo(stageCode: string): number {
 
 // Update this at the start of each term — drives which term's payments the
 // fee reminder cron checks for.
-export const CURRENT_TERM = "Term 1";
+export const CURRENT_TERM = "Term 3";

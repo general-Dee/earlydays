@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CURRENT_TERM } from "@/lib/fees";
 
 const collection = vi.fn();
 const parentsGet = vi.fn();
@@ -70,7 +71,7 @@ describe("GET /api/cron/fee-reminders", () => {
     expect(sendFeeReminderEmail).toHaveBeenCalledWith(
       { guardianName: "Aisha", email: "a@b.com" },
       [{ name: "Kid", stage: "N1" }],
-      "Term 1"
+      CURRENT_TERM
     );
   });
 
@@ -85,7 +86,7 @@ describe("GET /api/cron/fee-reminders", () => {
       ],
     });
     paymentsGet.mockResolvedValue({
-      docs: [{ data: () => ({ childId: "c1", term: "Term 1", status: "success" }) }],
+      docs: [{ data: () => ({ childId: "c1", term: CURRENT_TERM, status: "success" }) }],
     });
 
     const { GET } = await import("@/app/api/cron/fee-reminders/route");
@@ -121,7 +122,7 @@ describe("GET /api/cron/fee-reminders", () => {
         { name: "Kid One", stage: "N1" },
         { name: "Kid Two", stage: "P1" },
       ],
-      "Term 1"
+      CURRENT_TERM
     );
   });
 });
