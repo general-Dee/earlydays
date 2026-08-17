@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Mirrors firestore.rules: writes only ever happen server-side via the
+// Admin SDK, so every path is client-write:false here.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /reports/{uid}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

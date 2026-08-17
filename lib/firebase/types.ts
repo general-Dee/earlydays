@@ -72,3 +72,14 @@ export type CalendarEvent = {
   createdBy: string;
   createdAt: number;
 };
+
+export type ProgressReport = {
+  id: string;
+  childId: string;
+  childName: string;
+  term: string;
+  fileName: string;
+  storagePath: string;
+  uploadedBy: string;
+  createdAt: number;
+};

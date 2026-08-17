@@ -7,6 +7,7 @@ import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 import AnnouncementsFeed from "@/components/AnnouncementsFeed";
 import PortalEventsWidget from "@/components/PortalEventsWidget";
+import PortalReportsWidget from "@/components/PortalReportsWidget";
 
 function formatNaira(amountKobo: number) {
   return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
@@ -97,6 +98,8 @@ export default function PortalDashboard({ user }: { user: User }) {
               </ul>
             )}
           </div>
+
+          <PortalReportsWidget uid={user.uid} />
 
           <div className="mt-6">
             <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">Payment history</h5>
