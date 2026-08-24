@@ -2,6 +2,10 @@ rules_version = '2';
 
 // Mirrors firestore.rules: writes only ever happen server-side via the
 // Admin SDK, so every path is client-write:false here.
+//
+// Audited 2026-08-24: the only client-side Storage read is
+// PortalReportsWidget's getDownloadURL on reports/{uid}/{fileName},
+// which matches the rule below exactly.
 service firebase.storage {
   match /b/{bucket}/o {
     match /reports/{uid}/{fileName} {

@@ -1,8 +1,15 @@
 rules_version = '2';
 
-// Minimal starting point, not a full security audit — review before
-// launch. Payment writes only ever happen via the Admin SDK (server
-// routes bypass these rules), so `payments` is client-write:false here.
+// Payment writes only ever happen via the Admin SDK (server routes
+// bypass these rules), so `payments` is client-write:false here.
+//
+// Audited 2026-08-24: every client-side Firestore read in components/
+// (parents/{uid}, parents/{uid}/payments, parents/{uid}/reports,
+// announcements, events) is covered by a matching rule below, and no
+// client code reads applications/inquiries (admin-only, Admin SDK).
+// Not a substitute for a full professional security review — no
+// automated rules tests exist yet; verify with the Firebase Emulator
+// or Rules Playground before trusting a future change.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /parents/{uid} {
