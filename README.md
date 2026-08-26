@@ -42,14 +42,16 @@ real sign-in and payments won't work until you provide real credentials.
 ## Tests
 
 ```bash
-npm test          # Vitest unit tests (PathwayVisualizer, DayInLife)
+npm test           # Vitest — component behavior, admin API routes, auth, and payment flows (all mocked)
 npm run test:watch
-npm run test:e2e   # Playwright smoke test across all routes (starts the dev server automatically)
+npm run typecheck   # tsc --noEmit
+npm run test:e2e    # Playwright smoke test across all routes (starts the dev server automatically)
 ```
 
 Playwright needs browser binaries installed once via `npx playwright
-install`. Unit tests don't touch Firebase/Paystack — they test component
-behavior only.
+install`. Vitest tests don't touch real Firebase/Paystack — Firestore,
+Storage, and outbound Paystack calls are all mocked; they test route
+logic and component behavior only.
 
 ## Structure
 
@@ -60,30 +62,54 @@ app/
   safety/page.tsx          Safety & Trust, Meet the Teachers, Campus Tour teaser
   gallery/page.tsx         Full campus photo gallery (filterable, with lightbox)
   admissions/page.tsx      Fees table, prospectus download, online payment
-  events/page.tsx          Term dates & events calendar
+  admissions/apply/page.tsx Application form
+  events/page.tsx          Term dates & events calendar (reads the admin-managed calendar)
   blog/page.tsx            Blog index
   blog/[slug]/page.tsx     Individual blog post (statically generated)
   portal/page.tsx          Parent portal (Firebase Auth login + Firestore dashboard)
   contact/page.tsx         Contact details
   not-found.tsx            Custom 404 page
   error.tsx                Custom error boundary
-  api/paystack/            Server routes: initialize, verify, webhook
 
-components/                All reusable, presentational pieces (Navbar, Footer,
-                            PathwayVisualizer, DayInLife, FeesTable, etc.)
+  admin/                   Staff-only pages, gated by AuthProvider + Firebase Auth
+                            (announcements, applications, events, inquiries,
+                            parents, reports — one page per resource)
+
+  api/admin/                CRUD routes backing the admin pages above, one
+                            subfolder per resource; every handler is wrapped in
+                            withAdminRoute (lib/firebase/admin-auth.ts), which
+                            enforces auth and centralizes error handling
+  api/admissions/apply/      Public application-form submission
+  api/contact/               Public contact-form submission
+  api/cron/fee-reminders/    Weekly cron (see vercel.json), guarded by CRON_SECRET
+  api/paystack/              Server routes: initialize, verify, webhook
+
+components/                All reusable, presentational pieces — marketing
+                            (Navbar, Footer, PathwayVisualizer, DayInLife,
+                            FeesTable, ...), the parent portal (Portal*), and
+                            admin CRUD panels (Admin*List / Admin*Panel)
 
 lib/data.ts                 Single source of truth for all static site content —
-                            edit this file to update copy, fees, events, staff,
+                            edit this file to update copy, fees, staff,
                             blog posts, and the WhatsApp number everywhere at once.
 
-lib/firebase/                Firebase client/admin init, AuthProvider, and
-                            Firestore data types (parents, children, payments).
+lib/firebase/                Firebase client/admin init, AuthProvider,
+                            Firestore data types (parents, children, payments),
+                            and admin-auth.ts (requireAdminEmail / withAdminRoute).
+
+lib/api/errors.ts            Shared route-handler error wrapper (withRouteErrorHandling) —
+                            logs and returns a generic 500 for anything an
+                            API route doesn't handle itself.
 
 lib/fees.ts                  Per-stage termly fee amounts used by the
                             Paystack initialize route (server-side, never
                             trusts a client-submitted amount).
 
-test/, e2e/                  Vitest unit tests and Playwright smoke tests.
+lib/rate-limit.ts            In-memory rate limiting for the public contact
+                            and admissions/apply forms.
+
+test/, e2e/                  Vitest unit tests (component behavior, admin API
+                            routes, auth, payments) and Playwright smoke tests.
 ```
 
 ## Before you launch — replace these
