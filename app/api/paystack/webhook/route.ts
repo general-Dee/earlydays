@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendPaymentReceiptEmail } from "@/lib/email/notify";
+import { withRouteErrorHandling } from "@/lib/api/errors";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+export const POST = withRouteErrorHandling("POST /api/paystack/webhook", async (req: NextRequest) => {
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
   if (!secretKey) {
     return NextResponse.json({ error: "Payments aren't configured yet" }, { status: 500 });
@@ -64,4 +65,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
-}
+});

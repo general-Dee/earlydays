@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
+import { handleRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+export const POST = withRouteErrorHandling("POST /api/paystack/verify", async (req: NextRequest) => {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
@@ -34,10 +35,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Payments aren't configured yet" }, { status: 500 });
   }
 
-  const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-    headers: { Authorization: `Bearer ${secretKey}` },
-  });
-  const paystackData = await paystackRes.json();
+  let paystackRes: Response;
+  let paystackData: any;
+  try {
+    paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    paystackData = await paystackRes.json();
+  } catch (err) {
+    return handleRouteError(err, "POST /api/paystack/verify", {
+      status: 502,
+      message: "Could not verify payment with Paystack",
+    });
+  }
 
   const verified =
     paystackRes.ok &&
@@ -60,4 +70,4 @@ export async function POST(req: NextRequest) {
   );
 
   return NextResponse.json({ status: "success" });
-}
+});

@@ -167,6 +167,28 @@ describe("POST /api/paystack/initialize", () => {
       expect.objectContaining({ status: "pending", childId: "c1" })
     );
   });
+
+  it("502s when the Paystack request itself fails (network error)", async () => {
+    process.env.PAYSTACK_SECRET_KEY = "sk_test";
+    verifyIdToken.mockResolvedValue({ uid: "u1" });
+    docGet.mockResolvedValue({
+      exists: true,
+      data: () => ({ email: "p@example.com", children: [{ id: "c1", stage: "N1", name: "Kid" }] }),
+    });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+    const { POST } = await import("@/app/api/paystack/initialize/route");
+    const res = await POST(
+      jsonRequest(
+        "/api/paystack/initialize",
+        { childId: "c1", term: "Term 1" },
+        { authorization: "Bearer ok" }
+      )
+    );
+
+    expect(res.status).toBe(502);
+    expect(docSet).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/paystack/verify", () => {
@@ -234,6 +256,21 @@ describe("POST /api/paystack/verify", () => {
       expect.objectContaining({ status: "success", channel: "card" }),
       { merge: true }
     );
+  });
+
+  it("502s when the Paystack request itself fails (network error)", async () => {
+    process.env.PAYSTACK_SECRET_KEY = "sk_test";
+    verifyIdToken.mockResolvedValue({ uid: "u1" });
+    docGet.mockResolvedValue({ exists: true, data: () => ({ amountKobo: 6_000_000 }) });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+    const { POST } = await import("@/app/api/paystack/verify/route");
+    const res = await POST(
+      jsonRequest("/api/paystack/verify", { reference: "edy_1" }, { authorization: "Bearer ok" })
+    );
+
+    expect(res.status).toBe(502);
+    expect(docSet).not.toHaveBeenCalled();
   });
 });
 

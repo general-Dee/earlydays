@@ -3,13 +3,14 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { sendApplicationNotification } from "@/lib/email/notify";
 import { stages } from "@/lib/data";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { withRouteErrorHandling } from "@/lib/api/errors";
 
 export const runtime = "nodejs";
 
 const MAX_NOTES_LENGTH = 2000;
 const VALID_STAGE_CODES = stages.map((s) => s.code);
 
-export async function POST(req: NextRequest) {
+export const POST = withRouteErrorHandling("POST /api/admissions/apply", async (req: NextRequest) => {
   const ip = getClientIp(req);
   if (!checkRateLimit(`admissions:${ip}`, { max: 3, windowMs: 10 * 60 * 1000 })) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
@@ -84,4 +85,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
-}
+});

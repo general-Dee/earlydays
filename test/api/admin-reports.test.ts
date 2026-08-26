@@ -10,6 +10,7 @@ const docGet = vi.fn();
 const set = vi.fn();
 const file = vi.fn();
 const save = vi.fn();
+const deleteFile = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -21,7 +22,7 @@ function resetChain() {
   collection.mockImplementation(() => ({ orderBy, doc }));
   orderBy.mockImplementation(() => ({ get }));
   doc.mockImplementation(() => ({ get: docGet, collection: () => ({ doc: () => ({ id: "r1", set }) }) }));
-  file.mockImplementation(() => ({ save }));
+  file.mockImplementation(() => ({ save, delete: deleteFile }));
 }
 
 function getRequest(headers: Record<string, string> = {}) {
@@ -76,6 +77,7 @@ beforeEach(() => {
   docGet.mockResolvedValue({ exists: true });
   save.mockResolvedValue(undefined);
   set.mockResolvedValue(undefined);
+  deleteFile.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -201,5 +203,34 @@ describe("POST /api/admin/reports", () => {
       })
     );
     expect(json).toMatchObject({ id: "r1", storagePath: "reports/u1/r1.pdf" });
+  });
+
+  it("cleans up the uploaded file when saving the report doc fails", async () => {
+    set.mockRejectedValue(new Error("Firestore is down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { POST } = await import("@/app/api/admin/reports/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }));
+
+    expect(res.status).toBe(500);
+    expect(file).toHaveBeenCalledWith("reports/u1/r1.pdf");
+    expect(deleteFile).toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
+
+  it("still returns 500 without throwing when the cleanup delete also fails", async () => {
+    set.mockRejectedValue(new Error("Firestore is down"));
+    deleteFile.mockRejectedValue(new Error("Storage is down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { POST } = await import("@/app/api/admin/reports/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json).toEqual({ error: "Couldn't save the report. Please try again." });
+
+    consoleSpy.mockRestore();
   });
 });

@@ -4,12 +4,13 @@ import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { requireAdminEmail } from "@/lib/firebase/admin-auth";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { site } from "@/lib/data";
+import { withRouteErrorHandling } from "@/lib/api/errors";
 import { validateChildren, validateEmail, validateGuardianName, validatePhone } from "./validation";
 import type { Parent } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
-export async function GET(req: NextRequest) {
+export const GET = withRouteErrorHandling("GET /api/admin/parents", async (req: NextRequest) => {
   const admin = await requireAdminEmail(req, "parents");
   if (admin instanceof NextResponse) return admin;
 
@@ -17,9 +18,9 @@ export async function GET(req: NextRequest) {
   const parents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   return NextResponse.json({ parents });
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withRouteErrorHandling("POST /api/admin/parents", async (req: NextRequest) => {
   const admin = await requireAdminEmail(req, "parents");
   if (admin instanceof NextResponse) return admin;
 
@@ -97,4 +98,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ...parent, resetLink, emailSent });
-}
+});

@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { getFeeKobo } from "@/lib/fees";
+import { handleRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import type { Parent } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+export const POST = withRouteErrorHandling("POST /api/paystack/initialize", async (req: NextRequest) => {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
@@ -50,21 +51,30 @@ export async function POST(req: NextRequest) {
 
   const reference = `edy_${randomUUID()}`;
 
-  const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${secretKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: parent.email,
-      amount: amountKobo,
-      reference,
-      metadata: { uid, childId, term },
-    }),
-  });
+  let paystackRes: Response;
+  let paystackData: any;
+  try {
+    paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: parent.email,
+        amount: amountKobo,
+        reference,
+        metadata: { uid, childId, term },
+      }),
+    });
+    paystackData = await paystackRes.json();
+  } catch (err) {
+    return handleRouteError(err, "POST /api/paystack/initialize", {
+      status: 502,
+      message: "Could not start payment with Paystack",
+    });
+  }
 
-  const paystackData = await paystackRes.json();
   if (!paystackRes.ok || !paystackData.status) {
     return NextResponse.json({ error: "Could not start payment with Paystack" }, { status: 502 });
   }
@@ -83,4 +93,4 @@ export async function POST(req: NextRequest) {
     accessCode: paystackData.data.access_code,
     reference,
   });
-}
+});

@@ -81,6 +81,22 @@ describe("GET /api/admin/announcements", () => {
     expect(collection).toHaveBeenCalledWith("announcements");
     expect(orderBy).toHaveBeenCalledWith("createdAt", "desc");
   });
+
+  it("returns a generic 500 when Firestore throws", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    get.mockRejectedValue(new Error("Firestore is down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { GET } = await import("@/app/api/admin/announcements/route");
+    const res = await GET(getRequest({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json).toEqual({ error: "Something went wrong. Please try again." });
+
+    consoleSpy.mockRestore();
+  });
 });
 
 describe("POST /api/admin/announcements", () => {
@@ -133,5 +149,21 @@ describe("POST /api/admin/announcements", () => {
         createdBy: "staff@earlydays.example",
       })
     );
+  });
+
+  it("returns a generic 500 when Firestore throws", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    add.mockRejectedValue(new Error("Firestore is down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { POST } = await import("@/app/api/admin/announcements/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, { title: "Closed Friday", body: "School closed" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json).toEqual({ error: "Something went wrong. Please try again." });
+
+    consoleSpy.mockRestore();
   });
 });

@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendContactNotification } from "@/lib/email/notify";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { withRouteErrorHandling } from "@/lib/api/errors";
 
 export const runtime = "nodejs";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
-export async function POST(req: NextRequest) {
+export const POST = withRouteErrorHandling("POST /api/contact", async (req: NextRequest) => {
   const ip = getClientIp(req);
   if (!checkRateLimit(`contact:${ip}`, { max: 5, windowMs: 10 * 60 * 1000 })) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
@@ -64,4 +65,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
-}
+});

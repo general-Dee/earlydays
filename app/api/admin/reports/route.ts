@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb, getAdminBucket } from "@/lib/firebase/admin";
 import { requireAdminEmail } from "@/lib/firebase/admin-auth";
+import { withRouteErrorHandling } from "@/lib/api/errors";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -8,7 +9,7 @@ export const runtime = "nodejs";
 const MAX_TERM_LENGTH = 60;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
-export async function GET(req: NextRequest) {
+export const GET = withRouteErrorHandling("GET /api/admin/reports", async (req: NextRequest) => {
   const admin = await requireAdminEmail(req, "reports");
   if (admin instanceof NextResponse) return admin;
 
@@ -19,9 +20,9 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ parents });
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withRouteErrorHandling("POST /api/admin/reports", async (req: NextRequest) => {
   const admin = await requireAdminEmail(req, "reports");
   if (admin instanceof NextResponse) return admin;
 
@@ -82,7 +83,18 @@ export async function POST(req: NextRequest) {
     createdAt: Date.now(),
   };
 
-  await reportRef.set(report);
+  try {
+    await reportRef.set(report);
+  } catch (err) {
+    console.error(`[api] POST /api/admin/reports failed to save report doc; cleaning up orphaned file ${storagePath}`, err);
+    await getAdminBucket()
+      .file(storagePath)
+      .delete()
+      .catch((cleanupErr) => {
+        console.error(`[api] POST /api/admin/reports failed to clean up orphaned file ${storagePath}`, cleanupErr);
+      });
+    return NextResponse.json({ error: "Couldn't save the report. Please try again." }, { status: 500 });
+  }
 
   return NextResponse.json(report);
-}
+});
