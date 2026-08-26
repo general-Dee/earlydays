@@ -1,29 +1,22 @@
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
-import { requireAdminEmail } from "@/lib/firebase/admin-auth";
+import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { site } from "@/lib/data";
-import { withRouteErrorHandling } from "@/lib/api/errors";
 import { validateChildren, validateEmail, validateGuardianName, validatePhone } from "./validation";
 import type { Parent } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
-export const GET = withRouteErrorHandling("GET /api/admin/parents", async (req: NextRequest) => {
-  const admin = await requireAdminEmail(req, "parents");
-  if (admin instanceof NextResponse) return admin;
-
+export const GET = withAdminRoute("parents", "GET /api/admin/parents", async (req: NextRequest, admin) => {
   const snapshot = await getAdminDb().collection("parents").orderBy("createdAt", "desc").get();
   const parents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   return NextResponse.json({ parents });
 });
 
-export const POST = withRouteErrorHandling("POST /api/admin/parents", async (req: NextRequest) => {
-  const admin = await requireAdminEmail(req, "parents");
-  if (admin instanceof NextResponse) return admin;
-
+export const POST = withAdminRoute("parents", "POST /api/admin/parents", async (req: NextRequest, admin) => {
   const { guardianName, email, phone, children } = (await req.json()) as {
     guardianName?: string;
     email?: string;

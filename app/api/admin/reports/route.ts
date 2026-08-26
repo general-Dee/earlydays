@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb, getAdminBucket } from "@/lib/firebase/admin";
-import { requireAdminEmail } from "@/lib/firebase/admin-auth";
-import { withRouteErrorHandling } from "@/lib/api/errors";
+import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -9,10 +8,7 @@ export const runtime = "nodejs";
 const MAX_TERM_LENGTH = 60;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
-export const GET = withRouteErrorHandling("GET /api/admin/reports", async (req: NextRequest) => {
-  const admin = await requireAdminEmail(req, "reports");
-  if (admin instanceof NextResponse) return admin;
-
+export const GET = withAdminRoute("reports", "GET /api/admin/reports", async (req: NextRequest, admin) => {
   const snapshot = await getAdminDb().collection("parents").orderBy("guardianName", "asc").get();
   const parents = snapshot.docs.map((doc) => {
     const data = doc.data() as { guardianName: string; email: string; children: ChildRecord[] };
@@ -22,10 +18,7 @@ export const GET = withRouteErrorHandling("GET /api/admin/reports", async (req: 
   return NextResponse.json({ parents });
 });
 
-export const POST = withRouteErrorHandling("POST /api/admin/reports", async (req: NextRequest) => {
-  const admin = await requireAdminEmail(req, "reports");
-  if (admin instanceof NextResponse) return admin;
-
+export const POST = withAdminRoute("reports", "POST /api/admin/reports", async (req: NextRequest, admin) => {
   const form = await req.formData();
   const parentUid = form.get("parentUid");
   const childId = form.get("childId");

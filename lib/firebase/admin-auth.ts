@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase/admin";
+import { withRouteErrorHandling } from "@/lib/api/errors";
 
 export type AdminArea = "announcements" | "applications" | "inquiries" | "parents" | "events" | "reports";
 
@@ -42,4 +43,16 @@ export async function requireAdminEmail(
   }
 
   return { email };
+}
+
+export function withAdminRoute<C = undefined>(
+  area: AdminArea,
+  route: string,
+  handler: (req: NextRequest, admin: { email: string }, context: C) => Promise<NextResponse>
+) {
+  return withRouteErrorHandling<C>(route, async (req, context) => {
+    const admin = await requireAdminEmail(req, area);
+    if (admin instanceof NextResponse) return admin;
+    return handler(req, admin, context as C);
+  });
 }

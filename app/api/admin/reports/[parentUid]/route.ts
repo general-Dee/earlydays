@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { requireAdminEmail } from "@/lib/firebase/admin-auth";
-import { withRouteErrorHandling } from "@/lib/api/errors";
+import { withAdminRoute } from "@/lib/firebase/admin-auth";
 
 export const runtime = "nodejs";
 
-export const GET = withRouteErrorHandling<{ params: { parentUid: string } }>(
+export const GET = withAdminRoute<{ params: { parentUid: string } }>(
+  "reports",
   "GET /api/admin/reports/[parentUid]",
-  async (req: NextRequest, { params }) => {
-    const admin = await requireAdminEmail(req, "reports");
-    if (admin instanceof NextResponse) return admin;
-
+  async (req: NextRequest, admin, { params }) => {
     const snapshot = await getAdminDb()
       .collection("parents")
       .doc(params.parentUid)

@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { requireAdminEmail } from "@/lib/firebase/admin-auth";
 import { sendApplicationStatusEmail } from "@/lib/email/notify";
-import { withRouteErrorHandling } from "@/lib/api/errors";
+import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
 const VALID_STATUSES: ApplicationStatus[] = ["new", "reviewing", "accepted", "waitlisted", "declined"];
 
-export const PATCH = withRouteErrorHandling<{ params: { id: string } }>(
+export const PATCH = withAdminRoute<{ params: { id: string } }>(
+  "applications",
   "PATCH /api/admin/applications/[id]",
-  async (req: NextRequest, { params }) => {
-    const admin = await requireAdminEmail(req, "applications");
-    if (admin instanceof NextResponse) return admin;
-
+  async (req: NextRequest, admin, { params }) => {
     const { status } = (await req.json()) as { status?: string };
 
     if (!status || !VALID_STATUSES.includes(status as ApplicationStatus)) {

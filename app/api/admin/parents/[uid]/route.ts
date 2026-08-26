@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { requireAdminEmail } from "@/lib/firebase/admin-auth";
-import { withRouteErrorHandling } from "@/lib/api/errors";
+import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { validateChildren, validateGuardianName, validatePhone } from "../validation";
 
 export const runtime = "nodejs";
 
-export const PATCH = withRouteErrorHandling<{ params: { uid: string } }>(
+export const PATCH = withAdminRoute<{ params: { uid: string } }>(
+  "parents",
   "PATCH /api/admin/parents/[uid]",
-  async (req: NextRequest, { params }) => {
-    const admin = await requireAdminEmail(req, "parents");
-    if (admin instanceof NextResponse) return admin;
-
+  async (req: NextRequest, admin, { params }) => {
     const { guardianName, phone, children } = (await req.json()) as {
       guardianName?: string;
       phone?: string;
