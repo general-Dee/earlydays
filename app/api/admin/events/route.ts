@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { validateRequiredString } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -24,32 +25,27 @@ export const POST = withAdminRoute("events", "POST /api/admin/events", async (re
     desc?: string;
   };
 
-  const trimmedTitle = title?.trim() ?? "";
-  const trimmedDate = date?.trim() ?? "";
-  const trimmedTag = tag?.trim() ?? "";
-  const trimmedDesc = desc?.trim() ?? "";
+  const titleResult = validateRequiredString(title, { label: "Title", maxLength: MAX_TITLE_LENGTH });
+  if (!titleResult.ok) return NextResponse.json({ error: titleResult.error }, { status: 400 });
 
-  if (!trimmedTitle || !trimmedDate || !trimmedTag || !trimmedDesc) {
-    return NextResponse.json({ error: "Title, date, tag, and description are required" }, { status: 400 });
-  }
-  if (!DATE_PATTERN.test(trimmedDate)) {
-    return NextResponse.json({ error: "Date must be in YYYY-MM-DD format" }, { status: 400 });
-  }
-  if (trimmedTitle.length > MAX_TITLE_LENGTH) {
-    return NextResponse.json({ error: "Title is too long" }, { status: 400 });
-  }
-  if (trimmedTag.length > MAX_TAG_LENGTH) {
-    return NextResponse.json({ error: "Tag is too long" }, { status: 400 });
-  }
-  if (trimmedDesc.length > MAX_DESC_LENGTH) {
-    return NextResponse.json({ error: "Description is too long" }, { status: 400 });
-  }
+  const dateResult = validateRequiredString(date, {
+    label: "Date",
+    maxLength: 20,
+    pattern: { regex: DATE_PATTERN, message: "Date must be in YYYY-MM-DD format" },
+  });
+  if (!dateResult.ok) return NextResponse.json({ error: dateResult.error }, { status: 400 });
+
+  const tagResult = validateRequiredString(tag, { label: "Tag", maxLength: MAX_TAG_LENGTH });
+  if (!tagResult.ok) return NextResponse.json({ error: tagResult.error }, { status: 400 });
+
+  const descResult = validateRequiredString(desc, { label: "Description", maxLength: MAX_DESC_LENGTH });
+  if (!descResult.ok) return NextResponse.json({ error: descResult.error }, { status: 400 });
 
   const event = {
-    title: trimmedTitle,
-    date: trimmedDate,
-    tag: trimmedTag,
-    desc: trimmedDesc,
+    title: titleResult.value,
+    date: dateResult.value,
+    tag: tagResult.value,
+    desc: descResult.value,
     createdBy: admin.email,
     createdAt: Date.now(),
   };

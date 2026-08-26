@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { validateRequiredString } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -17,22 +18,15 @@ export const GET = withAdminRoute("announcements", "GET /api/admin/announcements
 export const POST = withAdminRoute("announcements", "POST /api/admin/announcements", async (req: NextRequest, admin) => {
   const { title, body } = (await req.json()) as { title?: string; body?: string };
 
-  const trimmedTitle = title?.trim() ?? "";
-  const trimmedBody = body?.trim() ?? "";
+  const titleResult = validateRequiredString(title, { label: "Title", maxLength: MAX_TITLE_LENGTH });
+  if (!titleResult.ok) return NextResponse.json({ error: titleResult.error }, { status: 400 });
 
-  if (!trimmedTitle || !trimmedBody) {
-    return NextResponse.json({ error: "Title and body are required" }, { status: 400 });
-  }
-  if (trimmedTitle.length > MAX_TITLE_LENGTH) {
-    return NextResponse.json({ error: "Title is too long" }, { status: 400 });
-  }
-  if (trimmedBody.length > MAX_BODY_LENGTH) {
-    return NextResponse.json({ error: "Body is too long" }, { status: 400 });
-  }
+  const bodyResult = validateRequiredString(body, { label: "Body", maxLength: MAX_BODY_LENGTH });
+  if (!bodyResult.ok) return NextResponse.json({ error: bodyResult.error }, { status: 400 });
 
   const announcement = {
-    title: trimmedTitle,
-    body: trimmedBody,
+    title: titleResult.value,
+    body: bodyResult.value,
     createdBy: admin.email,
     createdAt: Date.now(),
   };

@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { FEE_BY_STAGE } from "@/lib/fees";
 import type { ChildRecord } from "@/lib/firebase/types";
+import type { ValidationResult } from "@/lib/validation";
 
 export const MAX_NAME_LENGTH = 200;
 export const MAX_PHONE_LENGTH = 50;
@@ -8,8 +9,6 @@ export const MAX_ADMISSION_NO_LENGTH = 100;
 export const MAX_CHILDREN = 10;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string };
 
 export function validateGuardianName(value: string | undefined): ValidationResult<string> {
   const trimmed = value?.trim() ?? "";
