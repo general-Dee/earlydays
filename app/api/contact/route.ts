@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { sendContactNotification } from "@/lib/email/notify";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { withRouteErrorHandling } from "@/lib/api/errors";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export const POST = withRouteErrorHandling("POST /api/contact", async (req: Next
   }
 
   await getAdminDb()
-    .collection("inquiries")
+    .collection(COLLECTIONS.inquiries)
     .add({
       name: trimmedName,
       email: trimmedEmail || null,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/client";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { Announcement } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "error" | "ready";
@@ -18,7 +19,7 @@ export default function AnnouncementsFeed() {
       setState("loading");
       try {
         const snap = await getDocs(
-          query(collection(getFirebaseDb(), "announcements"), orderBy("createdAt", "desc"))
+          query(collection(getFirebaseDb(), COLLECTIONS.announcements), orderBy("createdAt", "desc"))
         );
 
         if (cancelled) return;

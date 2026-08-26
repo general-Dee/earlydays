@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminBucket, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { ProgressReport } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -10,9 +11,9 @@ export const DELETE = withAdminRoute<{ params: { parentUid: string; reportId: st
   "DELETE /api/admin/reports/[parentUid]/[reportId]",
   async (req: NextRequest, admin, { params }) => {
     const reportRef = getAdminDb()
-      .collection("parents")
+      .collection(COLLECTIONS.parents)
       .doc(params.parentUid)
-      .collection("reports")
+      .collection(COLLECTIONS.reports)
       .doc(params.reportId);
 
     const snap = await reportRef.get();

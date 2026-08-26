@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { getFeeKobo } from "@/lib/fees";
 import { handleRouteError, withRouteErrorHandling } from "@/lib/api/errors";
+import { paths } from "@/lib/firebase/collections";
 import type { Parent } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -26,7 +27,7 @@ export const POST = withRouteErrorHandling("POST /api/paystack/initialize", asyn
     return NextResponse.json({ error: "childId and term are required" }, { status: 400 });
   }
 
-  const parentSnap = await getAdminDb().doc(`parents/${uid}`).get();
+  const parentSnap = await getAdminDb().doc(paths.parent(uid)).get();
   if (!parentSnap.exists) {
     return NextResponse.json({ error: "No parent record found for this account" }, { status: 404 });
   }
@@ -79,7 +80,7 @@ export const POST = withRouteErrorHandling("POST /api/paystack/initialize", asyn
     return NextResponse.json({ error: "Could not start payment with Paystack" }, { status: 502 });
   }
 
-  await getAdminDb().doc(`parents/${uid}/payments/${reference}`).set({
+  await getAdminDb().doc(paths.payment(uid, reference)).set({
     reference,
     childId,
     childName: child.name,

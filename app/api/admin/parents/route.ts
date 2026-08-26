@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { site } from "@/lib/data";
 import { validateChildren, validateEmail, validateGuardianName, validatePhone } from "./validation";
@@ -10,7 +11,7 @@ import type { Parent } from "@/lib/firebase/types";
 export const runtime = "nodejs";
 
 export const GET = withAdminRoute("parents", "GET /api/admin/parents", async (req: NextRequest, admin) => {
-  const snapshot = await getAdminDb().collection("parents").orderBy("createdAt", "desc").get();
+  const snapshot = await getAdminDb().collection(COLLECTIONS.parents).orderBy("createdAt", "desc").get();
   const parents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   return NextResponse.json({ parents });
@@ -66,7 +67,7 @@ export const POST = withAdminRoute("parents", "POST /api/admin/parents", async (
   };
 
   try {
-    await getAdminDb().collection("parents").doc(uid).set(parent);
+    await getAdminDb().collection(COLLECTIONS.parents).doc(uid).set(parent);
   } catch {
     await getAdminAuth()
       .deleteUser(uid)

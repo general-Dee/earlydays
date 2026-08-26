@@ -4,6 +4,7 @@ import { sendApplicationNotification } from "@/lib/email/notify";
 import { stages } from "@/lib/data";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { withRouteErrorHandling } from "@/lib/api/errors";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 
 export const runtime = "nodejs";
 
@@ -57,7 +58,7 @@ export const POST = withRouteErrorHandling("POST /api/admissions/apply", async (
   }
 
   await getAdminDb()
-    .collection("applications")
+    .collection(COLLECTIONS.applications)
     .add({
       childName: trimmedChildName,
       childDob: trimmedChildDob,

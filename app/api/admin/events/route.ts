@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -11,7 +12,7 @@ const MAX_DESC_LENGTH = 500;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export const GET = withAdminRoute("events", "GET /api/admin/events", async (req: NextRequest, admin) => {
-  const snapshot = await getAdminDb().collection("events").orderBy("date", "asc").get();
+  const snapshot = await getAdminDb().collection(COLLECTIONS.events).orderBy("date", "asc").get();
   const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   return NextResponse.json({ events });
@@ -50,7 +51,7 @@ export const POST = withAdminRoute("events", "POST /api/admin/events", async (re
     createdAt: Date.now(),
   };
 
-  const ref = await getAdminDb().collection("events").add(event);
+  const ref = await getAdminDb().collection(COLLECTIONS.events).add(event);
 
   return NextResponse.json({ id: ref.id, ...event });
 });

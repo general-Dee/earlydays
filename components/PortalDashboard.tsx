@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/firestore";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 import AnnouncementsFeed from "@/components/AnnouncementsFeed";
 import PortalEventsWidget from "@/components/PortalEventsWidget";
@@ -31,14 +32,17 @@ export default function PortalDashboard({ user }: { user: User }) {
     async function load() {
       setLoading(true);
       try {
-        const parentSnap = await getDoc(doc(getFirebaseDb(), "parents", user.uid));
+        const parentSnap = await getDoc(doc(getFirebaseDb(), COLLECTIONS.parents, user.uid));
         if (!parentSnap.exists()) {
           if (!cancelled) setNotFound(true);
           return;
         }
 
         const paymentsSnap = await getDocs(
-          query(collection(getFirebaseDb(), "parents", user.uid, "payments"), orderBy("createdAt", "desc"))
+          query(
+            collection(getFirebaseDb(), COLLECTIONS.parents, user.uid, COLLECTIONS.payments),
+            orderBy("createdAt", "desc")
+          )
         );
 
         if (!cancelled) {

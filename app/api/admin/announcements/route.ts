@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_BODY_LENGTH = 2000;
 
 export const GET = withAdminRoute("announcements", "GET /api/admin/announcements", async (req: NextRequest, admin) => {
-  const snapshot = await getAdminDb().collection("announcements").orderBy("createdAt", "desc").get();
+  const snapshot = await getAdminDb().collection(COLLECTIONS.announcements).orderBy("createdAt", "desc").get();
   const announcements = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   return NextResponse.json({ announcements });
@@ -31,7 +32,7 @@ export const POST = withAdminRoute("announcements", "POST /api/admin/announcemen
     createdAt: Date.now(),
   };
 
-  const ref = await getAdminDb().collection("announcements").add(announcement);
+  const ref = await getAdminDb().collection(COLLECTIONS.announcements).add(announcement);
 
   return NextResponse.json({ id: ref.id, ...announcement });
 });

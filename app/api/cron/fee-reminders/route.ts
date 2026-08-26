@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { sendFeeReminderEmail } from "@/lib/email/notify";
 import { CURRENT_TERM } from "@/lib/fees";
 import { withRouteErrorHandling } from "@/lib/api/errors";
+import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -14,13 +15,13 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
   }
 
   const db = getAdminDb();
-  const parentsSnap = await db.collection("parents").get();
+  const parentsSnap = await db.collection(COLLECTIONS.parents).get();
 
   let remindersSent = 0;
 
   for (const parentDoc of parentsSnap.docs) {
     const parent = parentDoc.data() as Parent;
-    const paymentsSnap = await db.collection(`parents/${parentDoc.id}/payments`).get();
+    const paymentsSnap = await db.collection(paths.payments(parentDoc.id)).get();
     const payments = paymentsSnap.docs.map((d) => d.data() as PaymentRecord);
 
     const unpaidChildren = parent.children.filter(

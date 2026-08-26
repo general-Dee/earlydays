@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/client";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { CalendarEvent } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "error" | "ready";
@@ -22,7 +23,7 @@ export default function PortalEventsWidget() {
         const today = new Date().toISOString().slice(0, 10);
         const snap = await getDocs(
           query(
-            collection(getFirebaseDb(), "events"),
+            collection(getFirebaseDb(), COLLECTIONS.events),
             where("date", ">=", today),
             orderBy("date", "asc"),
             limit(UPCOMING_LIMIT)

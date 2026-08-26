@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { getDownloadURL, ref } from "firebase/storage";
 import { getFirebaseDb, getFirebaseStorage } from "@/lib/firebase/client";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { ProgressReport } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "error" | "ready";
@@ -20,7 +21,10 @@ export default function PortalReportsWidget({ uid }: { uid: string }) {
       setState("loading");
       try {
         const snap = await getDocs(
-          query(collection(getFirebaseDb(), "parents", uid, "reports"), orderBy("createdAt", "desc"))
+          query(
+            collection(getFirebaseDb(), COLLECTIONS.parents, uid, COLLECTIONS.reports),
+            orderBy("createdAt", "desc")
+          )
         );
 
         if (cancelled) return;

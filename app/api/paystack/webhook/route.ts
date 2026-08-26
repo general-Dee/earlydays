@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendPaymentReceiptEmail } from "@/lib/email/notify";
 import { withRouteErrorHandling } from "@/lib/api/errors";
+import { paths } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -32,7 +33,7 @@ export const POST = withRouteErrorHandling("POST /api/paystack/webhook", async (
     const uid = metadata?.uid;
 
     if (uid && reference) {
-      const paymentRef = getAdminDb().doc(`parents/${uid}/payments/${reference}`);
+      const paymentRef = getAdminDb().doc(paths.payment(uid, reference));
       const existing = await paymentRef.get();
 
       if (!existing.exists || (existing.data() as PaymentRecord).status !== "success") {
@@ -48,7 +49,7 @@ export const POST = withRouteErrorHandling("POST /api/paystack/webhook", async (
 
         try {
           const payment = { ...(existing.data() as PaymentRecord | undefined), amountKobo: amount };
-          const parentSnap = await getAdminDb().doc(`parents/${uid}`).get();
+          const parentSnap = await getAdminDb().doc(paths.parent(uid)).get();
 
           if (parentSnap.exists && payment.childName && payment.term) {
             const parent = parentSnap.data() as Parent;

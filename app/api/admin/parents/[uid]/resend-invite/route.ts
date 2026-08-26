@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { site } from "@/lib/data";
 import type { Parent } from "@/lib/firebase/types";
@@ -11,7 +12,7 @@ export const POST = withAdminRoute<{ params: { uid: string } }>(
   "parents",
   "POST /api/admin/parents/[uid]/resend-invite",
   async (req: NextRequest, admin, { params }) => {
-    const snapshot = await getAdminDb().collection("parents").doc(params.uid).get();
+    const snapshot = await getAdminDb().collection(COLLECTIONS.parents).doc(params.uid).get();
     if (!snapshot.exists) {
       return NextResponse.json({ error: "Parent account not found" }, { status: 404 });
     }

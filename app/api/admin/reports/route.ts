@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb, getAdminBucket } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ const MAX_TERM_LENGTH = 60;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export const GET = withAdminRoute("reports", "GET /api/admin/reports", async (req: NextRequest, admin) => {
-  const snapshot = await getAdminDb().collection("parents").orderBy("guardianName", "asc").get();
+  const snapshot = await getAdminDb().collection(COLLECTIONS.parents).orderBy("guardianName", "asc").get();
   const parents = snapshot.docs.map((doc) => {
     const data = doc.data() as { guardianName: string; email: string; children: ChildRecord[] };
     return { uid: doc.id, guardianName: data.guardianName, email: data.email, children: data.children ?? [] };
@@ -54,12 +55,16 @@ export const POST = withAdminRoute("reports", "POST /api/admin/reports", async (
     return NextResponse.json({ error: "File is too large (10 MB max)" }, { status: 400 });
   }
 
-  const parentSnap = await getAdminDb().collection("parents").doc(trimmedParentUid).get();
+  const parentSnap = await getAdminDb().collection(COLLECTIONS.parents).doc(trimmedParentUid).get();
   if (!parentSnap.exists) {
     return NextResponse.json({ error: "Parent not found" }, { status: 404 });
   }
 
-  const reportRef = getAdminDb().collection("parents").doc(trimmedParentUid).collection("reports").doc();
+  const reportRef = getAdminDb()
+    .collection(COLLECTIONS.parents)
+    .doc(trimmedParentUid)
+    .collection(COLLECTIONS.reports)
+    .doc();
   const storagePath = `reports/${trimmedParentUid}/${reportRef.id}.pdf`;
 
   const buffer = Buffer.from(await file.arrayBuffer());

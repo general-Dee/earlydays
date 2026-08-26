@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 
 export const runtime = "nodejs";
 
@@ -9,9 +10,9 @@ export const GET = withAdminRoute<{ params: { parentUid: string } }>(
   "GET /api/admin/reports/[parentUid]",
   async (req: NextRequest, admin, { params }) => {
     const snapshot = await getAdminDb()
-      .collection("parents")
+      .collection(COLLECTIONS.parents)
       .doc(params.parentUid)
-      .collection("reports")
+      .collection(COLLECTIONS.reports)
       .orderBy("createdAt", "desc")
       .get();
 

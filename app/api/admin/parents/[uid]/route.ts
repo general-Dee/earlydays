@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateChildren, validateGuardianName, validatePhone } from "../validation";
 
 export const runtime = "nodejs";
@@ -39,7 +40,7 @@ export const PATCH = withAdminRoute<{ params: { uid: string } }>(
       patch.children = result.value;
     }
 
-    await getAdminDb().collection("parents").doc(params.uid).update(patch);
+    await getAdminDb().collection(COLLECTIONS.parents).doc(params.uid).update(patch);
 
     return NextResponse.json({ uid: params.uid, ...patch });
   }

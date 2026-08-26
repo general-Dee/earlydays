@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { InquiryStatus } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
-    await getAdminDb().collection("inquiries").doc(params.id).update({ status });
+    await getAdminDb().collection(COLLECTIONS.inquiries).doc(params.id).update({ status });
 
     return NextResponse.json({ ok: true });
   }

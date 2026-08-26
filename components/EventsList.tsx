@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/client";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { CalendarEvent } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "error" | "ready";
@@ -25,7 +26,7 @@ export default function EventsList() {
     async function load() {
       setState("loading");
       try {
-        const snap = await getDocs(query(collection(getFirebaseDb(), "events"), orderBy("date", "asc")));
+        const snap = await getDocs(query(collection(getFirebaseDb(), COLLECTIONS.events), orderBy("date", "asc")));
 
         if (cancelled) return;
 

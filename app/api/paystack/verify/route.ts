@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { handleRouteError, withRouteErrorHandling } from "@/lib/api/errors";
+import { paths } from "@/lib/firebase/collections";
 
 export const runtime = "nodejs";
 
@@ -23,7 +24,7 @@ export const POST = withRouteErrorHandling("POST /api/paystack/verify", async (r
     return NextResponse.json({ error: "reference is required" }, { status: 400 });
   }
 
-  const paymentRef = getAdminDb().doc(`parents/${uid}/payments/${reference}`);
+  const paymentRef = getAdminDb().doc(paths.payment(uid, reference));
   const paymentSnap = await paymentRef.get();
   if (!paymentSnap.exists) {
     return NextResponse.json({ error: "Payment not found" }, { status: 404 });
