@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { stages } from "@/lib/data";
+import { site, stages } from "@/lib/data";
 import { getFeeKobo } from "@/lib/fees";
 import type { ApplicationStatus } from "@/lib/firebase/types";
 
@@ -223,6 +223,8 @@ export async function sendPaymentReceiptEmail(
       `We've received your ${payment.term} fee payment of ${formatNaira(payment.amountKobo)} for ${payment.childName}. Thank you!`,
       "",
       `Reference: ${payment.reference}`,
+      "",
+      `View or print your receipt: ${site.url}/portal/receipts/${payment.reference}`,
       "",
       "Keep this email for your records.",
       "",

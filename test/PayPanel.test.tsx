@@ -81,6 +81,10 @@ describe("PayPanel", () => {
     fireEvent.click(button);
 
     expect(await screen.findByText("Payment confirmed — thank you!")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "View receipt →" })).toHaveAttribute(
+      "href",
+      "/portal/receipts/edy_1"
+    );
   });
 
   it("retries a transient verify failure and still confirms success", async () => {

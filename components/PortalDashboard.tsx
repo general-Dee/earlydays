@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/firestore";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
@@ -117,9 +118,16 @@ export default function PortalDashboard({ user }: { user: User }) {
                       <span className="block text-sm font-semibold">{payment.childName} — {payment.term}</span>
                       <span className="text-xs text-slate">{formatNaira(payment.amountKobo)}</span>
                     </div>
-                    <span className={`text-[0.7rem] font-bold px-2.5 py-1 rounded-full ${statusStyle[payment.status]}`}>
-                      {payment.status}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <span className={`text-[0.7rem] font-bold px-2.5 py-1 rounded-full ${statusStyle[payment.status]}`}>
+                        {payment.status}
+                      </span>
+                      {payment.status === "success" && (
+                        <Link href={`/portal/receipts/${payment.reference}`} className="btn btn-ghost btn-sm">
+                          View receipt
+                        </Link>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

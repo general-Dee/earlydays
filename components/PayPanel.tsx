@@ -71,6 +71,7 @@ export default function PayPanel() {
   const [term, setTerm] = useState(TERMS[0]);
   const [payStatus, setPayStatus] = useState<PayStatus>("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [receiptReference, setReceiptReference] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -98,6 +99,7 @@ export default function PayPanel() {
     if (!user || !childId) return;
     setPayStatus("starting");
     setMessage(null);
+    setReceiptReference(null);
 
     try {
       const idToken = await user.getIdToken();
@@ -121,6 +123,7 @@ export default function PayPanel() {
             if (verifyData.status === "success") {
               setPayStatus("success");
               setMessage("Payment confirmed — thank you!");
+              setReceiptReference(data.reference);
             } else {
               setPayStatus("error");
               setMessage("We couldn't confirm this payment yet. Contact the school if you were charged.");
@@ -203,6 +206,11 @@ export default function PayPanel() {
         )}
 
         {message && <p className="text-sm text-ink/[0.78] mt-3">{message}</p>}
+        {receiptReference && (
+          <Link href={`/portal/receipts/${receiptReference}`} className="text-sm font-medium underline text-accent-light mt-1 inline-block">
+            View receipt →
+          </Link>
+        )}
       </div>
 
       <button onClick={handlePay} disabled={!canPay} className="btn btn-primary disabled:opacity-60">
