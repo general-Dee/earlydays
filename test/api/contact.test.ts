@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetRateLimits } from "@/lib/rate-limit";
 
 const collectionAdd = vi.fn();
 const collection = vi.fn();
@@ -12,6 +11,12 @@ vi.mock("@/lib/firebase/admin", () => ({
 
 vi.mock("@/lib/email/notify", () => ({
   sendContactNotification: (...args: unknown[]) => sendContactNotification(...args),
+}));
+
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  getClientIp: () => "1.2.3.4",
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
 }));
 
 collection.mockImplementation(() => ({ add: collectionAdd }));
@@ -26,10 +31,10 @@ function jsonRequest(body: unknown, headers: Record<string, string> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  resetRateLimits();
   collection.mockImplementation(() => ({ add: collectionAdd }));
   collectionAdd.mockResolvedValue(undefined);
   sendContactNotification.mockResolvedValue(undefined);
+  checkRateLimit.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -103,18 +108,12 @@ describe("POST /api/contact", () => {
     expect(collectionAdd).toHaveBeenCalled();
   });
 
-  it("rate limits repeated requests from the same IP", async () => {
+  it("returns 429 and skips the write when rate limited", async () => {
+    checkRateLimit.mockResolvedValue(false);
     const { POST } = await import("@/app/api/contact/route");
-    const headers = { "x-forwarded-for": "1.2.3.4" };
-    const body = { name: "Aisha", message: "I'd like to book a tour.", email: "a@b.com" };
-
-    for (let i = 0; i < 5; i++) {
-      const res = await POST(jsonRequest(body, headers));
-      expect(res.status).toBe(200);
-    }
-
-    collectionAdd.mockClear();
-    const res = await POST(jsonRequest(body, headers));
+    const res = await POST(
+      jsonRequest({ name: "Aisha", message: "I'd like to book a tour.", email: "a@b.com" })
+    );
     const json = await res.json();
 
     expect(res.status).toBe(429);

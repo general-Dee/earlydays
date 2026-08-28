@@ -12,7 +12,7 @@ const NOT_FOUND_MESSAGE = "No matching application found. Double-check your refe
 
 export const POST = withRouteErrorHandling("POST /api/admissions/status", async (req: NextRequest) => {
   const ip = getClientIp(req);
-  if (!checkRateLimit(`app-status:${ip}`, { max: 10, windowMs: 10 * 60 * 1000 })) {
+  if (!(await checkRateLimit(`app-status:${ip}`, { max: 10, windowMs: 10 * 60 * 1000 }))) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 

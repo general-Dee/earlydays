@@ -11,7 +11,7 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 export const POST = withRouteErrorHandling("POST /api/contact", async (req: NextRequest) => {
   const ip = getClientIp(req);
-  if (!checkRateLimit(`contact:${ip}`, { max: 5, windowMs: 10 * 60 * 1000 })) {
+  if (!(await checkRateLimit(`contact:${ip}`, { max: 5, windowMs: 10 * 60 * 1000 }))) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 

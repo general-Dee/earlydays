@@ -1,12 +1,17 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetRateLimits } from "@/lib/rate-limit";
 
 const collection = vi.fn();
 const get = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ collection }),
+}));
+
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  getClientIp: () => "1.2.3.4",
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
 }));
 
 function buildQuery() {
@@ -37,8 +42,8 @@ const fakeApplication = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  resetRateLimits();
   collection.mockImplementation(() => buildQuery());
+  checkRateLimit.mockResolvedValue(true);
 });
 
 describe("POST /api/admissions/status", () => {
@@ -71,17 +76,10 @@ describe("POST /api/admissions/status", () => {
     });
   });
 
-  it("rate limits repeated requests from the same IP", async () => {
-    get.mockResolvedValue({ empty: true, docs: [] });
+  it("returns 429 when rate limited", async () => {
+    checkRateLimit.mockResolvedValue(false);
     const { POST } = await import("@/app/api/admissions/status/route");
-    const headers = { "x-forwarded-for": "1.2.3.4" };
-
-    for (let i = 0; i < 10; i++) {
-      const res = await POST(jsonRequest({ referenceCode: "A1B2C3D4" }, headers));
-      expect(res.status).toBe(404);
-    }
-
-    const res = await POST(jsonRequest({ referenceCode: "A1B2C3D4" }, headers));
+    const res = await POST(jsonRequest({ referenceCode: "A1B2C3D4" }));
     const json = await res.json();
 
     expect(res.status).toBe(429);

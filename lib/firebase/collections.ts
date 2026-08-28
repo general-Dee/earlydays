@@ -7,6 +7,7 @@ export const COLLECTIONS = {
   reports: "reports",
   payments: "payments",
   settings: "settings",
+  rateLimits: "rateLimits",
 } as const;
 
 export const paths = {

@@ -14,7 +14,7 @@ const VALID_STAGE_CODES = stages.map((s) => s.code);
 
 export const POST = withRouteErrorHandling("POST /api/admissions/apply", async (req: NextRequest) => {
   const ip = getClientIp(req);
-  if (!checkRateLimit(`admissions:${ip}`, { max: 3, windowMs: 10 * 60 * 1000 })) {
+  if (!(await checkRateLimit(`admissions:${ip}`, { max: 3, windowMs: 10 * 60 * 1000 }))) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
