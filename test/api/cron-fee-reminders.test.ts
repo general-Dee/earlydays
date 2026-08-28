@@ -15,6 +15,16 @@ vi.mock("@/lib/email/notify", () => ({
   sendFeeReminderEmail: (...args: unknown[]) => sendFeeReminderEmail(...args),
 }));
 
+const sendWhatsAppFeeReminder = vi.fn();
+vi.mock("@/lib/whatsapp", () => ({
+  sendWhatsAppFeeReminder: (...args: unknown[]) => sendWhatsAppFeeReminder(...args),
+}));
+
+const sendSmsFeeReminder = vi.fn();
+vi.mock("@/lib/sms", () => ({
+  sendSmsFeeReminder: (...args: unknown[]) => sendSmsFeeReminder(...args),
+}));
+
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/cron/fee-reminders", { headers });
 }
@@ -30,6 +40,8 @@ beforeEach(() => {
     path === "parents" ? { get: parentsGet } : { get: paymentsGet }
   );
   sendFeeReminderEmail.mockResolvedValue(true);
+  sendWhatsAppFeeReminder.mockResolvedValue(true);
+  sendSmsFeeReminder.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -67,12 +79,14 @@ describe("GET /api/cron/fee-reminders", () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json).toEqual({ ok: true, remindersSent: 1 });
+    expect(json).toEqual({ ok: true, emailsSent: 1, whatsappSent: 0, smsSent: 0 });
     expect(sendFeeReminderEmail).toHaveBeenCalledWith(
       { guardianName: "Aisha", email: "a@b.com" },
       [{ name: "Kid", stage: "N1" }],
       CURRENT_TERM
     );
+    expect(sendWhatsAppFeeReminder).not.toHaveBeenCalled();
+    expect(sendSmsFeeReminder).not.toHaveBeenCalled();
   });
 
   it("skips a parent whose child already paid for the current term", async () => {
@@ -93,7 +107,7 @@ describe("GET /api/cron/fee-reminders", () => {
     const res = await GET(request({ authorization: "Bearer test-secret" }));
     const json = await res.json();
 
-    expect(json).toEqual({ ok: true, remindersSent: 0 });
+    expect(json).toEqual({ ok: true, emailsSent: 0, whatsappSent: 0, smsSent: 0 });
     expect(sendFeeReminderEmail).not.toHaveBeenCalled();
   });
 
@@ -124,5 +138,76 @@ describe("GET /api/cron/fee-reminders", () => {
       ],
       CURRENT_TERM
     );
+  });
+
+  it("attempts WhatsApp and SMS when the parent has a phone number", async () => {
+    parentsGet.mockResolvedValue({
+      docs: [
+        parentDoc("u1", {
+          guardianName: "Aisha",
+          email: "a@b.com",
+          phone: "08012345678",
+          children: [{ id: "c1", name: "Kid", stage: "N1" }],
+        }),
+      ],
+    });
+    paymentsGet.mockResolvedValue({ docs: [] });
+
+    const { GET } = await import("@/app/api/cron/fee-reminders/route");
+    const res = await GET(request({ authorization: "Bearer test-secret" }));
+    const json = await res.json();
+
+    expect(json).toEqual({ ok: true, emailsSent: 1, whatsappSent: 1, smsSent: 1 });
+    expect(sendWhatsAppFeeReminder).toHaveBeenCalledWith(
+      { guardianName: "Aisha", phone: "08012345678" },
+      [{ name: "Kid", stage: "N1" }],
+      CURRENT_TERM
+    );
+    expect(sendSmsFeeReminder).toHaveBeenCalledWith(
+      { guardianName: "Aisha", phone: "08012345678" },
+      [{ name: "Kid", stage: "N1" }],
+      CURRENT_TERM
+    );
+  });
+
+  it("doesn't attempt WhatsApp or SMS when the parent has no phone number on file", async () => {
+    parentsGet.mockResolvedValue({
+      docs: [
+        parentDoc("u1", {
+          guardianName: "Aisha",
+          email: "a@b.com",
+          children: [{ id: "c1", name: "Kid", stage: "N1" }],
+        }),
+      ],
+    });
+    paymentsGet.mockResolvedValue({ docs: [] });
+
+    const { GET } = await import("@/app/api/cron/fee-reminders/route");
+    await GET(request({ authorization: "Bearer test-secret" }));
+
+    expect(sendWhatsAppFeeReminder).not.toHaveBeenCalled();
+    expect(sendSmsFeeReminder).not.toHaveBeenCalled();
+  });
+
+  it("keeps counting other channels when one channel fails", async () => {
+    sendWhatsAppFeeReminder.mockRejectedValue(new Error("graph api down"));
+    parentsGet.mockResolvedValue({
+      docs: [
+        parentDoc("u1", {
+          guardianName: "Aisha",
+          email: "a@b.com",
+          phone: "08012345678",
+          children: [{ id: "c1", name: "Kid", stage: "N1" }],
+        }),
+      ],
+    });
+    paymentsGet.mockResolvedValue({ docs: [] });
+
+    const { GET } = await import("@/app/api/cron/fee-reminders/route");
+    const res = await GET(request({ authorization: "Bearer test-secret" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ ok: true, emailsSent: 1, whatsappSent: 0, smsSent: 1 });
   });
 });

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendFeeReminderEmail } from "@/lib/email/notify";
+import { sendWhatsAppFeeReminder } from "@/lib/whatsapp";
+import { sendSmsFeeReminder } from "@/lib/sms";
 import { CURRENT_TERM } from "@/lib/fees";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
@@ -17,7 +19,9 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
   const db = getAdminDb();
   const parentsSnap = await db.collection(COLLECTIONS.parents).get();
 
-  let remindersSent = 0;
+  let emailsSent = 0;
+  let whatsappSent = 0;
+  let smsSent = 0;
 
   for (const parentDoc of parentsSnap.docs) {
     const parent = parentDoc.data() as Parent;
@@ -31,19 +35,45 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
         )
     );
 
-    if (unpaidChildren.length > 0) {
+    if (unpaidChildren.length === 0) continue;
+
+    const unpaidForNotify = unpaidChildren.map((c) => ({ name: c.name, stage: c.stage }));
+
+    try {
+      const sent = await sendFeeReminderEmail(
+        { guardianName: parent.guardianName, email: parent.email },
+        unpaidForNotify,
+        CURRENT_TERM
+      );
+      if (sent) emailsSent++;
+    } catch (err) {
+      logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder email", err);
+    }
+
+    if (parent.phone) {
       try {
-        const sent = await sendFeeReminderEmail(
-          { guardianName: parent.guardianName, email: parent.email },
-          unpaidChildren.map((c) => ({ name: c.name, stage: c.stage })),
+        const sent = await sendWhatsAppFeeReminder(
+          { guardianName: parent.guardianName, phone: parent.phone },
+          unpaidForNotify,
           CURRENT_TERM
         );
-        if (sent) remindersSent++;
+        if (sent) whatsappSent++;
       } catch (err) {
-        logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder email", err);
+        logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder WhatsApp message", err);
+      }
+
+      try {
+        const sent = await sendSmsFeeReminder(
+          { guardianName: parent.guardianName, phone: parent.phone },
+          unpaidForNotify,
+          CURRENT_TERM
+        );
+        if (sent) smsSent++;
+      } catch (err) {
+        logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder SMS", err);
       }
     }
   }
 
-  return NextResponse.json({ ok: true, remindersSent });
+  return NextResponse.json({ ok: true, emailsSent, whatsappSent, smsSent });
 });
