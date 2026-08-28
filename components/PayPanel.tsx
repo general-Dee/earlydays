@@ -7,6 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { TERMS } from "@/lib/data";
 import type { Parent } from "@/lib/firebase/types";
 
 declare global {
@@ -23,7 +24,6 @@ declare global {
   }
 }
 
-const TERMS = ["Term 1", "Term 2", "Term 3"];
 const VERIFY_RETRY_DELAYS_MS = [1000, 2000];
 
 type ParentStatus = "idle" | "loading" | "ready" | "missing";

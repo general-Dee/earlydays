@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { TERMS } from "@/lib/data";
 import type { ApplicationStatus } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
@@ -46,6 +47,40 @@ function formatNaira(amountKobo: number) {
 export default function AdminDashboardOverview({ user }: { user: User }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [state, setState] = useState<LoadState>("loading");
+  const [editingTerm, setEditingTerm] = useState(false);
+  const [termDraft, setTermDraft] = useState(TERMS[0]);
+  const [savingTerm, setSavingTerm] = useState(false);
+  const [termError, setTermError] = useState<string | null>(null);
+
+  async function saveTerm() {
+    setSavingTerm(true);
+    setTermError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/admin/dashboard", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ currentTerm: termDraft }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setTermError(body.error ?? "Couldn't update the term. Please try again.");
+        return;
+      }
+
+      setData((current) => (current ? { ...current, term: termDraft } : current));
+      setEditingTerm(false);
+    } catch {
+      setTermError("Couldn't update the term. Please try again.");
+    } finally {
+      setSavingTerm(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -130,9 +165,61 @@ export default function AdminDashboardOverview({ user }: { user: User }) {
           </div>
 
           <div className="mt-6">
-            <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">
-              Fee collection — {data.term}
-            </h5>
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider">
+                Fee collection — {data.term}
+              </h5>
+              {!editingTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTermDraft(data.term);
+                    setEditingTerm(true);
+                  }}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Change
+                </button>
+              )}
+            </div>
+
+            {editingTerm && (
+              <div className="flex items-center gap-2 mb-2.5">
+                <select
+                  aria-label="Current term"
+                  value={termDraft}
+                  onChange={(e) => setTermDraft(e.target.value)}
+                  className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                >
+                  {TERMS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={saveTerm}
+                  disabled={savingTerm}
+                  className="btn btn-primary btn-sm"
+                >
+                  {savingTerm ? "Saving…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTerm(false);
+                    setTermError(null);
+                  }}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {termError && <p className="text-[0.8rem] text-clay mb-2.5">{termError}</p>}
+
             <div className="flex flex-wrap gap-2.5">
               <div className="px-3.5 py-2.5 rounded-lg bg-chalk min-w-[9rem]">
                 <span className="text-[0.7rem] font-bold px-2.5 py-1 rounded-full bg-leaf-soft text-leaf">

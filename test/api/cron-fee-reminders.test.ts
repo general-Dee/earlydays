@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CURRENT_TERM } from "@/lib/fees";
+
+const CURRENT_TERM = "Term 2";
 
 const collection = vi.fn();
 const parentsGet = vi.fn();
@@ -8,6 +9,11 @@ const paymentsGet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ collection }),
+}));
+
+const getCurrentTerm = vi.fn();
+vi.mock("@/lib/termSettings", () => ({
+  getCurrentTerm: () => getCurrentTerm(),
 }));
 
 const sendFeeReminderEmail = vi.fn();
@@ -42,6 +48,7 @@ beforeEach(() => {
   sendFeeReminderEmail.mockResolvedValue(true);
   sendWhatsAppFeeReminder.mockResolvedValue(true);
   sendSmsFeeReminder.mockResolvedValue(true);
+  getCurrentTerm.mockResolvedValue(CURRENT_TERM);
 });
 
 afterEach(() => {

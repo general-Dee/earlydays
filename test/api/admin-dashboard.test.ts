@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CURRENT_TERM } from "@/lib/fees";
+
+const TEST_TERM = "Term 2";
 
 const verifyIdToken = vi.fn();
 const collection = vi.fn();
@@ -8,6 +9,8 @@ const applicationsGet = vi.fn();
 const inquiriesGet = vi.fn();
 const parentsGet = vi.fn();
 const paymentsGet = vi.fn();
+const settingsGet = vi.fn();
+const settingsSet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -16,6 +19,14 @@ vi.mock("@/lib/firebase/admin", () => ({
 
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/admin/dashboard", { headers });
+}
+
+function patchRequest(body: unknown, headers: Record<string, string> = {}) {
+  return new NextRequest("http://localhost/api/admin/dashboard", {
+    method: "PATCH",
+    headers: { "content-type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
 }
 
 function docsFrom(items: unknown[]) {
@@ -28,12 +39,15 @@ beforeEach(() => {
     if (path === "applications") return { get: applicationsGet };
     if (path === "inquiries") return { get: inquiriesGet };
     if (path === "parents") return { get: parentsGet };
+    if (path === "settings") return { doc: () => ({ get: settingsGet, set: settingsSet }) };
     return { get: paymentsGet };
   });
   applicationsGet.mockResolvedValue(docsFrom([]));
   inquiriesGet.mockResolvedValue(docsFrom([]));
   parentsGet.mockResolvedValue({ docs: [] });
   paymentsGet.mockResolvedValue({ docs: [] });
+  settingsGet.mockResolvedValue({ exists: true, data: () => ({ currentTerm: TEST_TERM }) });
+  settingsSet.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -89,7 +103,7 @@ describe("GET /api/admin/dashboard", () => {
     });
     paymentsGet.mockResolvedValue({
       docs: [
-        { data: () => ({ childId: "c1", term: CURRENT_TERM, status: "success", amountKobo: 60_000_00 }) },
+        { data: () => ({ childId: "c1", term: TEST_TERM, status: "success", amountKobo: 60_000_00 }) },
       ],
     });
 
@@ -99,7 +113,7 @@ describe("GET /api/admin/dashboard", () => {
 
     expect(res.status).toBe(200);
     expect(json).toEqual({
-      term: CURRENT_TERM,
+      term: TEST_TERM,
       applicationCounts: { new: 2, reviewing: 0, accepted: 1, waitlisted: 0, declined: 0 },
       newInquiries: 1,
       fees: {
@@ -119,5 +133,47 @@ describe("GET /api/admin/dashboard", () => {
     const res = await GET(request({ authorization: "Bearer ok" }));
 
     expect(res.status).toBe(200);
+  });
+});
+
+describe("PATCH /api/admin/dashboard", () => {
+  it("rejects requests without an Authorization header", async () => {
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(patchRequest({ currentTerm: "Term 1" }));
+    expect(res.status).toBe(401);
+  });
+
+  it("403s when the token's email isn't authorized", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "parent@example.com" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(patchRequest({ currentTerm: "Term 1" }, { authorization: "Bearer ok" }));
+    expect(res.status).toBe(403);
+    expect(settingsSet).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unrecognized term", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(patchRequest({ currentTerm: "Not A Term" }, { authorization: "Bearer ok" }));
+
+    expect(res.status).toBe(400);
+    expect(settingsSet).not.toHaveBeenCalled();
+  });
+
+  it("updates the current term for a valid value", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(patchRequest({ currentTerm: "Term 1" }, { authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ term: "Term 1" });
+    expect(settingsSet).toHaveBeenCalledWith(
+      expect.objectContaining({ currentTerm: "Term 1", updatedBy: "staff@earlydays.example" }),
+      { merge: true }
+    );
   });
 });

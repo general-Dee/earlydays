@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
-import { CURRENT_TERM } from "@/lib/fees";
+import { TERMS } from "@/lib/data";
 
 type ParentOption = { uid: string; guardianName: string; email: string; children: ChildRecord[] };
 
@@ -17,7 +17,7 @@ export default function AdminReportsList({ user }: { user: User }) {
 
   const [selectedParentUid, setSelectedParentUid] = useState("");
   const [selectedChildId, setSelectedChildId] = useState("");
-  const [term, setTerm] = useState(CURRENT_TERM);
+  const [term, setTerm] = useState(TERMS[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [reports, setReports] = useState<ProgressReport[]>([]);

@@ -6,6 +6,7 @@ export const COLLECTIONS = {
   parents: "parents",
   reports: "reports",
   payments: "payments",
+  settings: "settings",
 } as const;
 
 export const paths = {

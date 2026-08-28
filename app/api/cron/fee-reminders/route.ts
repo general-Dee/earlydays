@@ -3,7 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { sendFeeReminderEmail } from "@/lib/email/notify";
 import { sendWhatsAppFeeReminder } from "@/lib/whatsapp";
 import { sendSmsFeeReminder } from "@/lib/sms";
-import { CURRENT_TERM } from "@/lib/fees";
+import { getCurrentTerm } from "@/lib/termSettings";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
@@ -17,6 +17,7 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
   }
 
   const db = getAdminDb();
+  const CURRENT_TERM = await getCurrentTerm();
   const parentsSnap = await db.collection(COLLECTIONS.parents).get();
 
   let emailsSent = 0;

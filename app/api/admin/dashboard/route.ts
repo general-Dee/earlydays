@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
-import { CURRENT_TERM, FEE_BY_STAGE } from "@/lib/fees";
+import { FEE_BY_STAGE } from "@/lib/fees";
+import { getCurrentTerm, setCurrentTerm } from "@/lib/termSettings";
+import { TERMS } from "@/lib/data";
 import type { Application, ApplicationStatus, Inquiry, Parent, PaymentRecord } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
 export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async (req: NextRequest, admin) => {
   const db = getAdminDb();
+  const term = await getCurrentTerm();
 
   const applicationsSnap = await db.collection(COLLECTIONS.applications).get();
   const applicationCounts: Record<ApplicationStatus, number> = {
@@ -43,7 +46,7 @@ export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async
 
     for (const child of parent.children) {
       const successfulPayment = payments.find(
-        (p) => p.childId === child.id && p.term === CURRENT_TERM && p.status === "success"
+        (p) => p.childId === child.id && p.term === term && p.status === "success"
       );
       amountExpectedKobo += FEE_BY_STAGE[child.stage] ?? 0;
 
@@ -57,9 +60,21 @@ export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async
   }
 
   return NextResponse.json({
-    term: CURRENT_TERM,
+    term,
     applicationCounts,
     newInquiries,
     fees: { childrenPaid, childrenUnpaid, amountCollectedKobo, amountExpectedKobo },
   });
+});
+
+export const PATCH = withAdminRoute("dashboard", "PATCH /api/admin/dashboard", async (req: NextRequest, admin) => {
+  const { currentTerm } = (await req.json()) as { currentTerm?: string };
+
+  if (!currentTerm || !TERMS.includes(currentTerm)) {
+    return NextResponse.json({ error: "Please select a valid term" }, { status: 400 });
+  }
+
+  await setCurrentTerm(currentTerm, admin.email);
+
+  return NextResponse.json({ term: currentTerm });
 });
