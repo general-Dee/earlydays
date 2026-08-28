@@ -72,3 +72,27 @@ describe("requireAdminEmail", () => {
     expect((res as Response).status).toBe(403);
   });
 });
+
+describe("requireAuthenticatedUser", () => {
+  it("401s when the Authorization header is missing", async () => {
+    const { requireAuthenticatedUser } = await import("@/lib/firebase/admin-auth");
+    const res = await requireAuthenticatedUser(request());
+    expect(res).toBeInstanceOf(Response);
+    expect((res as Response).status).toBe(401);
+  });
+
+  it("401s on an invalid token", async () => {
+    verifyIdToken.mockRejectedValue(new Error("bad token"));
+    const { requireAuthenticatedUser } = await import("@/lib/firebase/admin-auth");
+    const res = await requireAuthenticatedUser(request({ authorization: "Bearer bad" }));
+    expect((res as Response).status).toBe(401);
+  });
+
+  it("returns the uid for a valid token", async () => {
+    verifyIdToken.mockResolvedValue({ uid: "u1", email: "p@example.com" });
+    const { requireAuthenticatedUser } = await import("@/lib/firebase/admin-auth");
+
+    const res = await requireAuthenticatedUser(request({ authorization: "Bearer ok" }));
+    expect(res).toEqual({ uid: "u1" });
+  });
+});

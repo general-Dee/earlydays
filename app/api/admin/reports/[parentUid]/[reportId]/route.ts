@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminBucket, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { ProgressReport } from "@/lib/firebase/types";
 
@@ -23,7 +24,7 @@ export const DELETE = withAdminRoute<{ params: { parentUid: string; reportId: st
         .file(storagePath)
         .delete()
         .catch((err) => {
-          console.error(`[api] DELETE /api/admin/reports/[parentUid]/[reportId] failed to delete storage file ${storagePath}`, err);
+          logRouteError("DELETE /api/admin/reports/[parentUid]/[reportId]", `failed to delete storage file ${storagePath}`, err);
         });
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb, getAdminBucket } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
 
@@ -84,12 +85,12 @@ export const POST = withAdminRoute("reports", "POST /api/admin/reports", async (
   try {
     await reportRef.set(report);
   } catch (err) {
-    console.error(`[api] POST /api/admin/reports failed to save report doc; cleaning up orphaned file ${storagePath}`, err);
+    logRouteError("POST /api/admin/reports", `failed to save report doc; cleaning up orphaned file ${storagePath}`, err);
     await getAdminBucket()
       .file(storagePath)
       .delete()
       .catch((cleanupErr) => {
-        console.error(`[api] POST /api/admin/reports failed to clean up orphaned file ${storagePath}`, cleanupErr);
+        logRouteError("POST /api/admin/reports", `failed to clean up orphaned file ${storagePath}`, cleanupErr);
       });
     return NextResponse.json({ error: "Couldn't save the report. Please try again." }, { status: 500 });
   }

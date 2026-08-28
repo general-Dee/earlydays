@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendApplicationStatusEmail } from "@/lib/email/notify";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 
@@ -40,7 +41,7 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
         status as ApplicationStatus
       );
     } catch (err) {
-      console.error("Failed to send application status email", err);
+      logRouteError("PATCH /api/admin/applications/[id]", "failed to send application status email", err);
     }
 
     return NextResponse.json({ ok: true, emailSent });

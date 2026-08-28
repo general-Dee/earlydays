@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendContactNotification } from "@/lib/email/notify";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { withRouteErrorHandling } from "@/lib/api/errors";
+import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 
 export const runtime = "nodejs";
@@ -62,7 +62,7 @@ export const POST = withRouteErrorHandling("POST /api/contact", async (req: Next
       message: trimmedMessage,
     });
   } catch (err) {
-    console.error("Failed to send contact notification email", err);
+    logRouteError("POST /api/contact", "failed to send contact notification email", err);
   }
 
   return NextResponse.json({ ok: true });

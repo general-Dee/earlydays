@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { site } from "@/lib/data";
@@ -23,7 +24,7 @@ export const POST = withAdminRoute<{ params: { uid: string } }>(
     try {
       resetLink = await getAdminAuth().generatePasswordResetLink(parent.email, { url: `${site.url}/portal` });
     } catch (err) {
-      console.error("Failed to generate a password reset link", err);
+      logRouteError("POST /api/admin/parents/[uid]/resend-invite", "failed to generate a password reset link", err);
       return NextResponse.json({ error: "Couldn't generate a new invite link. Please try again." }, { status: 500 });
     }
 
@@ -31,7 +32,7 @@ export const POST = withAdminRoute<{ params: { uid: string } }>(
     try {
       emailSent = await sendParentInviteEmail({ guardianName: parent.guardianName, email: parent.email }, resetLink);
     } catch (err) {
-      console.error("Failed to send parent invite email", err);
+      logRouteError("POST /api/admin/parents/[uid]/resend-invite", "failed to send parent invite email", err);
     }
 
     return NextResponse.json({ resetLink, emailSent });

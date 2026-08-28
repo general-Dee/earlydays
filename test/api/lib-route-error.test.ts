@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { describe, expect, it, vi } from "vitest";
-import { handleRouteError, withRouteErrorHandling } from "@/lib/api/errors";
+import { handleRouteError, logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 
 function request() {
   return new NextRequest("http://localhost/api/test");
 }
+
+describe("logRouteError", () => {
+  it("logs with the [api] <route> <message> convention", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = new Error("boom");
+
+    logRouteError("POST /api/x", "failed to do thing", err);
+
+    expect(consoleSpy).toHaveBeenCalledWith("[api] POST /api/x failed to do thing", err);
+
+    consoleSpy.mockRestore();
+  });
+});
 
 describe("handleRouteError", () => {
   it("logs the error and returns a generic 500 by default", async () => {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendFeeReminderEmail } from "@/lib/email/notify";
 import { CURRENT_TERM } from "@/lib/fees";
-import { withRouteErrorHandling } from "@/lib/api/errors";
+import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
@@ -40,7 +40,7 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
         );
         if (sent) remindersSent++;
       } catch (err) {
-        console.error("Failed to send fee reminder email", err);
+        logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder email", err);
       }
     }
   }

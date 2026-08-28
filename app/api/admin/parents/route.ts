@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
+import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { site } from "@/lib/data";
@@ -79,7 +80,7 @@ export const POST = withAdminRoute("parents", "POST /api/admin/parents", async (
   try {
     resetLink = await getAdminAuth().generatePasswordResetLink(trimmedEmail, { url: `${site.url}/portal` });
   } catch (err) {
-    console.error("Failed to generate a password reset link", err);
+    logRouteError("POST /api/admin/parents", "failed to generate a password reset link", err);
   }
 
   let emailSent = false;
@@ -87,7 +88,7 @@ export const POST = withAdminRoute("parents", "POST /api/admin/parents", async (
     try {
       emailSent = await sendParentInviteEmail({ guardianName: trimmedGuardianName, email: trimmedEmail }, resetLink);
     } catch (err) {
-      console.error("Failed to send parent invite email", err);
+      logRouteError("POST /api/admin/parents", "failed to send parent invite email", err);
     }
   }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendPaymentReceiptEmail } from "@/lib/email/notify";
-import { withRouteErrorHandling } from "@/lib/api/errors";
+import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { paths } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
@@ -59,7 +59,7 @@ export const POST = withRouteErrorHandling("POST /api/paystack/webhook", async (
             );
           }
         } catch (err) {
-          console.error("Failed to send payment receipt email", err);
+          logRouteError("POST /api/paystack/webhook", "failed to send payment receipt email", err);
         }
       }
     }

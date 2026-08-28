@@ -198,6 +198,15 @@ describe("POST /api/paystack/verify", () => {
     expect(res.status).toBe(401);
   });
 
+  it("rejects an invalid token", async () => {
+    verifyIdToken.mockRejectedValue(new Error("bad token"));
+    const { POST } = await import("@/app/api/paystack/verify/route");
+    const res = await POST(
+      jsonRequest("/api/paystack/verify", { reference: "edy_1" }, { authorization: "Bearer bad" })
+    );
+    expect(res.status).toBe(401);
+  });
+
   it("404s when the payment record doesn't exist", async () => {
     verifyIdToken.mockResolvedValue({ uid: "u1" });
     docGet.mockResolvedValue({ exists: false });
