@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Inquiry, InquiryStatus } from "@/lib/firebase/types";
+import { useListFilter } from "@/lib/useListFilter";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -15,10 +16,22 @@ const statusStyle: Record<InquiryStatus, string> = {
   resolved: "bg-chalk text-slate",
 };
 
+function getSearchText(inquiry: Inquiry): string {
+  return [inquiry.name, inquiry.email, inquiry.phone, inquiry.message].filter(Boolean).join(" ");
+}
+
 export default function AdminInquiriesList({ user }: { user: User }) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<InquiryStatus | "all">("all");
+
+  const statusFiltered =
+    statusFilter === "all" ? inquiries : inquiries.filter((inquiry) => inquiry.status === statusFilter);
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
+    statusFiltered,
+    getSearchText
+  );
 
   async function updateStatus(id: string, status: InquiryStatus) {
     const previous = inquiries;
@@ -113,8 +126,38 @@ export default function AdminInquiriesList({ user }: { user: User }) {
       )}
 
       {state === "ready" && inquiries.length > 0 && (
-        <ul className="flex flex-col gap-2.5 mt-5">
-          {inquiries.map((inquiry) => (
+        <div className="flex flex-wrap gap-2.5 mt-5">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, email, phone, or message…"
+            aria-label="Search inquiries"
+            className="flex-1 min-w-[200px] text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+          />
+          <select
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as InquiryStatus | "all")}
+            className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+          >
+            <option value="all">All statuses</option>
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {state === "ready" && inquiries.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching inquiries.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
+        <ul className="flex flex-col gap-2.5 mt-4">
+          {paged.map((inquiry) => (
             <li key={inquiry.id} className="px-3.5 py-3 rounded-lg bg-chalk">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold">{inquiry.name}</span>
@@ -145,6 +188,30 @@ export default function AdminInquiriesList({ user }: { user: User }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );

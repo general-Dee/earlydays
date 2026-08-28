@@ -239,4 +239,51 @@ describe("AdminParentsPanel", () => {
       await screen.findByText("You’re logged in, but this account isn’t authorized to manage parent accounts.")
     ).toBeInTheDocument();
   });
+
+  it("narrows the list by a child's name", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const other = {
+      uid: "u2",
+      guardianName: "Chidi Okoye",
+      email: "chidi@example.com",
+      children: [{ id: "c2", name: "Emeka", stage: "P1" }],
+      createdAt: Date.now(),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ parents: [fakeParent, other] }) })
+    );
+
+    render(<AdminParentsPanel />);
+    await screen.findByText("Aisha Bello");
+    expect(screen.getByText("Chidi Okoye")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search parent accounts"), "Emeka");
+
+    expect(screen.getByText("Chidi Okoye")).toBeInTheDocument();
+    expect(screen.queryByText("Aisha Bello")).not.toBeInTheDocument();
+  });
+
+  it("narrows the list by the stage filter", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const other = {
+      uid: "u2",
+      guardianName: "Chidi Okoye",
+      email: "chidi@example.com",
+      children: [{ id: "c2", name: "Emeka", stage: "P1" }],
+      createdAt: Date.now(),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ parents: [fakeParent, other] }) })
+    );
+
+    render(<AdminParentsPanel />);
+    await screen.findByText("Aisha Bello");
+
+    await userEvent.selectOptions(screen.getByLabelText("Filter by stage"), "P1");
+
+    expect(screen.getByText("Chidi Okoye")).toBeInTheDocument();
+    expect(screen.queryByText("Aisha Bello")).not.toBeInTheDocument();
+  });
 });

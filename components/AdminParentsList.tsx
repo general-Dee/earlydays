@@ -5,6 +5,7 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { stages } from "@/lib/data";
 import type { Parent } from "@/lib/firebase/types";
+import { useListFilter } from "@/lib/useListFilter";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -91,9 +92,16 @@ function InviteBanner({
   );
 }
 
+function getSearchText(parent: Parent): string {
+  return [parent.guardianName, parent.email, parent.phone, ...parent.children.map((c) => c.name)]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export default function AdminParentsList({ user }: { user: User }) {
   const [parents, setParents] = useState<Parent[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const [stageFilter, setStageFilter] = useState<string>("all");
   const [guardianName, setGuardianName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -110,6 +118,13 @@ export default function AdminParentsList({ user }: { user: User }) {
 
   const [resendState, setResendState] = useState<Record<string, ResendState>>({});
   const [copiedResendUid, setCopiedResendUid] = useState<string | null>(null);
+
+  const stageFiltered =
+    stageFilter === "all" ? parents : parents.filter((p) => p.children.some((c) => c.stage === stageFilter));
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
+    stageFiltered,
+    getSearchText
+  );
 
   function updateChild(index: number, patch: Partial<ChildFormRow>) {
     setChildren((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -419,8 +434,38 @@ export default function AdminParentsList({ user }: { user: User }) {
       )}
 
       {state === "ready" && parents.length > 0 && (
-        <ul className="flex flex-col gap-2.5 mt-5">
-          {parents.map((parent) => {
+        <div className="flex flex-wrap gap-2.5 mt-5">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by guardian, email, phone, or child name…"
+            aria-label="Search parent accounts"
+            className="flex-1 min-w-[200px] text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+          />
+          <select
+            aria-label="Filter by stage"
+            value={stageFilter}
+            onChange={(e) => setStageFilter(e.target.value)}
+            className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+          >
+            <option value="all">All stages</option>
+            {stages.map((stage) => (
+              <option key={stage.code} value={stage.code}>
+                {stage.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {state === "ready" && parents.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching parent accounts.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
+        <ul className="flex flex-col gap-2.5 mt-4">
+          {paged.map((parent) => {
             const resend = resendState[parent.uid];
             const isEditing = editingUid === parent.uid;
 
@@ -522,6 +567,30 @@ export default function AdminParentsList({ user }: { user: User }) {
             );
           })}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );

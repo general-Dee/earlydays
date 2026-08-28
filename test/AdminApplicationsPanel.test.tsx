@@ -123,4 +123,88 @@ describe("AdminApplicationsPanel", () => {
       await screen.findByText("You’re logged in, but this account isn’t authorized to view applications.")
     ).toBeInTheDocument();
   });
+
+  it("narrows the list by search text", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const other = { ...sampleApplication, id: "a2", childName: "Bola Adeyemi", guardianName: "Chidi Adeyemi" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ applications: [sampleApplication, other] }),
+      })
+    );
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+    expect(screen.getByText(/Bola Adeyemi/)).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search applications"), "Bola");
+
+    expect(screen.getByText(/Bola Adeyemi/)).toBeInTheDocument();
+    expect(screen.queryByText(/Femi Okafor/)).not.toBeInTheDocument();
+  });
+
+  it("narrows the list by the status filter", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const accepted = { ...sampleApplication, id: "a2", childName: "Bola Adeyemi", status: "accepted" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ applications: [sampleApplication, accepted] }),
+      })
+    );
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+
+    await userEvent.selectOptions(screen.getByLabelText("Filter by status"), "accepted");
+
+    expect(screen.getByText(/Bola Adeyemi/)).toBeInTheDocument();
+    expect(screen.queryByText(/Femi Okafor/)).not.toBeInTheDocument();
+  });
+
+  it("paginates when there are more records than fit on one page", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const many = Array.from({ length: 21 }, (_, i) => ({
+      ...sampleApplication,
+      id: `a${i}`,
+      childName: `Child ${i}`,
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ applications: many }) })
+    );
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Child 0 ·/);
+
+    expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+    expect(screen.queryByText(/Child 20 ·/)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next ›" }));
+
+    expect(await screen.findByText(/Child 20 ·/)).toBeInTheDocument();
+    expect(screen.queryByText(/Child 0 ·/)).not.toBeInTheDocument();
+  });
+
+  it("doesn't show pagination controls when everything fits on one page", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ applications: [sampleApplication] }),
+      })
+    );
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+
+    expect(screen.queryByText(/Page \d+ of \d+/)).not.toBeInTheDocument();
+  });
 });

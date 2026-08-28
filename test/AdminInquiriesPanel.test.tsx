@@ -118,4 +118,55 @@ describe("AdminInquiriesPanel", () => {
       await screen.findByText("You’re logged in, but this account isn’t authorized to view inquiries.")
     ).toBeInTheDocument();
   });
+
+  it("narrows the list by search text", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          inquiries: [
+            { id: "i1", name: "Aisha", email: "a@b.com", phone: null, message: "Book a tour", status: "new", createdAt: Date.now() },
+            { id: "i2", name: "Chidi", email: "c@d.com", phone: null, message: "Fee question", status: "new", createdAt: Date.now() },
+          ],
+        }),
+      })
+    );
+
+    render(<AdminInquiriesPanel />);
+    await screen.findByText("Aisha");
+    expect(screen.getByText("Chidi")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search inquiries"), "Chidi");
+
+    expect(screen.getByText("Chidi")).toBeInTheDocument();
+    expect(screen.queryByText("Aisha")).not.toBeInTheDocument();
+  });
+
+  it("narrows the list by the status filter", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          inquiries: [
+            { id: "i1", name: "Aisha", email: "a@b.com", phone: null, message: "Book a tour", status: "new", createdAt: Date.now() },
+            { id: "i2", name: "Chidi", email: "c@d.com", phone: null, message: "Fee question", status: "resolved", createdAt: Date.now() },
+          ],
+        }),
+      })
+    );
+
+    render(<AdminInquiriesPanel />);
+    await screen.findByText("Aisha");
+
+    await userEvent.selectOptions(screen.getByLabelText("Filter by status"), "resolved");
+
+    expect(screen.getByText("Chidi")).toBeInTheDocument();
+    expect(screen.queryByText("Aisha")).not.toBeInTheDocument();
+  });
 });

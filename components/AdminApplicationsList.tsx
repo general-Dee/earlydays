@@ -5,6 +5,7 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 import { stages } from "@/lib/data";
+import { useListFilter } from "@/lib/useListFilter";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -22,10 +23,22 @@ function stageLabel(code: string): string {
   return stages.find((s) => s.code === code)?.name ?? code;
 }
 
+function getSearchText(app: Application): string {
+  return [app.childName, app.guardianName, app.email, app.phone].filter(Boolean).join(" ");
+}
+
 export default function AdminApplicationsList({ user }: { user: User }) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
+
+  const statusFiltered =
+    statusFilter === "all" ? applications : applications.filter((app) => app.status === statusFilter);
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
+    statusFiltered,
+    getSearchText
+  );
 
   async function updateStatus(id: string, status: ApplicationStatus) {
     const previous = applications;
@@ -120,8 +133,38 @@ export default function AdminApplicationsList({ user }: { user: User }) {
       )}
 
       {state === "ready" && applications.length > 0 && (
-        <ul className="flex flex-col gap-2.5 mt-5">
-          {applications.map((app) => (
+        <div className="flex flex-wrap gap-2.5 mt-5">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by child, guardian, email, or phone…"
+            aria-label="Search applications"
+            className="flex-1 min-w-[200px] text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+          />
+          <select
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | "all")}
+            className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+          >
+            <option value="all">All statuses</option>
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {state === "ready" && applications.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching applications.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
+        <ul className="flex flex-col gap-2.5 mt-4">
+          {paged.map((app) => (
             <li key={app.id} className="px-3.5 py-3 rounded-lg bg-chalk">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold">
@@ -157,6 +200,30 @@ export default function AdminApplicationsList({ user }: { user: User }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );
