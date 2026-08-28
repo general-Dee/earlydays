@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { track } from "@vercel/analytics";
 import { stages } from "@/lib/data";
 
@@ -17,6 +18,7 @@ export default function ApplicationForm() {
   const [hp, setHp] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [referenceCode, setReferenceCode] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,6 +42,7 @@ export default function ApplicationForm() {
 
       track("application_submitted");
       setStatus("success");
+      setReferenceCode(data.referenceCode ?? null);
       setChildName("");
       setChildDob("");
       setDesiredStage(stages[0].code);
@@ -59,6 +62,19 @@ export default function ApplicationForm() {
         <div className="px-3.5 py-3 rounded-lg bg-leaf-soft text-leaf text-[0.85rem] font-semibold">
           Thanks — we&rsquo;ve received your application and will follow up within a school day.
         </div>
+        {referenceCode && (
+          <div className="mt-4">
+            <p className="text-[0.85rem] text-slate mb-1.5">
+              Save this reference code to check your application status later:
+            </p>
+            <code className="block px-3.5 py-3 rounded-lg bg-chalk text-ink text-lg font-semibold tracking-wider text-center">
+              {referenceCode}
+            </code>
+            <Link href="/admissions/status" className="text-sm font-medium underline mt-2 inline-block">
+              Check application status →
+            </Link>
+          </div>
+        )}
       </div>
     );
   }

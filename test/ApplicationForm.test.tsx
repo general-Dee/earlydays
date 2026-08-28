@@ -18,7 +18,7 @@ describe("ApplicationForm", () => {
   it("submits the form and shows a success message", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ ok: true }),
+      json: async () => ({ ok: true, referenceCode: "A1B2C3D4" }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -35,6 +35,7 @@ describe("ApplicationForm", () => {
     expect(
       await screen.findByText(/we.ve received your application/i)
     ).toBeInTheDocument();
+    expect(screen.getByText("A1B2C3D4")).toBeInTheDocument();
   });
 
   it("shows an error message when the request fails", async () => {

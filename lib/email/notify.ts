@@ -191,6 +191,46 @@ export async function sendApplicationStatusEmail(
   return true;
 }
 
+type ApplicationConfirmation = {
+  guardianName: string;
+  email: string;
+  childName: string;
+};
+
+export async function sendApplicationConfirmationEmail(
+  application: ApplicationConfirmation,
+  referenceCode: string
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: application.email,
+    subject: `Application received for ${application.childName}`,
+    text: [
+      `Hi ${application.guardianName},`,
+      "",
+      `We've received ${application.childName}'s application. Our admissions team will follow up within a school day.`,
+      "",
+      `Your reference code: ${referenceCode}`,
+      "",
+      `Check your application status anytime at: ${site.url}/admissions/status`,
+      "",
+      "Keep this email for your records.",
+      "",
+      "Warmly,",
+      "The Earlydays Admissions Team",
+    ].join("\n"),
+  });
+
+  return true;
+}
+
 function formatNaira(amountKobo: number): string {
   return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
 }

@@ -52,6 +52,7 @@ export type Application = {
   phone: string | null;
   notes: string;
   status: ApplicationStatus;
+  referenceCode: string;
   createdAt: number;
 };
 

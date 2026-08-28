@@ -5,6 +5,7 @@ import { resetRateLimits } from "@/lib/rate-limit";
 const collectionAdd = vi.fn();
 const collection = vi.fn();
 const sendApplicationNotification = vi.fn();
+const sendApplicationConfirmationEmail = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ collection }),
@@ -12,6 +13,7 @@ vi.mock("@/lib/firebase/admin", () => ({
 
 vi.mock("@/lib/email/notify", () => ({
   sendApplicationNotification: (...args: unknown[]) => sendApplicationNotification(...args),
+  sendApplicationConfirmationEmail: (...args: unknown[]) => sendApplicationConfirmationEmail(...args),
 }));
 
 collection.mockImplementation(() => ({ add: collectionAdd }));
@@ -38,6 +40,7 @@ beforeEach(() => {
   collection.mockImplementation(() => ({ add: collectionAdd }));
   collectionAdd.mockResolvedValue(undefined);
   sendApplicationNotification.mockResolvedValue(undefined);
+  sendApplicationConfirmationEmail.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -86,7 +89,8 @@ describe("POST /api/admissions/apply", () => {
     const res = await POST(jsonRequest(validBody));
     const json = await res.json();
 
-    expect(json).toEqual({ ok: true });
+    expect(json.ok).toBe(true);
+    expect(json.referenceCode).toMatch(/^[0-9A-F]{8}$/);
     expect(collectionAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         childName: "Femi Okafor",
@@ -96,11 +100,23 @@ describe("POST /api/admissions/apply", () => {
         email: "a@b.com",
         phone: null,
         status: "new",
+        referenceCode: json.referenceCode,
       })
     );
     expect(sendApplicationNotification).toHaveBeenCalledWith(
       expect.objectContaining({ childName: "Femi Okafor", guardianName: "Aisha Okafor" })
     );
+    expect(sendApplicationConfirmationEmail).toHaveBeenCalledWith(
+      { guardianName: "Aisha Okafor", email: "a@b.com", childName: "Femi Okafor" },
+      json.referenceCode
+    );
+  });
+
+  it("skips the confirmation email when only a phone number was given", async () => {
+    const { POST } = await import("@/app/api/admissions/apply/route");
+    await POST(jsonRequest({ ...validBody, email: undefined, phone: "0800" }));
+
+    expect(sendApplicationConfirmationEmail).not.toHaveBeenCalled();
   });
 
   it("still returns ok when the notification email fails to send", async () => {
@@ -110,7 +126,7 @@ describe("POST /api/admissions/apply", () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json).toEqual({ ok: true });
+    expect(json.ok).toBe(true);
     expect(collectionAdd).toHaveBeenCalled();
   });
 

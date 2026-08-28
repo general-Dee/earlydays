@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import SectionHeader from "@/components/SectionHeader";
 import ApplicationForm from "@/components/ApplicationForm";
 
@@ -17,6 +18,13 @@ export default function ApplyPage() {
           desc="Fill in a few details about your child and we'll follow up within a school day."
         />
         <ApplicationForm />
+        <p className="text-[0.85rem] text-slate mt-5">
+          Already applied?{" "}
+          <Link href="/admissions/status" className="font-medium underline">
+            Check your status
+          </Link>
+          .
+        </p>
       </div>
     </main>
   );
