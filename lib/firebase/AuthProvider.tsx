@@ -16,11 +16,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
-      setUser(nextUser);
+    try {
+      const unsubscribe = onAuthStateChanged(getFirebaseAuth(), (nextUser) => {
+        setUser(nextUser);
+        setLoading(false);
+      });
+      return unsubscribe;
+    } catch (err) {
+      console.error("Firebase Auth failed to initialize", err);
       setLoading(false);
-    });
-    return unsubscribe;
+    }
   }, []);
 
   return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
