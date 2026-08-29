@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/firestore";
 import { signOut, type User } from "firebase/auth";
@@ -11,6 +11,7 @@ import AnnouncementsFeed from "@/components/AnnouncementsFeed";
 import PortalEventsWidget from "@/components/PortalEventsWidget";
 import PortalReportsWidget from "@/components/PortalReportsWidget";
 import PortalProfileForm from "@/components/PortalProfileForm";
+import PortalPayPanel from "@/components/PortalPayPanel";
 
 function formatNaira(amountKobo: number) {
   return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
@@ -27,6 +28,16 @@ export default function PortalDashboard({ user }: { user: User }) {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  const reloadPayments = useCallback(async () => {
+    const paymentsSnap = await getDocs(
+      query(
+        collection(getFirebaseDb(), COLLECTIONS.parents, user.uid, COLLECTIONS.payments),
+        orderBy("createdAt", "desc")
+      )
+    );
+    setPayments(paymentsSnap.docs.map((d) => d.data() as PaymentRecord));
+  }, [user.uid]);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +123,8 @@ export default function PortalDashboard({ user }: { user: User }) {
           </div>
 
           <PortalReportsWidget uid={user.uid} />
+
+          <PortalPayPanel user={user} parent={parent} onPaid={reloadPayments} />
 
           <div className="mt-6">
             <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">Payment history</h5>

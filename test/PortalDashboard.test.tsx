@@ -46,6 +46,14 @@ vi.mock("@/components/PortalProfileForm", () => ({
   ),
 }));
 
+vi.mock("@/components/PortalPayPanel", () => ({
+  default: ({ onPaid }: { onPaid: () => void }) => (
+    <div>
+      <button onClick={onPaid}>trigger-paid</button>
+    </div>
+  ),
+}));
+
 const fakeUser = { uid: "u1", email: "parent@example.com" } as any;
 
 const fakeParent = {
@@ -142,6 +150,22 @@ describe("PortalDashboard", () => {
     await userEvent.click(screen.getByRole("button", { name: "trigger-save" }));
 
     expect(await screen.findByTestId("profile-name")).toHaveTextContent("Updated Name");
+  });
+
+  it("refetches payment history when PortalPayPanel reports a payment", async () => {
+    getDoc.mockResolvedValue({ exists: () => true, data: () => fakeParent });
+    getDocs.mockResolvedValue({ docs: [] });
+
+    render(<PortalDashboard user={fakeUser} />);
+
+    expect(await screen.findByText("No payments yet.")).toBeInTheDocument();
+    expect(getDocs).toHaveBeenCalledTimes(1);
+
+    getDocs.mockResolvedValue({ docs: [{ data: () => fakePayment }] });
+    await userEvent.click(screen.getByRole("button", { name: "trigger-paid" }));
+
+    expect(getDocs).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText("Zainab — Term 3")).toBeInTheDocument();
   });
 
   it("logs out when the Log Out button is clicked", async () => {
