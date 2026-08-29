@@ -6,6 +6,13 @@ const getFeeAmounts = vi.fn();
 
 vi.mock("@/lib/feeSettings", () => ({
   getFeeAmounts: () => getFeeAmounts(),
+  defaultFeeAmounts: () => ({
+    creche: 45_000_00,
+    "pre-nursery": 50_000_00,
+    nursery: 60_000_00,
+    "primary-junior": 75_000_00,
+    "primary-senior": 85_000_00,
+  }),
 }));
 
 beforeEach(() => {
@@ -36,6 +43,16 @@ describe("FeesTable", () => {
 
     render(await FeesTable());
 
+    expect(screen.getByText("₦45,000")).toBeInTheDocument();
+    expect(screen.getByText("₦85,000")).toBeInTheDocument();
+  });
+
+  it("falls back to default amounts entirely when the live read fails", async () => {
+    getFeeAmounts.mockRejectedValue(new Error("Firestore unreachable"));
+
+    render(await FeesTable());
+
+    expect(screen.getByText("Creche")).toBeInTheDocument();
     expect(screen.getByText("₦45,000")).toBeInTheDocument();
     expect(screen.getByText("₦85,000")).toBeInTheDocument();
   });

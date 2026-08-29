@@ -1,12 +1,21 @@
 import { FEE_BRACKETS } from "@/lib/fees";
-import { getFeeAmounts } from "@/lib/feeSettings";
+import { defaultFeeAmounts, getFeeAmounts } from "@/lib/feeSettings";
 
 function formatNaira(amountKobo: number) {
   return (amountKobo / 100).toLocaleString("en-NG");
 }
 
 export default async function FeesTable() {
-  const amounts = await getFeeAmounts();
+  // Unlike the payment/cron/admin paths, a public marketing page should
+  // degrade to the default prices rather than fail to render if Firestore
+  // is briefly unreachable (or, at build time, has no real credentials yet).
+  let amounts;
+  try {
+    amounts = await getFeeAmounts();
+  } catch (err) {
+    console.error("FeesTable: failed to load live fee amounts, showing defaults", err);
+    amounts = defaultFeeAmounts();
+  }
 
   return (
     <table className="w-full border-collapse card overflow-hidden">

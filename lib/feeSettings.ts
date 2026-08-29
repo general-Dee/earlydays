@@ -4,7 +4,7 @@ import { FEE_BRACKETS } from "@/lib/fees";
 
 export type FeeAmounts = Record<string, number>; // bracket id -> kobo
 
-function defaultFeeAmounts(): FeeAmounts {
+export function defaultFeeAmounts(): FeeAmounts {
   return Object.fromEntries(FEE_BRACKETS.map((bracket) => [bracket.id, bracket.defaultAmountKobo]));
 }
 
