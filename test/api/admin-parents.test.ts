@@ -5,6 +5,7 @@ const verifyIdToken = vi.fn();
 const createUser = vi.fn();
 const deleteUser = vi.fn();
 const generatePasswordResetLink = vi.fn();
+const getUsers = vi.fn();
 const collection = vi.fn();
 const orderBy = vi.fn();
 const get = vi.fn();
@@ -12,7 +13,7 @@ const doc = vi.fn();
 const set = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
-  getAdminAuth: () => ({ verifyIdToken, createUser, deleteUser, generatePasswordResetLink }),
+  getAdminAuth: () => ({ verifyIdToken, createUser, deleteUser, generatePasswordResetLink, getUsers }),
   getAdminDb: () => ({ collection }),
 }));
 
@@ -52,6 +53,7 @@ beforeEach(() => {
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
   deleteUser.mockResolvedValue(undefined);
+  getUsers.mockResolvedValue({ users: [] });
 });
 
 afterEach(() => {
@@ -97,10 +99,47 @@ describe("GET /api/admin/parents", () => {
 
     expect(res.status).toBe(200);
     expect(json.parents).toEqual([
-      { id: "u1", uid: "u1", guardianName: "Aisha Bello", email: "aisha@example.com", children: [], createdAt: 2 },
+      {
+        id: "u1",
+        uid: "u1",
+        guardianName: "Aisha Bello",
+        email: "aisha@example.com",
+        children: [],
+        createdAt: 2,
+        disabled: false,
+      },
     ]);
     expect(collection).toHaveBeenCalledWith("parents");
     expect(orderBy).toHaveBeenCalledWith("createdAt", "desc");
+    expect(getUsers).toHaveBeenCalledWith([{ uid: "u1" }]);
+  });
+
+  it("merges disabled status from the batched Auth lookup", async () => {
+    get.mockResolvedValue({
+      docs: [
+        { id: "u1", data: () => ({ uid: "u1", guardianName: "Aisha", email: "a@b.com", children: [], createdAt: 1 }) },
+        { id: "u2", data: () => ({ uid: "u2", guardianName: "Musa", email: "m@b.com", children: [], createdAt: 2 }) },
+      ],
+    });
+    getUsers.mockResolvedValue({ users: [{ uid: "u1", disabled: true }, { uid: "u2", disabled: false }] });
+
+    const { GET } = await import("@/app/api/admin/parents/route");
+    const res = await GET(getRequest({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(json.parents.find((p: { uid: string }) => p.uid === "u1").disabled).toBe(true);
+    expect(json.parents.find((p: { uid: string }) => p.uid === "u2").disabled).toBe(false);
+  });
+
+  it("skips the Auth batch lookup entirely when there are no parents", async () => {
+    get.mockResolvedValue({ docs: [] });
+
+    const { GET } = await import("@/app/api/admin/parents/route");
+    const res = await GET(getRequest({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(json.parents).toEqual([]);
+    expect(getUsers).not.toHaveBeenCalled();
   });
 });
 

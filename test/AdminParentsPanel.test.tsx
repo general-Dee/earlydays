@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminParentsPanel from "@/components/AdminParentsPanel";
@@ -159,7 +159,13 @@ describe("AdminParentsPanel", () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: async () => ({ uid: "u1", guardianName: "Aisha Bello", phone: "0801234567", children: fakeParent.children }),
+          json: async () => ({
+            uid: "u1",
+            guardianName: "Aisha Bello",
+            email: "aisha@example.com",
+            phone: "0801234567",
+            children: fakeParent.children,
+          }),
         });
       }
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
@@ -198,6 +204,133 @@ describe("AdminParentsPanel", () => {
 
     expect(within(row).queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith("/api/admin/parents/u1", expect.anything());
+  });
+
+  it("edits a parent's email and updates the list in place", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/admin/parents/u1" && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            uid: "u1",
+            guardianName: "Aisha Bello",
+            email: "new@example.com",
+            phone: "",
+            children: fakeParent.children,
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminParentsPanel />);
+    const row = (await screen.findByText("Aisha Bello")).closest("li") as HTMLElement;
+
+    await userEvent.click(within(row).getByRole("button", { name: "Edit" }));
+    const emailInput = within(row).getByPlaceholderText("Email");
+    await userEvent.clear(emailInput);
+    await userEvent.type(emailInput, "new@example.com");
+    await userEvent.click(within(row).getByRole("button", { name: "Save" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/parents/u1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({
+          guardianName: "Aisha Bello",
+          email: "new@example.com",
+          phone: "",
+          children: [{ id: "c1", name: "Zainab", stage: "N1", admissionNo: "" }],
+        }),
+      })
+    );
+    expect(await within(row).findByText("new@example.com")).toBeInTheDocument();
+  });
+
+  it("shows a duplicate-email error on edit without closing the form", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/admin/parents/u1" && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: false,
+          status: 409,
+          json: async () => ({ error: "A parent account with this email already exists" }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminParentsPanel />);
+    const row = (await screen.findByText("Aisha Bello")).closest("li") as HTMLElement;
+
+    await userEvent.click(within(row).getByRole("button", { name: "Edit" }));
+    await userEvent.click(within(row).getByRole("button", { name: "Save" }));
+
+    expect(await within(row).findByText("A parent account with this email already exists")).toBeInTheDocument();
+    expect(within(row).getByRole("button", { name: "Save" })).toBeInTheDocument();
+  });
+
+  it("deactivates and reactivates a parent account", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/admin/parents/u1" && init?.method === "PATCH") {
+        const body = JSON.parse(init.body as string) as { disabled: boolean };
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ uid: "u1", disabled: body.disabled }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminParentsPanel />);
+    const row = (await screen.findByText("Aisha Bello")).closest("li") as HTMLElement;
+
+    await userEvent.click(within(row).getByRole("button", { name: "Deactivate" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/parents/u1",
+      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ disabled: true }) })
+    );
+    expect(await within(row).findByText("Disabled")).toBeInTheDocument();
+    expect(within(row).getByRole("button", { name: "Reactivate" })).toBeInTheDocument();
+
+    await userEvent.click(within(row).getByRole("button", { name: "Reactivate" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/parents/u1",
+      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ disabled: false }) })
+    );
+    await waitFor(() => expect(within(row).queryByText("Disabled")).not.toBeInTheDocument());
+  });
+
+  it("shows an inline error when deactivating fails", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/admin/parents/u1" && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          json: async () => ({ error: "Couldn't update the account. Please try again." }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminParentsPanel />);
+    const row = (await screen.findByText("Aisha Bello")).closest("li") as HTMLElement;
+
+    await userEvent.click(within(row).getByRole("button", { name: "Deactivate" }));
+
+    expect(await within(row).findByText("Couldn't update the account. Please try again.")).toBeInTheDocument();
+    expect(within(row).queryByText("Disabled")).not.toBeInTheDocument();
   });
 
   it("resends an invite and shows the banner on that row", async () => {

@@ -16,7 +16,9 @@ type LastCreated = { resetLink: string | null; emailSent: boolean };
 
 type ResendState = { status: "pending" } | { status: "done"; resetLink: string | null; emailSent: boolean };
 
-type EditForm = { guardianName: string; phone: string; children: EditChildRow[] };
+type EditForm = { guardianName: string; email: string; phone: string; children: EditChildRow[] };
+
+type DisableState = { status: "pending" } | { status: "error"; message: string };
 
 function blankChildRow(): ChildFormRow {
   return { name: "", stage: stages[0]?.code ?? "", admissionNo: "" };
@@ -119,6 +121,8 @@ export default function AdminParentsList({ user }: { user: User }) {
   const [resendState, setResendState] = useState<Record<string, ResendState>>({});
   const [copiedResendUid, setCopiedResendUid] = useState<string | null>(null);
 
+  const [disableState, setDisableState] = useState<Record<string, DisableState>>({});
+
   const stageFiltered =
     stageFilter === "all" ? parents : parents.filter((p) => p.children.some((c) => c.stage === stageFilter));
   const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
@@ -194,6 +198,7 @@ export default function AdminParentsList({ user }: { user: User }) {
     setEditingUid(parent.uid);
     setEditForm({
       guardianName: parent.guardianName,
+      email: parent.email,
       phone: parent.phone ?? "",
       children: parent.children.map((child) => ({
         id: child.id,
@@ -242,6 +247,7 @@ export default function AdminParentsList({ user }: { user: User }) {
         },
         body: JSON.stringify({
           guardianName: editForm.guardianName,
+          email: editForm.email,
           phone: editForm.phone,
           children: editForm.children.map(({ id, name, stage, admissionNo }) => ({ id, name, stage, admissionNo })),
         }),
@@ -253,11 +259,22 @@ export default function AdminParentsList({ user }: { user: User }) {
         return;
       }
 
-      const updated = (await res.json()) as { guardianName: string; phone: string; children: Parent["children"] };
+      const updated = (await res.json()) as {
+        guardianName: string;
+        email: string;
+        phone: string;
+        children: Parent["children"];
+      };
       setParents((current) =>
         current.map((parent) =>
           parent.uid === uid
-            ? { ...parent, guardianName: updated.guardianName, phone: updated.phone, children: updated.children }
+            ? {
+                ...parent,
+                guardianName: updated.guardianName,
+                email: updated.email,
+                phone: updated.phone,
+                children: updated.children,
+              }
             : parent
         )
       );
@@ -306,6 +323,46 @@ export default function AdminParentsList({ user }: { user: User }) {
       setCopiedResendUid(uid);
     } catch {
       setCopiedResendUid(null);
+    }
+  }
+
+  async function toggleDisabled(parent: Parent) {
+    const nextDisabled = !parent.disabled;
+    setDisableState((current) => ({ ...current, [parent.uid]: { status: "pending" } }));
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/parents/${parent.uid}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ disabled: nextDisabled }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setDisableState((current) => ({
+          ...current,
+          [parent.uid]: { status: "error", message: data.error ?? "Couldn't update this account. Please try again." },
+        }));
+        return;
+      }
+
+      setParents((current) =>
+        current.map((p) => (p.uid === parent.uid ? { ...p, disabled: nextDisabled } : p))
+      );
+      setDisableState((current) => {
+        const next = { ...current };
+        delete next[parent.uid];
+        return next;
+      });
+    } catch {
+      setDisableState((current) => ({
+        ...current,
+        [parent.uid]: { status: "error", message: "Couldn't update this account. Please try again." },
+      }));
     }
   }
 
@@ -482,6 +539,14 @@ export default function AdminParentsList({ user }: { user: User }) {
                       className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
                     />
                     <input
+                      type="email"
+                      placeholder="Email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm((form) => (form ? { ...form, email: e.target.value } : form))}
+                      required
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                    />
+                    <input
                       type="text"
                       placeholder="Phone (optional)"
                       value={editForm.phone}
@@ -528,6 +593,11 @@ export default function AdminParentsList({ user }: { user: User }) {
                     <p className="text-sm mt-1 mb-0 text-slate">
                       {parent.email}
                       {parent.phone ? ` · ${parent.phone}` : ""}
+                      {parent.disabled && (
+                        <span className="ml-2 text-[0.7rem] font-bold px-2.5 py-1 rounded-full bg-clay-soft text-clay align-middle">
+                          Disabled
+                        </span>
+                      )}
                     </p>
                     <div className="flex flex-wrap gap-1.5 mt-2.5">
                       {parent.children.map((child) => (
@@ -548,7 +618,24 @@ export default function AdminParentsList({ user }: { user: User }) {
                       >
                         {resend?.status === "pending" ? "Sending…" : "Resend Invite"}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleDisabled(parent)}
+                        disabled={disableState[parent.uid]?.status === "pending"}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        {disableState[parent.uid]?.status === "pending"
+                          ? "Updating…"
+                          : parent.disabled
+                            ? "Reactivate"
+                            : "Deactivate"}
+                      </button>
                     </div>
+                    {disableState[parent.uid]?.status === "error" && (
+                      <p className="text-[0.8rem] text-clay mt-2 mb-0">
+                        {(disableState[parent.uid] as { status: "error"; message: string }).message}
+                      </p>
+                    )}
                     {resend?.status === "done" && (
                       <div className="mt-2.5 px-3.5 py-3 rounded-lg bg-leaf-soft text-leaf text-[0.85rem] font-semibold">
                         <InviteBanner

@@ -11,11 +11,25 @@ import type { Parent } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
+const GET_USERS_BATCH_SIZE = 100;
+
 export const GET = withAdminRoute("parents", "GET /api/admin/parents", async (req: NextRequest, admin) => {
   const snapshot = await getAdminDb().collection(COLLECTIONS.parents).orderBy("createdAt", "desc").get();
-  const parents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const parents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as { id: string } & Parent);
 
-  return NextResponse.json({ parents });
+  // `disabled` lives only on the Firebase Auth user record, never in Firestore —
+  // batch it in (getUsers caps at 100 identifiers per call) rather than
+  // denormalizing a second source of truth.
+  const disabledByUid = new Map<string, boolean>();
+  for (let i = 0; i < parents.length; i += GET_USERS_BATCH_SIZE) {
+    const chunk = parents.slice(i, i + GET_USERS_BATCH_SIZE);
+    const { users } = await getAdminAuth().getUsers(chunk.map((p) => ({ uid: p.uid })));
+    for (const user of users) disabledByUid.set(user.uid, user.disabled);
+  }
+
+  const withStatus = parents.map((p) => ({ ...p, disabled: disabledByUid.get(p.uid) ?? false }));
+
+  return NextResponse.json({ parents: withStatus });
 });
 
 export const POST = withAdminRoute("parents", "POST /api/admin/parents", async (req: NextRequest, admin) => {

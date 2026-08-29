@@ -18,6 +18,8 @@ function friendlyError(error: AuthError): string {
       return "Email or password is incorrect.";
     case "auth/too-many-requests":
       return "Too many attempts — please wait a moment and try again.";
+    case "auth/user-disabled":
+      return "This account has been deactivated. Contact the school office.";
     case "auth/network-request-failed":
       return "Network error — check your connection and try again.";
     default:

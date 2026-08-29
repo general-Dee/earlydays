@@ -48,6 +48,20 @@ describe("PortalLoginForm", () => {
     expect(await screen.findByText("Email or password is incorrect.")).toBeInTheDocument();
   });
 
+  it("shows a deactivated-account message for a disabled login", async () => {
+    signInWithEmailAndPassword.mockRejectedValue({ code: "auth/user-disabled" });
+    const user = userEvent.setup();
+    render(<PortalLoginForm />);
+
+    await user.type(screen.getByLabelText("Email"), "parent@example.com");
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByRole("button", { name: "Log In" }));
+
+    expect(
+      await screen.findByText("This account has been deactivated. Contact the school office.")
+    ).toBeInTheDocument();
+  });
+
   it("prompts for an email before sending a reset link", async () => {
     const user = userEvent.setup();
     render(<PortalLoginForm />);

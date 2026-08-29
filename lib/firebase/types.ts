@@ -12,6 +12,10 @@ export type Parent = {
   phone?: string;
   children: ChildRecord[];
   createdAt: number;
+  // Live Firebase Auth account status — only ever populated by GET
+  // /api/admin/parents; never stored in Firestore or present on
+  // client-side portal reads.
+  disabled?: boolean;
 };
 
 export type PaymentStatus = "pending" | "success" | "failed";
