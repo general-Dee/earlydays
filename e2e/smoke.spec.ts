@@ -57,3 +57,12 @@ for (const { path, heading } of adminRoutes) {
     await expect(page.getByLabel("Password")).toBeVisible();
   });
 }
+
+test("/portal shows the login gate when logged out", async ({ page }) => {
+  const response = await page.goto("/portal");
+  expect(response?.status()).toBeLessThan(400);
+  await expect(page.getByRole("heading", { name: "Parent Login" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Log In" })).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
+});

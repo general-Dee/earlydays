@@ -47,11 +47,27 @@ describe("parents/{uid}", () => {
     await assertSucceeds(getDoc(doc(asOwner(), "parents", OWNER_UID)));
   });
 
-  it("lets the owner update their own doc", async () => {
+  it("lets the owner self-service edit their guardianName and phone", async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), "parents", OWNER_UID), { guardianName: "Aisha" });
     });
     await assertSucceeds(updateDoc(doc(asOwner(), "parents", OWNER_UID), { guardianName: "Aisha B." }));
+    await assertSucceeds(updateDoc(doc(asOwner(), "parents", OWNER_UID), { phone: "+2348000000000" }));
+  });
+
+  it("denies the owner updating any other field, even alongside an allowed one", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "parents", OWNER_UID), {
+        guardianName: "Aisha",
+        email: "a@b.com",
+        children: [],
+      });
+    });
+    await assertFails(updateDoc(doc(asOwner(), "parents", OWNER_UID), { email: "hijacked@b.com" }));
+    await assertFails(updateDoc(doc(asOwner(), "parents", OWNER_UID), { children: [{ id: "x", name: "New Kid", stage: "n1" }] }));
+    await assertFails(
+      updateDoc(doc(asOwner(), "parents", OWNER_UID), { guardianName: "Aisha B.", email: "hijacked@b.com" })
+    );
   });
 
   it("denies another authenticated user reading, creating, or updating it", async () => {

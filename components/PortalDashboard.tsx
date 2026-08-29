@@ -10,6 +10,7 @@ import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 import AnnouncementsFeed from "@/components/AnnouncementsFeed";
 import PortalEventsWidget from "@/components/PortalEventsWidget";
 import PortalReportsWidget from "@/components/PortalReportsWidget";
+import PortalProfileForm from "@/components/PortalProfileForm";
 
 function formatNaira(amountKobo: number) {
   return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
@@ -88,6 +89,12 @@ export default function PortalDashboard({ user }: { user: User }) {
 
       {!loading && parent && (
         <>
+          <PortalProfileForm
+            uid={user.uid}
+            parent={parent}
+            onSaved={(patch) => setParent((p) => (p ? { ...p, ...patch } : p))}
+          />
+
           <div className="mt-5">
             <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">Children</h5>
             {parent.children.length === 0 ? (

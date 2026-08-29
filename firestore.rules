@@ -13,8 +13,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /parents/{uid} {
-      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
       allow create: if request.auth != null && request.auth.uid == uid;
+      // Self-service profile editing (portal) may only touch guardianName/phone —
+      // children, email, uid, and createdAt stay admin-managed via the Admin SDK.
+      allow update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["guardianName", "phone"]);
       allow delete: if false;
 
       match /payments/{reference} {
