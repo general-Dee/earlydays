@@ -8,7 +8,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     globals: true,
-    exclude: ["node_modules", "e2e"],
+    exclude: ["node_modules", "e2e", "test/rules"],
   },
   resolve: {
     alias: {

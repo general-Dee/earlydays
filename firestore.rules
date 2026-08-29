@@ -7,9 +7,9 @@ rules_version = '2';
 // (parents/{uid}, parents/{uid}/payments, parents/{uid}/reports,
 // announcements, events) is covered by a matching rule below, and no
 // client code reads applications/inquiries (admin-only, Admin SDK).
-// Not a substitute for a full professional security review — no
-// automated rules tests exist yet; verify with the Firebase Emulator
-// or Rules Playground before trusting a future change.
+// Not a substitute for a full professional security review. Covered by
+// automated tests in test/rules/firestore.rules.test.ts (run via
+// `npm run test:rules`) — update that suite when you change a rule here.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /parents/{uid} {
