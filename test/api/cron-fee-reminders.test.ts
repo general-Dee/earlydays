@@ -16,6 +16,13 @@ vi.mock("@/lib/termSettings", () => ({
   getCurrentTerm: () => getCurrentTerm(),
 }));
 
+const FEES_BY_STAGE = { N1: 60_000_00, P1: 75_000_00 };
+const getFeeAmounts = vi.fn();
+vi.mock("@/lib/feeSettings", () => ({
+  getFeeAmounts: () => getFeeAmounts(),
+  feeKoboByStageCode: (amounts: Record<string, number>) => amounts,
+}));
+
 const sendFeeReminderEmail = vi.fn();
 vi.mock("@/lib/email/notify", () => ({
   sendFeeReminderEmail: (...args: unknown[]) => sendFeeReminderEmail(...args),
@@ -49,6 +56,7 @@ beforeEach(() => {
   sendWhatsAppFeeReminder.mockResolvedValue(true);
   sendSmsFeeReminder.mockResolvedValue(true);
   getCurrentTerm.mockResolvedValue(CURRENT_TERM);
+  getFeeAmounts.mockResolvedValue(FEES_BY_STAGE);
 });
 
 afterEach(() => {
@@ -90,7 +98,8 @@ describe("GET /api/cron/fee-reminders", () => {
     expect(sendFeeReminderEmail).toHaveBeenCalledWith(
       { guardianName: "Aisha", email: "a@b.com" },
       [{ name: "Kid", stage: "N1" }],
-      CURRENT_TERM
+      CURRENT_TERM,
+      FEES_BY_STAGE
     );
     expect(sendWhatsAppFeeReminder).not.toHaveBeenCalled();
     expect(sendSmsFeeReminder).not.toHaveBeenCalled();
@@ -143,7 +152,8 @@ describe("GET /api/cron/fee-reminders", () => {
         { name: "Kid One", stage: "N1" },
         { name: "Kid Two", stage: "P1" },
       ],
-      CURRENT_TERM
+      CURRENT_TERM,
+      FEES_BY_STAGE
     );
   });
 
@@ -168,12 +178,14 @@ describe("GET /api/cron/fee-reminders", () => {
     expect(sendWhatsAppFeeReminder).toHaveBeenCalledWith(
       { guardianName: "Aisha", phone: "08012345678" },
       [{ name: "Kid", stage: "N1" }],
-      CURRENT_TERM
+      CURRENT_TERM,
+      FEES_BY_STAGE
     );
     expect(sendSmsFeeReminder).toHaveBeenCalledWith(
       { guardianName: "Aisha", phone: "08012345678" },
       [{ name: "Kid", stage: "N1" }],
-      CURRENT_TERM
+      CURRENT_TERM,
+      FEES_BY_STAGE
     );
   });
 

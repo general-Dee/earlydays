@@ -4,6 +4,7 @@ import { sendFeeReminderEmail } from "@/lib/email/notify";
 import { sendWhatsAppFeeReminder } from "@/lib/whatsapp";
 import { sendSmsFeeReminder } from "@/lib/sms";
 import { getCurrentTerm } from "@/lib/termSettings";
+import { feeKoboByStageCode, getFeeAmounts } from "@/lib/feeSettings";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
@@ -18,6 +19,7 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
 
   const db = getAdminDb();
   const CURRENT_TERM = await getCurrentTerm();
+  const feesByStage = feeKoboByStageCode(await getFeeAmounts());
   const parentsSnap = await db.collection(COLLECTIONS.parents).get();
 
   let emailsSent = 0;
@@ -44,7 +46,8 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
       const sent = await sendFeeReminderEmail(
         { guardianName: parent.guardianName, email: parent.email },
         unpaidForNotify,
-        CURRENT_TERM
+        CURRENT_TERM,
+        feesByStage
       );
       if (sent) emailsSent++;
     } catch (err) {
@@ -56,7 +59,8 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
         const sent = await sendWhatsAppFeeReminder(
           { guardianName: parent.guardianName, phone: parent.phone },
           unpaidForNotify,
-          CURRENT_TERM
+          CURRENT_TERM,
+          feesByStage
         );
         if (sent) whatsappSent++;
       } catch (err) {
@@ -67,7 +71,8 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
         const sent = await sendSmsFeeReminder(
           { guardianName: parent.guardianName, phone: parent.phone },
           unpaidForNotify,
-          CURRENT_TERM
+          CURRENT_TERM,
+          feesByStage
         );
         if (sent) smsSent++;
       } catch (err) {

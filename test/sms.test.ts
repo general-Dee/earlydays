@@ -3,6 +3,7 @@ import { sendSmsFeeReminder } from "@/lib/sms";
 
 const parent = { guardianName: "Aisha", phone: "08012345678" };
 const unpaidChildren = [{ name: "Kid", stage: "N1" }];
+const feesByStage = { N1: 60_000_00 };
 
 beforeEach(() => {
   process.env.TERMII_API_KEY = "test-key";
@@ -21,7 +22,7 @@ describe("sendSmsFeeReminder", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const sent = await sendSmsFeeReminder(parent, unpaidChildren, "Term 1");
+    const sent = await sendSmsFeeReminder(parent, unpaidChildren, "Term 1", feesByStage);
 
     expect(sent).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -31,7 +32,7 @@ describe("sendSmsFeeReminder", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const sent = await sendSmsFeeReminder({ ...parent, phone: "not-a-phone" }, unpaidChildren, "Term 1");
+    const sent = await sendSmsFeeReminder({ ...parent, phone: "not-a-phone" }, unpaidChildren, "Term 1", feesByStage);
 
     expect(sent).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -41,7 +42,7 @@ describe("sendSmsFeeReminder", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    const sent = await sendSmsFeeReminder(parent, unpaidChildren, "Term 1");
+    const sent = await sendSmsFeeReminder(parent, unpaidChildren, "Term 1", feesByStage);
 
     expect(sent).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(
@@ -59,7 +60,7 @@ describe("sendSmsFeeReminder", () => {
   it("returns false when the API responds with a non-OK status", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
 
-    const sent = await sendSmsFeeReminder(parent, unpaidChildren, "Term 1");
+    const sent = await sendSmsFeeReminder(parent, unpaidChildren, "Term 1", feesByStage);
 
     expect(sent).toBe(false);
   });

@@ -101,9 +101,16 @@ lib/api/errors.ts            Shared route-handler error wrapper (withRouteErrorH
                             logs and returns a generic 500 for anything an
                             API route doesn't handle itself.
 
-lib/fees.ts                  Per-stage termly fee amounts used by the
-                            Paystack initialize route (server-side, never
-                            trusts a client-submitted amount).
+lib/fees.ts                  Static fee-bracket definitions (labels, ages,
+                            which stage codes share a price). Actual prices
+                            are admin-editable and Firestore-backed — see
+                            lib/feeSettings.ts.
+
+lib/feeSettings.ts           Firestore-backed termly fee amounts, editable
+                            from /admin (Fee schedule). Used server-side by
+                            the Paystack initialize route, the fee-reminder
+                            cron job, and the public /admissions fee table
+                            — never trusts a client-submitted amount.
 
 lib/rate-limit.ts            In-memory rate limiting for the public contact
                             and admissions/apply forms.
@@ -115,7 +122,7 @@ test/, e2e/                  Vitest unit tests (component behavior, admin API
 ## Before you launch — replace these
 
 1. **`lib/data.ts` → `site.whatsapp`** — swap in the real WhatsApp number (digits only, country code first, no `+`).
-2. **`lib/fees.ts` → `FEE_BY_STAGE`** — sample Naira figures, replace with the confirmed fee schedule (keep `lib/data.ts` → `fees` in sync for the fees table display).
+2. ~~`lib/fees.ts` → `FEE_BY_STAGE`~~ — done: termly fees are now admin-editable (`/admin` → Overview → Fee schedule) instead of a code edit. `lib/fees.ts` keeps only the static bracket definitions (labels/ages/which stage codes share a price); real amounts live in Firestore via `lib/feeSettings.ts` and start out at the same sample figures until an admin sets real ones.
 3. **`components/ProspectusCard.tsx`** — points to `/prospectus.pdf`; a placeholder PDF ships in `/public/prospectus.pdf` — replace it with the real prospectus.
 4. **`components/TeacherGrid.tsx` / `lib/data.ts` → `teachers`** — swap placeholder initials for real staff photos (add an `<Image>` per teacher once photos exist).
 5. ~~`components/GalleryGrid.tsx` / `lib/data.ts` → `galleryCells`~~ — done: real campus photography now lives in `lib/data.ts` → `galleryImages`, with a full `/gallery` page (`components/Gallery.tsx`) and a teaser grid on the Safety page.

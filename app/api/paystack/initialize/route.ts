@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { getFeeKobo } from "@/lib/fees";
+import { getFeeKobo } from "@/lib/feeSettings";
 import { handleRouteError } from "@/lib/api/errors";
 import { withAuthenticatedRoute } from "@/lib/firebase/admin-auth";
 import { paths } from "@/lib/firebase/collections";
@@ -30,7 +30,7 @@ export const POST = withAuthenticatedRoute(
 
     let amountKobo: number;
     try {
-      amountKobo = getFeeKobo(child.stage);
+      amountKobo = await getFeeKobo(child.stage);
     } catch {
       return NextResponse.json({ error: "No fee configured for this stage — contact the school" }, { status: 500 });
     }

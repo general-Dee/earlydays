@@ -182,6 +182,7 @@ describe("collections with no explicit rule fall through to the catch-all deny",
     ["applications", "app1"],
     ["inquiries", "i1"],
     ["settings", "term"],
+    ["settings", "fees"],
     ["rateLimits", "contact:1.2.3.4"],
   ];
 

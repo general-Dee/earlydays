@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { TERMS } from "@/lib/data";
+import { FEE_BRACKETS } from "@/lib/fees";
 import type { ApplicationStatus } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
@@ -19,6 +20,7 @@ type DashboardData = {
     amountCollectedKobo: number;
     amountExpectedKobo: number;
   };
+  feeAmounts: Record<string, number>;
 };
 
 const STATUS_OPTIONS: ApplicationStatus[] = ["new", "reviewing", "accepted", "waitlisted", "declined"];
@@ -51,6 +53,52 @@ export default function AdminDashboardOverview({ user }: { user: User }) {
   const [termDraft, setTermDraft] = useState(TERMS[0]);
   const [savingTerm, setSavingTerm] = useState(false);
   const [termError, setTermError] = useState<string | null>(null);
+
+  const [editingFees, setEditingFees] = useState(false);
+  const [feesDraft, setFeesDraft] = useState<Record<string, string>>({});
+  const [savingFees, setSavingFees] = useState(false);
+  const [feesError, setFeesError] = useState<string | null>(null);
+
+  async function saveFees() {
+    setSavingFees(true);
+    setFeesError(null);
+
+    const feesKobo: Record<string, number> = {};
+    for (const bracket of FEE_BRACKETS) {
+      const naira = Number(feesDraft[bracket.id]);
+      if (!Number.isFinite(naira) || naira <= 0) {
+        setFeesError(`Enter a valid amount for ${bracket.label}`);
+        setSavingFees(false);
+        return;
+      }
+      feesKobo[bracket.id] = Math.round(naira * 100);
+    }
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/admin/dashboard", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ feesKobo }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setFeesError(body.error ?? "Couldn't update the fee schedule. Please try again.");
+        return;
+      }
+
+      setData((current) => (current ? { ...current, feeAmounts: feesKobo } : current));
+      setEditingFees(false);
+    } catch {
+      setFeesError("Couldn't update the fee schedule. Please try again.");
+    } finally {
+      setSavingFees(false);
+    }
+  }
 
   async function saveTerm() {
     setSavingTerm(true);
@@ -172,6 +220,7 @@ export default function AdminDashboardOverview({ user }: { user: User }) {
               {!editingTerm && (
                 <button
                   type="button"
+                  aria-label="Change term"
                   onClick={() => {
                     setTermDraft(data.term);
                     setEditingTerm(true);
@@ -219,6 +268,82 @@ export default function AdminDashboardOverview({ user }: { user: User }) {
             )}
 
             {termError && <p className="text-[0.8rem] text-clay mb-2.5">{termError}</p>}
+
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <span className="text-[0.7rem] font-semibold text-slate uppercase tracking-wider">Fee schedule</span>
+              {!editingFees && (
+                <button
+                  type="button"
+                  aria-label="Change fee schedule"
+                  onClick={() => {
+                    setFeesDraft(
+                      Object.fromEntries(
+                        FEE_BRACKETS.map((bracket) => [
+                          bracket.id,
+                          String((data.feeAmounts[bracket.id] ?? bracket.defaultAmountKobo) / 100),
+                        ])
+                      )
+                    );
+                    setEditingFees(true);
+                  }}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Change
+                </button>
+              )}
+            </div>
+
+            {editingFees && (
+              <div className="flex flex-col gap-2 mb-2.5">
+                {FEE_BRACKETS.map((bracket) => (
+                  <div key={bracket.id} className="flex items-center gap-2">
+                    <label htmlFor={`fee-${bracket.id}`} className="text-xs text-slate w-32">
+                      {bracket.label}
+                    </label>
+                    <input
+                      id={`fee-${bracket.id}`}
+                      type="number"
+                      min={1}
+                      value={feesDraft[bracket.id] ?? ""}
+                      onChange={(e) => setFeesDraft((current) => ({ ...current, [bracket.id]: e.target.value }))}
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2 w-32"
+                    />
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={saveFees} disabled={savingFees} className="btn btn-primary btn-sm">
+                    {savingFees ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingFees(false);
+                      setFeesError(null);
+                    }}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {feesError && <p className="text-[0.8rem] text-clay mb-2.5">{feesError}</p>}
+
+            {!editingFees && (
+              <div className="flex flex-wrap gap-2.5 mb-2.5">
+                {FEE_BRACKETS.map((bracket) => (
+                  <div key={bracket.id} className="px-3.5 py-2.5 rounded-lg bg-chalk min-w-[8rem]">
+                    <span className="text-[0.7rem] font-bold px-2.5 py-1 rounded-full bg-ground-card text-accent-light">
+                      {bracket.label}
+                    </span>
+                    <div className="text-lg font-display font-semibold mt-1.5">
+                      {formatNaira(data.feeAmounts[bracket.id] ?? bracket.defaultAmountKobo)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2.5">
               <div className="px-3.5 py-2.5 rounded-lg bg-chalk min-w-[9rem]">

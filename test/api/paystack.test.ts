@@ -19,6 +19,11 @@ vi.mock("@/lib/email/notify", () => ({
   sendPaymentReceiptEmail: (...args: unknown[]) => sendPaymentReceiptEmail(...args),
 }));
 
+const getFeeKobo = vi.fn();
+vi.mock("@/lib/feeSettings", () => ({
+  getFeeKobo: (stageCode: string) => getFeeKobo(stageCode),
+}));
+
 doc.mockImplementation(() => ({ get: docGet, set: docSet }));
 collection.mockImplementation(() => ({ add: collectionAdd }));
 
@@ -39,6 +44,9 @@ beforeEach(() => {
   doc.mockImplementation(() => ({ get: docGet, set: docSet }));
   collection.mockImplementation(() => ({ add: collectionAdd }));
   sendPaymentReceiptEmail.mockResolvedValue(true);
+  getFeeKobo.mockImplementation((stageCode: string) =>
+    stageCode === "N1" ? Promise.resolve(60_000_00) : Promise.reject(new Error(`No fee configured for stage "${stageCode}"`))
+  );
 });
 
 afterEach(() => {

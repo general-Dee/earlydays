@@ -1,6 +1,5 @@
 import { Resend } from "resend";
 import { site, stages } from "@/lib/data";
-import { getFeeKobo } from "@/lib/fees";
 import type { ApplicationStatus } from "@/lib/firebase/types";
 
 function stageLabel(code: string): string {
@@ -284,7 +283,8 @@ type UnpaidChild = {
 export async function sendFeeReminderEmail(
   parent: { guardianName: string; email: string },
   unpaidChildren: UnpaidChild[],
-  term: string
+  term: string,
+  feesByStage: Record<string, number>
 ): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.CONTACT_FROM_EMAIL;
@@ -295,12 +295,8 @@ export async function sendFeeReminderEmail(
 
   const childList = unpaidChildren
     .map((c) => {
-      let amount: string;
-      try {
-        amount = formatNaira(getFeeKobo(c.stage));
-      } catch {
-        amount = "contact the school for the fee amount";
-      }
+      const amountKobo = feesByStage[c.stage];
+      const amount = typeof amountKobo === "number" ? formatNaira(amountKobo) : "contact the school for the fee amount";
       return `- ${c.name} (${stageLabel(c.stage)}): ${amount}`;
     })
     .join("\n");

@@ -1,5 +1,4 @@
 import { stages } from "@/lib/data";
-import { getFeeKobo } from "@/lib/fees";
 import { normalizeNigerianPhone } from "@/lib/phone";
 
 function stageLabel(code: string): string {
@@ -15,15 +14,11 @@ type UnpaidChild = {
   stage: string;
 };
 
-function childListText(unpaidChildren: UnpaidChild[]): string {
+function childListText(unpaidChildren: UnpaidChild[], feesByStage: Record<string, number>): string {
   return unpaidChildren
     .map((c) => {
-      let amount: string;
-      try {
-        amount = formatNaira(getFeeKobo(c.stage));
-      } catch {
-        amount = "contact the school for the fee amount";
-      }
+      const amountKobo = feesByStage[c.stage];
+      const amount = typeof amountKobo === "number" ? formatNaira(amountKobo) : "contact the school for the fee amount";
       return `${c.name} (${stageLabel(c.stage)}): ${amount}`;
     })
     .join("; ");
@@ -36,7 +31,8 @@ function childListText(unpaidChildren: UnpaidChild[]): string {
 export async function sendWhatsAppFeeReminder(
   parent: { guardianName: string; phone: string },
   unpaidChildren: UnpaidChild[],
-  term: string
+  term: string,
+  feesByStage: Record<string, number>
 ): Promise<boolean> {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -66,7 +62,7 @@ export async function sendWhatsAppFeeReminder(
             type: "body",
             parameters: [
               { type: "text", text: parent.guardianName },
-              { type: "text", text: childListText(unpaidChildren) },
+              { type: "text", text: childListText(unpaidChildren, feesByStage) },
               { type: "text", text: term },
             ],
           },

@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   description: "Termly fees by stage, prospectus download, and online fee payment.",
 };
 
+// Fees are admin-editable (see AdminDashboardOverview) — revalidate
+// periodically so a price change shows up here without a redeploy.
+export const revalidate = 300;
+
 export default function AdmissionsPage() {
   return (
     <main>
@@ -35,7 +39,7 @@ export default function AdmissionsPage() {
           <SectionHeader
             eyebrow="Admissions"
             title="Fees by stage"
-            desc="Sample termly figures shown in Naira — replace with your confirmed fee schedule."
+            desc="Termly figures shown in Naira."
           />
           <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.8fr] gap-10">
             <FeesTable />

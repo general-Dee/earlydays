@@ -280,17 +280,6 @@ export const blogPosts: BlogPost[] = [
   },
 ];
 
-export type FeeRow = { stage: string; age: string; amount: string };
-
-// Sample termly figures in Naira — replace with confirmed fee schedule.
-export const fees: FeeRow[] = [
-  { stage: "Creche", age: "3–12 months", amount: "45,000" },
-  { stage: "Pre-Nursery", age: "1–2 yrs", amount: "50,000" },
-  { stage: "Nursery 1–2", age: "3–4 yrs", amount: "60,000" },
-  { stage: "Primary 1–3", age: "5–7 yrs", amount: "75,000" },
-  { stage: "Primary 4–6", age: "8–10 yrs", amount: "85,000" },
-];
-
 export const navLinks = [
   { href: "/journey", label: "The Journey" },
   { href: "/safety", label: "Safety" },

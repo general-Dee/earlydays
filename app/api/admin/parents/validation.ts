@@ -1,7 +1,9 @@
 import { randomUUID } from "crypto";
-import { FEE_BY_STAGE } from "@/lib/fees";
+import { stages } from "@/lib/data";
 import type { ChildRecord } from "@/lib/firebase/types";
 import type { ValidationResult } from "@/lib/validation";
+
+const VALID_STAGE_CODES = new Set(stages.map((stage) => stage.code));
 
 export const MAX_NAME_LENGTH = 200;
 export const MAX_PHONE_LENGTH = 50;
@@ -51,7 +53,7 @@ export function validateChildren(value: unknown): ValidationResult<ChildRecord[]
     if (!trimmedName || trimmedName.length > MAX_NAME_LENGTH) {
       return { ok: false, error: "Each child needs a valid name" };
     }
-    if (!Object.prototype.hasOwnProperty.call(FEE_BY_STAGE, stage)) {
+    if (!VALID_STAGE_CODES.has(stage)) {
       return { ok: false, error: `Unknown stage "${stage}"` };
     }
     if (trimmedAdmissionNo.length > MAX_ADMISSION_NO_LENGTH) {

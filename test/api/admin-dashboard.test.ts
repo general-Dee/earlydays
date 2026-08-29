@@ -9,8 +9,10 @@ const applicationsGet = vi.fn();
 const inquiriesGet = vi.fn();
 const parentsGet = vi.fn();
 const paymentsGet = vi.fn();
-const settingsGet = vi.fn();
-const settingsSet = vi.fn();
+const termGet = vi.fn();
+const termSet = vi.fn();
+const feesGet = vi.fn();
+const feesSet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -39,15 +41,21 @@ beforeEach(() => {
     if (path === "applications") return { get: applicationsGet };
     if (path === "inquiries") return { get: inquiriesGet };
     if (path === "parents") return { get: parentsGet };
-    if (path === "settings") return { doc: () => ({ get: settingsGet, set: settingsSet }) };
+    if (path === "settings") {
+      return {
+        doc: (id: string) => (id === "term" ? { get: termGet, set: termSet } : { get: feesGet, set: feesSet }),
+      };
+    }
     return { get: paymentsGet };
   });
   applicationsGet.mockResolvedValue(docsFrom([]));
   inquiriesGet.mockResolvedValue(docsFrom([]));
   parentsGet.mockResolvedValue({ docs: [] });
   paymentsGet.mockResolvedValue({ docs: [] });
-  settingsGet.mockResolvedValue({ exists: true, data: () => ({ currentTerm: TEST_TERM }) });
-  settingsSet.mockResolvedValue(undefined);
+  termGet.mockResolvedValue({ exists: true, data: () => ({ currentTerm: TEST_TERM }) });
+  termSet.mockResolvedValue(undefined);
+  feesGet.mockResolvedValue({ exists: false });
+  feesSet.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -122,6 +130,13 @@ describe("GET /api/admin/dashboard", () => {
         amountCollectedKobo: 60_000_00,
         amountExpectedKobo: 135_000_00,
       },
+      feeAmounts: {
+        creche: 45_000_00,
+        "pre-nursery": 50_000_00,
+        nursery: 60_000_00,
+        "primary-junior": 75_000_00,
+        "primary-senior": 85_000_00,
+      },
     });
   });
 
@@ -149,7 +164,7 @@ describe("PATCH /api/admin/dashboard", () => {
     const { PATCH } = await import("@/app/api/admin/dashboard/route");
     const res = await PATCH(patchRequest({ currentTerm: "Term 1" }, { authorization: "Bearer ok" }));
     expect(res.status).toBe(403);
-    expect(settingsSet).not.toHaveBeenCalled();
+    expect(termSet).not.toHaveBeenCalled();
   });
 
   it("rejects an unrecognized term", async () => {
@@ -159,7 +174,7 @@ describe("PATCH /api/admin/dashboard", () => {
     const res = await PATCH(patchRequest({ currentTerm: "Not A Term" }, { authorization: "Bearer ok" }));
 
     expect(res.status).toBe(400);
-    expect(settingsSet).not.toHaveBeenCalled();
+    expect(termSet).not.toHaveBeenCalled();
   });
 
   it("updates the current term for a valid value", async () => {
@@ -171,9 +186,75 @@ describe("PATCH /api/admin/dashboard", () => {
 
     expect(res.status).toBe(200);
     expect(json).toEqual({ term: "Term 1" });
-    expect(settingsSet).toHaveBeenCalledWith(
+    expect(termSet).toHaveBeenCalledWith(
       expect.objectContaining({ currentTerm: "Term 1", updatedBy: "staff@earlydays.example" }),
       { merge: true }
     );
+  });
+
+  it("rejects a body with neither currentTerm nor feesKobo", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(patchRequest({}, { authorization: "Bearer ok" }));
+
+    expect(res.status).toBe(400);
+    expect(termSet).not.toHaveBeenCalled();
+    expect(feesSet).not.toHaveBeenCalled();
+  });
+
+  it("updates the fee schedule for valid bracket amounts", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(
+      patchRequest({ feesKobo: { creche: 5_000_00, nursery: 7_000_00 } }, { authorization: "Bearer ok" })
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ feeAmounts: { creche: 5_000_00, nursery: 7_000_00 } });
+    expect(feesSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountsKobo: { creche: 5_000_00, nursery: 7_000_00 },
+        updatedBy: "staff@earlydays.example",
+      }),
+      { merge: true }
+    );
+  });
+
+  it("400s on an unknown fee bracket id", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(patchRequest({ feesKobo: { madeup: 5_000_00 } }, { authorization: "Bearer ok" }));
+
+    expect(res.status).toBe(400);
+    expect(feesSet).not.toHaveBeenCalled();
+  });
+
+  it("400s on a non-positive fee amount", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(patchRequest({ feesKobo: { creche: 0 } }, { authorization: "Bearer ok" }));
+
+    expect(res.status).toBe(400);
+    expect(feesSet).not.toHaveBeenCalled();
+  });
+
+  it("updates both the term and fee schedule in one request", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { PATCH } = await import("@/app/api/admin/dashboard/route");
+    const res = await PATCH(
+      patchRequest({ currentTerm: "Term 1", feesKobo: { creche: 5_000_00 } }, { authorization: "Bearer ok" })
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ term: "Term 1", feeAmounts: { creche: 5_000_00 } });
+    expect(termSet).toHaveBeenCalled();
+    expect(feesSet).toHaveBeenCalled();
   });
 });

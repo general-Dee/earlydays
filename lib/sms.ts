@@ -1,5 +1,4 @@
 import { stages } from "@/lib/data";
-import { getFeeKobo } from "@/lib/fees";
 import { normalizeNigerianPhone } from "@/lib/phone";
 
 function stageLabel(code: string): string {
@@ -15,15 +14,11 @@ type UnpaidChild = {
   stage: string;
 };
 
-function childListText(unpaidChildren: UnpaidChild[]): string {
+function childListText(unpaidChildren: UnpaidChild[], feesByStage: Record<string, number>): string {
   return unpaidChildren
     .map((c) => {
-      let amount: string;
-      try {
-        amount = formatNaira(getFeeKobo(c.stage));
-      } catch {
-        amount = "contact the school for the fee amount";
-      }
+      const amountKobo = feesByStage[c.stage];
+      const amount = typeof amountKobo === "number" ? formatNaira(amountKobo) : "contact the school for the fee amount";
       return `${c.name} (${stageLabel(c.stage)}): ${amount}`;
     })
     .join("; ");
@@ -34,7 +29,8 @@ function childListText(unpaidChildren: UnpaidChild[]): string {
 export async function sendSmsFeeReminder(
   parent: { guardianName: string; phone: string },
   unpaidChildren: UnpaidChild[],
-  term: string
+  term: string,
+  feesByStage: Record<string, number>
 ): Promise<boolean> {
   const apiKey = process.env.TERMII_API_KEY;
   const senderId = process.env.TERMII_SENDER_ID;
@@ -45,7 +41,8 @@ export async function sendSmsFeeReminder(
   if (!to) return false;
 
   const message = `Hi ${parent.guardianName}, ${term} fees are still outstanding for: ${childListText(
-    unpaidChildren
+    unpaidChildren,
+    feesByStage
   )}. Pay via the Earlydays parent portal.`;
 
   const res = await fetch("https://api.ng.termii.com/api/sms/send", {

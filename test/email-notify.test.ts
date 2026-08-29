@@ -50,3 +50,50 @@ describe("sendPaymentReceiptEmail", () => {
     expect(send).not.toHaveBeenCalled();
   });
 });
+
+describe("sendFeeReminderEmail", () => {
+  it("includes the guardian, term, and fee amount from the fee map", async () => {
+    const { sendFeeReminderEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendFeeReminderEmail(
+      { guardianName: "Aisha", email: "a@b.com" },
+      [{ name: "Zainab", stage: "N1" }],
+      "Term 3",
+      { N1: 60_000_00 }
+    );
+
+    expect(sent).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "a@b.com",
+        text: expect.stringContaining("Term 3"),
+      })
+    );
+    const text = send.mock.calls[0][0].text as string;
+    expect(text).toContain("Zainab");
+    expect(text).toContain("60,000");
+  });
+
+  it("falls back to a generic message for a stage with no configured fee", async () => {
+    const { sendFeeReminderEmail } = await import("@/lib/email/notify");
+
+    await sendFeeReminderEmail(
+      { guardianName: "Aisha", email: "a@b.com" },
+      [{ name: "Zainab", stage: "N1" }],
+      "Term 3",
+      {}
+    );
+
+    const text = send.mock.calls[0][0].text as string;
+    expect(text).toContain("contact the school for the fee amount");
+  });
+
+  it("does nothing when there are no unpaid children", async () => {
+    const { sendFeeReminderEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendFeeReminderEmail({ guardianName: "Aisha", email: "a@b.com" }, [], "Term 3", {});
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});

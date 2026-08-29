@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
-import { FEE_BY_STAGE } from "@/lib/fees";
+import { FEE_BRACKETS } from "@/lib/fees";
+import { feeKoboByStageCode, getFeeAmounts, setFeeAmounts } from "@/lib/feeSettings";
 import { getCurrentTerm, setCurrentTerm } from "@/lib/termSettings";
 import { TERMS } from "@/lib/data";
 import type { Application, ApplicationStatus, Inquiry, Parent, PaymentRecord } from "@/lib/firebase/types";
@@ -12,6 +13,8 @@ export const runtime = "nodejs";
 export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async (req: NextRequest, admin) => {
   const db = getAdminDb();
   const term = await getCurrentTerm();
+  const feeAmounts = await getFeeAmounts();
+  const feesByStage = feeKoboByStageCode(feeAmounts);
 
   const applicationsSnap = await db.collection(COLLECTIONS.applications).get();
   const applicationCounts: Record<ApplicationStatus, number> = {
@@ -48,7 +51,7 @@ export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async
       const successfulPayment = payments.find(
         (p) => p.childId === child.id && p.term === term && p.status === "success"
       );
-      amountExpectedKobo += FEE_BY_STAGE[child.stage] ?? 0;
+      amountExpectedKobo += feesByStage[child.stage] ?? 0;
 
       if (successfulPayment) {
         childrenPaid++;
@@ -64,17 +67,51 @@ export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async
     applicationCounts,
     newInquiries,
     fees: { childrenPaid, childrenUnpaid, amountCollectedKobo, amountExpectedKobo },
+    feeAmounts,
   });
 });
 
-export const PATCH = withAdminRoute("dashboard", "PATCH /api/admin/dashboard", async (req: NextRequest, admin) => {
-  const { currentTerm } = (await req.json()) as { currentTerm?: string };
+const VALID_BRACKET_IDS = new Set(FEE_BRACKETS.map((bracket) => bracket.id));
 
-  if (!currentTerm || !TERMS.includes(currentTerm)) {
-    return NextResponse.json({ error: "Please select a valid term" }, { status: 400 });
+export const PATCH = withAdminRoute("dashboard", "PATCH /api/admin/dashboard", async (req: NextRequest, admin) => {
+  const { currentTerm, feesKobo } = (await req.json()) as {
+    currentTerm?: string;
+    feesKobo?: Record<string, unknown>;
+  };
+
+  if (currentTerm === undefined && feesKobo === undefined) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
-  await setCurrentTerm(currentTerm, admin.email);
+  if (currentTerm !== undefined) {
+    if (!TERMS.includes(currentTerm)) {
+      return NextResponse.json({ error: "Please select a valid term" }, { status: 400 });
+    }
+    await setCurrentTerm(currentTerm, admin.email);
+  }
 
-  return NextResponse.json({ term: currentTerm });
+  let updatedFeeAmounts: Record<string, number> | undefined;
+  if (feesKobo !== undefined) {
+    const entries = Object.entries(feesKobo);
+    if (entries.length === 0) {
+      return NextResponse.json({ error: "No fee amounts provided" }, { status: 400 });
+    }
+    const validated: Record<string, number> = {};
+    for (const [id, amount] of entries) {
+      if (!VALID_BRACKET_IDS.has(id)) {
+        return NextResponse.json({ error: `Unknown fee bracket "${id}"` }, { status: 400 });
+      }
+      if (typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0) {
+        return NextResponse.json({ error: `Invalid amount for "${id}"` }, { status: 400 });
+      }
+      validated[id] = amount;
+    }
+    await setFeeAmounts(validated, admin.email);
+    updatedFeeAmounts = validated;
+  }
+
+  return NextResponse.json({
+    ...(currentTerm !== undefined ? { term: currentTerm } : {}),
+    ...(updatedFeeAmounts !== undefined ? { feeAmounts: updatedFeeAmounts } : {}),
+  });
 });

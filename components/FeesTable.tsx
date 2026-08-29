@@ -1,6 +1,13 @@
-import { fees } from "@/lib/data";
+import { FEE_BRACKETS } from "@/lib/fees";
+import { getFeeAmounts } from "@/lib/feeSettings";
 
-export default function FeesTable() {
+function formatNaira(amountKobo: number) {
+  return (amountKobo / 100).toLocaleString("en-NG");
+}
+
+export default async function FeesTable() {
+  const amounts = await getFeeAmounts();
+
   return (
     <table className="w-full border-collapse card overflow-hidden">
       <thead>
@@ -11,11 +18,13 @@ export default function FeesTable() {
         </tr>
       </thead>
       <tbody>
-        {fees.map((f, i) => (
-          <tr key={f.stage}>
-            <td className={`px-4.5 py-4 text-sm ${i < fees.length - 1 ? "border-b border-line" : ""}`}>{f.stage}</td>
-            <td className={`px-4.5 py-4 text-sm ${i < fees.length - 1 ? "border-b border-line" : ""}`}>{f.age}</td>
-            <td className={`px-4.5 py-4 text-sm font-medium text-ink ${i < fees.length - 1 ? "border-b border-line" : ""}`}>₦{f.amount}</td>
+        {FEE_BRACKETS.map((bracket, i) => (
+          <tr key={bracket.id}>
+            <td className={`px-4.5 py-4 text-sm ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>{bracket.label}</td>
+            <td className={`px-4.5 py-4 text-sm ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>{bracket.ageRange}</td>
+            <td className={`px-4.5 py-4 text-sm font-medium text-ink ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>
+              ₦{formatNaira(amounts[bracket.id] ?? bracket.defaultAmountKobo)}
+            </td>
           </tr>
         ))}
       </tbody>
