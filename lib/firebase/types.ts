@@ -88,3 +88,17 @@ export type ProgressReport = {
   uploadedBy: string;
   createdAt: number;
 };
+
+export type Staff = {
+  id: string;
+  name: string;
+  role: string;
+  bio: string;
+  photoUrl?: string;
+  // Needed to delete/replace the file when a new photo is uploaded.
+  photoStoragePath?: string;
+  order: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt?: number;
+};

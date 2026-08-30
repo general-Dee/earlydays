@@ -177,6 +177,22 @@ describe("events/{id}", () => {
   });
 });
 
+describe("staff/{id}", () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "staff", "s1"), { name: "Mrs. Grace A." });
+    });
+  });
+
+  it("allows even an unauthenticated request to read", async () => {
+    await assertSucceeds(getDoc(doc(asGuest(), "staff", "s1")));
+  });
+
+  it("denies writes from anyone", async () => {
+    await assertFails(setDoc(doc(asOwner(), "staff", "s2"), { name: "Hijacked" }));
+  });
+});
+
 describe("collections with no explicit rule fall through to the catch-all deny", () => {
   const paths: Array<[string, ...string[]]> = [
     ["applications", "app1"],

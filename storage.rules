@@ -3,13 +3,19 @@ rules_version = '2';
 // Mirrors firestore.rules: writes only ever happen server-side via the
 // Admin SDK, so every path is client-write:false here.
 //
-// Audited 2026-08-24: the only client-side Storage read is
-// PortalReportsWidget's getDownloadURL on reports/{uid}/{fileName},
-// which matches the rule below exactly.
+// Audited 2026-08-30: the client-side Storage reads are
+// PortalReportsWidget's getDownloadURL on reports/{uid}/{fileName}, and
+// TeacherGrid's public photo reads on staff/{fileName} — both match the
+// rules below exactly.
 service firebase.storage {
   match /b/{bucket}/o {
     match /reports/{uid}/{fileName} {
       allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /staff/{staffId}/{fileName} {
+      allow read: if true;
       allow write: if false;
     }
 

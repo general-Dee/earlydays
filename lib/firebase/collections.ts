@@ -6,6 +6,7 @@ export const COLLECTIONS = {
   parents: "parents",
   reports: "reports",
   payments: "payments",
+  staff: "staff",
   settings: "settings",
   rateLimits: "rateLimits",
 } as const;

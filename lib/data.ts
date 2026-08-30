@@ -154,15 +154,6 @@ export const safetyPoints = [
   { icon: "phone-call", title: "Same-day communication", desc: "Incidents, however small, reach parents the same day — by phone and WhatsApp." },
 ];
 
-export type Teacher = { name: string; role: string; color: string };
-
-export const teachers: Teacher[] = [
-  { name: "Mrs. Grace A.", role: "Head of Nursery, 8 yrs exp.", color: "#423a6a" },
-  { name: "Mr. Yusuf I.", role: "Primary 4 Class Teacher, 6 yrs exp.", color: "#2b2741" },
-  { name: "Mrs. Chidinma O.", role: "Literacy Coordinator, 10 yrs exp.", color: "#5d5294" },
-  { name: "Mr. Suleiman B.", role: "Head of Primary, 12 yrs exp.", color: "#3f424d" },
-];
-
 export type GalleryImage = {
   src: string;
   alt: string;

@@ -9,7 +9,9 @@ export type AdminArea =
   | "parents"
   | "events"
   | "reports"
-  | "dashboard";
+  | "dashboard"
+  | "payments"
+  | "staff";
 
 function parseEmailList(raw: string | undefined): string[] {
   return (raw ?? "")

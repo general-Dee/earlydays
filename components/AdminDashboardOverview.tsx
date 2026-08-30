@@ -36,10 +36,12 @@ const statusStyle: Record<ApplicationStatus, string> = {
 const QUICK_LINKS = [
   { href: "/admin/applications", label: "Applications" },
   { href: "/admin/parents", label: "Parents" },
+  { href: "/admin/payments", label: "Payments" },
   { href: "/admin/inquiries", label: "Inquiries" },
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/announcements", label: "Announcements" },
   { href: "/admin/events", label: "Events" },
+  { href: "/admin/staff", label: "Staff" },
 ];
 
 function formatNaira(amountKobo: number) {

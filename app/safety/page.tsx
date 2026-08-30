@@ -29,7 +29,7 @@ export default function SafetyPage() {
           <SectionHeader
             eyebrow="Meet the Teachers"
             title="The people your child sees every morning"
-            desc="Replace these placeholder cards with real staff photos and bios before launch."
+            desc="The team who greets your child at the door and knows them by name."
           />
           <TeacherGrid />
         </div>

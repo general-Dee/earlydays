@@ -13,6 +13,7 @@ let testEnv: RulesTestEnvironment;
 const OWNER_UID = "owner-uid";
 const OTHER_UID = "other-uid";
 const REPORT_PATH = `reports/${OWNER_UID}/report.pdf`;
+const STAFF_PHOTO_PATH = "staff/s1/s1.jpg";
 
 function asOwner() {
   return testEnv.authenticatedContext(OWNER_UID).storage();
@@ -40,6 +41,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     await uploadString(ref(ctx.storage(), REPORT_PATH), "fake pdf contents");
+    await uploadString(ref(ctx.storage(), STAFF_PHOTO_PATH), "fake jpg contents");
   });
 });
 
@@ -59,6 +61,17 @@ describe("reports/{uid}/{fileName}", () => {
   it("denies writes from anyone, including the owner", async () => {
     await assertFails(uploadString(ref(asOwner(), REPORT_PATH), "overwritten"));
     await assertFails(deleteObject(ref(asOwner(), REPORT_PATH)));
+  });
+});
+
+describe("staff/{staffId}/{fileName}", () => {
+  it("allows even an unauthenticated request to read", async () => {
+    await assertSucceeds(getDownloadURL(ref(asGuest(), STAFF_PHOTO_PATH)));
+  });
+
+  it("denies writes from anyone", async () => {
+    await assertFails(uploadString(ref(asOwner(), STAFF_PHOTO_PATH), "overwritten"));
+    await assertFails(deleteObject(ref(asOwner(), STAFF_PHOTO_PATH)));
   });
 });
 
