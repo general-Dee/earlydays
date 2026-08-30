@@ -27,6 +27,11 @@ const fakeData = {
     "primary-junior": 75_000_00,
     "primary-senior": 85_000_00,
   },
+  termBreakdown: [
+    { term: "Term 1", amountCollectedKobo: 0, amountExpectedKobo: 135_000_00 },
+    { term: "Term 2", amountCollectedKobo: 60_000_00, amountExpectedKobo: 135_000_00 },
+    { term: "Term 3", amountCollectedKobo: 0, amountExpectedKobo: 135_000_00 },
+  ],
 };
 
 beforeEach(() => {
@@ -125,6 +130,59 @@ describe("AdminDashboardOverview", () => {
 
     expect(await screen.findByText("Invalid amount")).toBeInTheDocument();
     expect(screen.getByLabelText("Creche")).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
+  it("renders a collection-rate meter per term", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => fakeData }));
+    render(<AdminDashboardOverview user={fakeUser} />);
+    await screen.findByText("Fee collection — Term 2");
+
+    const meters = screen.getAllByRole("progressbar");
+    expect(meters).toHaveLength(3);
+    expect(screen.getByText("Term 1")).toBeInTheDocument();
+    expect(screen.getByText("Term 2")).toBeInTheDocument();
+    expect(screen.getByText("Term 3")).toBeInTheDocument();
+
+    const term2Meter = screen.getByLabelText("Term 2 collection rate");
+    expect(term2Meter).toHaveAttribute("aria-valuenow", "44");
+    vi.unstubAllGlobals();
+  });
+
+  it("shows a no-fees-due state when a term has zero expected amount", async () => {
+    const dataWithNoFees = {
+      ...fakeData,
+      termBreakdown: [
+        { term: "Term 1", amountCollectedKobo: 0, amountExpectedKobo: 0 },
+        ...fakeData.termBreakdown.slice(1),
+      ],
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => dataWithNoFees }));
+    render(<AdminDashboardOverview user={fakeUser} />);
+    await screen.findByText("Fee collection — Term 2");
+
+    expect(screen.getByText("No fees due")).toBeInTheDocument();
+    expect(screen.getByLabelText("Term 1 collection rate")).toHaveAttribute("aria-valuenow", "0");
+    vi.unstubAllGlobals();
+  });
+
+  it("clamps the meter fill for a >100% collection rate but still shows the true percentage", async () => {
+    const dataOverpaid = {
+      ...fakeData,
+      termBreakdown: [
+        ...fakeData.termBreakdown.slice(0, 2),
+        { term: "Term 3", amountCollectedKobo: 145_800_00, amountExpectedKobo: 135_000_00 },
+      ],
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => dataOverpaid }));
+    render(<AdminDashboardOverview user={fakeUser} />);
+    await screen.findByText("Fee collection — Term 2");
+
+    expect(screen.getByText("108%")).toBeInTheDocument();
+    const term3Meter = screen.getByLabelText("Term 3 collection rate");
+    expect(term3Meter).toHaveAttribute("aria-valuenow", "108");
+    const fill = term3Meter.firstElementChild as HTMLElement;
+    expect(fill.style.width).toBe("100%");
     vi.unstubAllGlobals();
   });
 

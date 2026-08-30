@@ -39,8 +39,11 @@ export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async
   const parentsSnap = await db.collection(COLLECTIONS.parents).get();
   let childrenPaid = 0;
   let childrenUnpaid = 0;
-  let amountCollectedKobo = 0;
-  let amountExpectedKobo = 0;
+  // Fees are flat per-stage-per-term (see lib/feeSettings.ts), so a child's expected
+  // amount is identical across every term — only "collected" varies by term, depending
+  // on which term's payment record has status "success".
+  const termTotals: Record<string, { amountCollectedKobo: number; amountExpectedKobo: number }> =
+    Object.fromEntries(TERMS.map((t) => [t, { amountCollectedKobo: 0, amountExpectedKobo: 0 }]));
 
   for (const parentDoc of parentsSnap.docs) {
     const parent = parentDoc.data() as Parent;
@@ -48,26 +51,31 @@ export const GET = withAdminRoute("dashboard", "GET /api/admin/dashboard", async
     const payments = paymentsSnap.docs.map((d) => d.data() as PaymentRecord);
 
     for (const child of parent.children) {
-      const successfulPayment = payments.find(
-        (p) => p.childId === child.id && p.term === term && p.status === "success"
-      );
-      amountExpectedKobo += feesByStage[child.stage] ?? 0;
+      const expectedForChild = feesByStage[child.stage] ?? 0;
 
-      if (successfulPayment) {
+      for (const t of TERMS) {
+        termTotals[t].amountExpectedKobo += expectedForChild;
+        const paidForTerm = payments.find((p) => p.childId === child.id && p.term === t && p.status === "success");
+        if (paidForTerm) termTotals[t].amountCollectedKobo += paidForTerm.amountKobo;
+      }
+
+      if (payments.some((p) => p.childId === child.id && p.term === term && p.status === "success")) {
         childrenPaid++;
-        amountCollectedKobo += successfulPayment.amountKobo;
       } else {
         childrenUnpaid++;
       }
     }
   }
 
+  const termBreakdown = TERMS.map((t) => ({ term: t, ...termTotals[t] }));
+
   return NextResponse.json({
     term,
     applicationCounts,
     newInquiries,
-    fees: { childrenPaid, childrenUnpaid, amountCollectedKobo, amountExpectedKobo },
+    fees: { childrenPaid, childrenUnpaid, ...termTotals[term] },
     feeAmounts,
+    termBreakdown,
   });
 });
 

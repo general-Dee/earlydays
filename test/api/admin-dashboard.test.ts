@@ -137,7 +137,88 @@ describe("GET /api/admin/dashboard", () => {
         "primary-junior": 75_000_00,
         "primary-senior": 85_000_00,
       },
+      termBreakdown: [
+        { term: "Term 1", amountCollectedKobo: 0, amountExpectedKobo: 135_000_00 },
+        { term: "Term 2", amountCollectedKobo: 60_000_00, amountExpectedKobo: 135_000_00 },
+        { term: "Term 3", amountCollectedKobo: 0, amountExpectedKobo: 135_000_00 },
+      ],
     });
+  });
+
+  it("buckets successful payments into termBreakdown by their term field", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+
+    parentsGet.mockResolvedValue({
+      docs: [
+        {
+          id: "u1",
+          data: () => ({
+            guardianName: "Aisha",
+            email: "a@b.com",
+            children: [{ id: "c1", name: "Kid One", stage: "N1" }],
+          }),
+        },
+      ],
+    });
+    paymentsGet.mockResolvedValue({
+      docs: [
+        { data: () => ({ childId: "c1", term: "Term 1", status: "success", amountKobo: 60_000_00 }) },
+        { data: () => ({ childId: "c1", term: "Term 2", status: "success", amountKobo: 60_000_00 }) },
+      ],
+    });
+
+    const { GET } = await import("@/app/api/admin/dashboard/route");
+    const res = await GET(request({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(json.termBreakdown).toEqual([
+      { term: "Term 1", amountCollectedKobo: 60_000_00, amountExpectedKobo: 60_000_00 },
+      { term: "Term 2", amountCollectedKobo: 60_000_00, amountExpectedKobo: 60_000_00 },
+      { term: "Term 3", amountCollectedKobo: 0, amountExpectedKobo: 60_000_00 },
+    ]);
+  });
+
+  it("excludes non-success payments from termBreakdown collected totals", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+
+    parentsGet.mockResolvedValue({
+      docs: [
+        {
+          id: "u1",
+          data: () => ({
+            guardianName: "Aisha",
+            email: "a@b.com",
+            children: [{ id: "c1", name: "Kid One", stage: "N1" }],
+          }),
+        },
+      ],
+    });
+    paymentsGet.mockResolvedValue({
+      docs: [{ data: () => ({ childId: "c1", term: "Term 1", status: "pending", amountKobo: 60_000_00 }) }],
+    });
+
+    const { GET } = await import("@/app/api/admin/dashboard/route");
+    const res = await GET(request({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(json.termBreakdown[0]).toEqual({ term: "Term 1", amountCollectedKobo: 0, amountExpectedKobo: 60_000_00 });
+  });
+
+  it("returns zero-valued termBreakdown entries when there are no parents", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+
+    const { GET } = await import("@/app/api/admin/dashboard/route");
+    const res = await GET(request({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(json.termBreakdown).toEqual([
+      { term: "Term 1", amountCollectedKobo: 0, amountExpectedKobo: 0 },
+      { term: "Term 2", amountCollectedKobo: 0, amountExpectedKobo: 0 },
+      { term: "Term 3", amountCollectedKobo: 0, amountExpectedKobo: 0 },
+    ]);
   });
 
   it("returns 200 for an email allow-listed only for the dashboard area", async () => {

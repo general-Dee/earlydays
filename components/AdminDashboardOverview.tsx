@@ -6,6 +6,7 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { TERMS } from "@/lib/data";
 import { FEE_BRACKETS } from "@/lib/fees";
+import AdminFeeChart, { type TermBreakdownEntry } from "@/components/AdminFeeChart";
 import type { ApplicationStatus } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
@@ -21,6 +22,7 @@ type DashboardData = {
     amountExpectedKobo: number;
   };
   feeAmounts: Record<string, number>;
+  termBreakdown: TermBreakdownEntry[];
 };
 
 const STATUS_OPTIONS: ApplicationStatus[] = ["new", "reviewing", "accepted", "waitlisted", "declined"];
@@ -371,6 +373,13 @@ export default function AdminDashboardOverview({ user }: { user: User }) {
                   </span>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <h6 className="text-[0.7rem] font-semibold text-slate uppercase tracking-wider mb-2">
+                Collection rate by term
+              </h6>
+              <AdminFeeChart data={data.termBreakdown} />
             </div>
           </div>
 
