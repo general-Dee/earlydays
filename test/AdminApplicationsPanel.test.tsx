@@ -207,4 +207,103 @@ describe("AdminApplicationsPanel", () => {
 
     expect(screen.queryByText(/Page \d+ of \d+/)).not.toBeInTheDocument();
   });
+
+  it("adds an application submitted through the create form", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const created = { ...sampleApplication, id: "a9", childName: "New Kid", guardianName: "New Guardian" };
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => created });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ applications: [sampleApplication] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+
+    await userEvent.type(screen.getByPlaceholderText("Child's full name"), "New Kid");
+    await userEvent.type(screen.getByLabelText("Child's date of birth"), "2022-01-01");
+    await userEvent.type(screen.getByPlaceholderText("Guardian full name"), "New Guardian");
+    await userEvent.type(screen.getByPlaceholderText("Email"), "new@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Add Application" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/applications",
+      expect.objectContaining({
+        method: "POST",
+        headers: { Authorization: "Bearer tok", "Content-Type": "application/json" },
+      })
+    );
+    expect(await screen.findByText(/New Kid/)).toBeInTheDocument();
+  });
+
+  it("shows an error and keeps the form filled in when create fails", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({ error: "Provide an email or phone number" }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ applications: [sampleApplication] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+
+    // Email/phone are the only optional fields — leaving both blank triggers a
+    // server-side 400 without the browser's own required-field validation blocking
+    // submission first (unlike leaving a required field like child name empty).
+    await userEvent.type(screen.getByPlaceholderText("Child's full name"), "New Kid");
+    await userEvent.type(screen.getByLabelText("Child's date of birth"), "2022-01-01");
+    await userEvent.type(screen.getByPlaceholderText("Guardian full name"), "New Guardian");
+    await userEvent.click(screen.getByRole("button", { name: "Add Application" }));
+
+    expect(await screen.findByText("Provide an email or phone number")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Child's full name")).toHaveValue("New Kid");
+  });
+
+  it("deletes an application via the delete button", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ applications: [sampleApplication] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/applications/a1",
+      expect.objectContaining({ method: "DELETE", headers: { Authorization: "Bearer tok" } })
+    );
+    expect(screen.queryByText(/Femi Okafor/)).not.toBeInTheDocument();
+  });
+
+  it("restores the application if delete fails", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({ error: "fail" }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ applications: [sampleApplication] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByText(/Femi Okafor/)).toBeInTheDocument();
+  });
 });

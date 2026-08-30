@@ -31,7 +31,18 @@ export default function AdminApplicationsList({ user }: { user: User }) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
+
+  const [childName, setChildName] = useState("");
+  const [childDob, setChildDob] = useState("");
+  const [desiredStage, setDesiredStage] = useState(stages[0].code);
+  const [guardianName, setGuardianName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
 
   const statusFiltered =
     statusFilter === "all" ? applications : applications.filter((app) => app.status === statusFilter);
@@ -39,6 +50,66 @@ export default function AdminApplicationsList({ user }: { user: User }) {
     statusFiltered,
     getSearchText
   );
+
+  async function createApplication(e: React.FormEvent) {
+    e.preventDefault();
+    setPosting(true);
+    setPostError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/admin/applications", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ childName, childDob, desiredStage, guardianName, email, phone, notes }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setPostError(data.error ?? "Couldn't add this application. Please try again.");
+        return;
+      }
+
+      const created = (await res.json()) as Application;
+      setApplications((current) => [created, ...current]);
+      setChildName("");
+      setChildDob("");
+      setDesiredStage(stages[0].code);
+      setGuardianName("");
+      setEmail("");
+      setPhone("");
+      setNotes("");
+    } catch {
+      setPostError("Couldn't add this application. Please try again.");
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function deleteApplication(id: string) {
+    const previous = applications;
+    setDeletingId(id);
+    setApplications((current) => current.filter((app) => app.id !== id));
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/applications/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!res.ok) {
+        setApplications(previous);
+      }
+    } catch {
+      setApplications(previous);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function updateStatus(id: string, status: ApplicationStatus) {
     const previous = applications;
@@ -113,6 +184,71 @@ export default function AdminApplicationsList({ user }: { user: User }) {
           Log Out
         </button>
       </div>
+
+      <form onSubmit={createApplication} className="mt-5 flex flex-col gap-2.5">
+        <input
+          type="text"
+          placeholder="Child's full name"
+          value={childName}
+          onChange={(e) => setChildName(e.target.value)}
+          required
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <input
+          type="date"
+          value={childDob}
+          onChange={(e) => setChildDob(e.target.value)}
+          required
+          aria-label="Child's date of birth"
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <select
+          value={desiredStage}
+          onChange={(e) => setDesiredStage(e.target.value)}
+          required
+          aria-label="Desired stage"
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        >
+          {stages.map((s) => (
+            <option key={s.code} value={s.code}>
+              {s.name} ({s.age})
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          placeholder="Guardian full name"
+          value={guardianName}
+          onChange={(e) => setGuardianName(e.target.value)}
+          required
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <input
+          type="tel"
+          placeholder="Phone"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <textarea
+          placeholder="Notes (optional)"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        {postError && <p className="text-[0.8rem] text-clay mb-0">{postError}</p>}
+        <button type="submit" disabled={posting} className="btn btn-primary btn-sm self-start">
+          {posting ? "Adding…" : "Add Application"}
+        </button>
+      </form>
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading applications…</p>}
 
@@ -196,6 +332,13 @@ export default function AdminApplicationsList({ user }: { user: User }) {
                     </option>
                   ))}
                 </select>
+                <button
+                  onClick={() => deleteApplication(app.id)}
+                  disabled={deletingId === app.id}
+                  className="btn btn-ghost btn-sm ml-auto"
+                >
+                  Delete
+                </button>
               </div>
             </li>
           ))}

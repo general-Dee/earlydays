@@ -23,3 +23,13 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
     return NextResponse.json({ ok: true });
   }
 );
+
+export const DELETE = withAdminRoute<{ params: { id: string } }>(
+  "inquiries",
+  "DELETE /api/admin/inquiries/[id]",
+  async (req: NextRequest, admin, { params }) => {
+    await getAdminDb().collection(COLLECTIONS.inquiries).doc(params.id).delete();
+
+    return NextResponse.json({ ok: true });
+  }
+);

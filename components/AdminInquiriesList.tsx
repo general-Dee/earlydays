@@ -24,7 +24,15 @@ export default function AdminInquiriesList({ user }: { user: User }) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<InquiryStatus | "all">("all");
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
 
   const statusFiltered =
     statusFilter === "all" ? inquiries : inquiries.filter((inquiry) => inquiry.status === statusFilter);
@@ -32,6 +40,63 @@ export default function AdminInquiriesList({ user }: { user: User }) {
     statusFiltered,
     getSearchText
   );
+
+  async function createInquiry(e: React.FormEvent) {
+    e.preventDefault();
+    setPosting(true);
+    setPostError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/admin/inquiries", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, phone, message }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setPostError(data.error ?? "Couldn't add this inquiry. Please try again.");
+        return;
+      }
+
+      const created = (await res.json()) as Inquiry;
+      setInquiries((current) => [created, ...current]);
+      setName("");
+      setEmail("");
+      setPhone("");
+      setMessage("");
+    } catch {
+      setPostError("Couldn't add this inquiry. Please try again.");
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function deleteInquiry(id: string) {
+    const previous = inquiries;
+    setDeletingId(id);
+    setInquiries((current) => current.filter((inquiry) => inquiry.id !== id));
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/inquiries/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!res.ok) {
+        setInquiries(previous);
+      }
+    } catch {
+      setInquiries(previous);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function updateStatus(id: string, status: InquiryStatus) {
     const previous = inquiries;
@@ -106,6 +171,43 @@ export default function AdminInquiriesList({ user }: { user: User }) {
           Log Out
         </button>
       </div>
+
+      <form onSubmit={createInquiry} className="mt-5 flex flex-col gap-2.5">
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <input
+          type="tel"
+          placeholder="Phone"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <textarea
+          placeholder="Message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          required
+          rows={3}
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        {postError && <p className="text-[0.8rem] text-clay mb-0">{postError}</p>}
+        <button type="submit" disabled={posting} className="btn btn-primary btn-sm self-start">
+          {posting ? "Adding…" : "Add Inquiry"}
+        </button>
+      </form>
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading inquiries…</p>}
 
@@ -184,6 +286,13 @@ export default function AdminInquiriesList({ user }: { user: User }) {
                     </option>
                   ))}
                 </select>
+                <button
+                  onClick={() => deleteInquiry(inquiry.id)}
+                  disabled={deletingId === inquiry.id}
+                  className="btn btn-ghost btn-sm ml-auto"
+                >
+                  Delete
+                </button>
               </div>
             </li>
           ))}

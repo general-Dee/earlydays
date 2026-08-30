@@ -21,6 +21,16 @@ vi.mock("@/lib/firebase/client", () => ({
 
 const fakeUser = { email: "staff@earlydays.example", getIdToken: vi.fn().mockResolvedValue("tok") };
 
+const sampleInquiry = {
+  id: "i1",
+  name: "Aisha",
+  email: "a@b.com",
+  phone: null,
+  message: "Book a tour",
+  status: "new",
+  createdAt: Date.now(),
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   fakeUser.getIdToken.mockResolvedValue("tok");
@@ -168,5 +178,102 @@ describe("AdminInquiriesPanel", () => {
 
     expect(screen.getByText("Chidi")).toBeInTheDocument();
     expect(screen.queryByText("Aisha")).not.toBeInTheDocument();
+  });
+
+  it("adds an inquiry submitted through the create form", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const created = { ...sampleInquiry, id: "i9", name: "New Visitor" };
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => created });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ inquiries: [sampleInquiry] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminInquiriesPanel />);
+    await screen.findByText("Aisha");
+
+    await userEvent.type(screen.getByPlaceholderText("Name"), "New Visitor");
+    await userEvent.type(screen.getByPlaceholderText("Message"), "Interested in a tour");
+    await userEvent.type(screen.getByPlaceholderText("Email"), "visitor@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Add Inquiry" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/inquiries",
+      expect.objectContaining({
+        method: "POST",
+        headers: { Authorization: "Bearer tok", "Content-Type": "application/json" },
+      })
+    );
+    expect(await screen.findByText("New Visitor")).toBeInTheDocument();
+  });
+
+  it("shows an error and keeps the form filled in when create fails", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({ error: "Provide an email or phone number" }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ inquiries: [sampleInquiry] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminInquiriesPanel />);
+    await screen.findByText("Aisha");
+
+    // Email/phone are the only optional fields — leaving both blank triggers a
+    // server-side 400 without the browser's own required-field validation blocking
+    // submission first (unlike leaving name or message empty).
+    await userEvent.type(screen.getByPlaceholderText("Name"), "New Visitor");
+    await userEvent.type(screen.getByPlaceholderText("Message"), "Interested in a tour");
+    await userEvent.click(screen.getByRole("button", { name: "Add Inquiry" }));
+
+    expect(await screen.findByText("Provide an email or phone number")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Name")).toHaveValue("New Visitor");
+  });
+
+  it("deletes an inquiry via the delete button", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ inquiries: [sampleInquiry] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminInquiriesPanel />);
+    await screen.findByText("Aisha");
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/inquiries/i1",
+      expect.objectContaining({ method: "DELETE", headers: { Authorization: "Bearer tok" } })
+    );
+    expect(screen.queryByText("Aisha")).not.toBeInTheDocument();
+  });
+
+  it("restores the inquiry if delete fails", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({ error: "fail" }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ inquiries: [sampleInquiry] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminInquiriesPanel />);
+    await screen.findByText("Aisha");
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByText("Aisha")).toBeInTheDocument();
   });
 });

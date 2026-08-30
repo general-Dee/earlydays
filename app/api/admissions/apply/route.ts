@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendApplicationConfirmationEmail, sendApplicationNotification } from "@/lib/email/notify";
 import { stages } from "@/lib/data";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { generateReferenceCode } from "@/lib/referenceCode";
 
 export const runtime = "nodejs";
 
@@ -58,7 +58,7 @@ export const POST = withRouteErrorHandling("POST /api/admissions/apply", async (
     return NextResponse.json({ error: "Notes are too long" }, { status: 400 });
   }
 
-  const referenceCode = randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
+  const referenceCode = generateReferenceCode();
 
   await getAdminDb()
     .collection(COLLECTIONS.applications)
