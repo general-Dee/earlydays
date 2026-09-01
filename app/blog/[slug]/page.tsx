@@ -1,20 +1,27 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { blogPosts } from "@/lib/data";
+import { getBlogPosts } from "@/lib/blogPosts";
 
-export function generateStaticParams() {
-  return blogPosts.map((p) => ({ slug: p.slug }));
+// Blog posts are admin-editable (see /admin/blog) — revalidate periodically
+// so a new or edited post shows up here without a redeploy.
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const posts = await getBlogPosts();
+  return posts.map((p) => ({ slug: p.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const post = blogPosts.find((p) => p.slug === params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const posts = await getBlogPosts();
+  const post = posts.find((p) => p.slug === params.slug);
   if (!post) return {};
   return { title: `${post.title} — Earlydays`, description: post.excerpt };
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = blogPosts.find((p) => p.slug === params.slug);
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const posts = await getBlogPosts();
+  const post = posts.find((p) => p.slug === params.slug);
   if (!post) notFound();
 
   return (
@@ -24,7 +31,10 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           ← Back to all posts
         </Link>
 
-        <div className="h-[220px] rounded-card mt-6 mb-8" style={{ background: post.gradient }} />
+        <div
+          className="h-[220px] rounded-card mt-6 mb-8 bg-cover bg-center"
+          style={post.coverPhotoUrl ? { backgroundImage: `url(${post.coverPhotoUrl})` } : { background: post.gradient }}
+        />
 
         <span className="font-mono text-[0.7rem] uppercase text-sun font-medium tracking-wider">
           {post.category}

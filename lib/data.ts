@@ -225,52 +225,6 @@ export const testimonials: Testimonial[] = [
   { id: "fatima-s", quote: "Two kids, one gate, one uniform, one calendar. It sounds small until you've lived the alternative.", name: "Fatima S.", area: "Parent, Sabon Tasha", initial: "F" },
 ];
 
-export type BlogPost = {
-  slug: string;
-  category: string;
-  title: string;
-  excerpt: string;
-  body: string[];
-  gradient: string;
-};
-
-export const blogPosts: BlogPost[] = [
-  {
-    slug: "helping-a-shy-child-through-the-first-week",
-    category: "Settling In",
-    title: "Helping a shy child through the first week",
-    excerpt: "Small routines that make drop-off easier for both of you.",
-    body: [
-      "The first week is harder on parents than it looks on children. A short, predictable goodbye — the same words, the same hug, every morning — helps far more than lingering.",
-      "Arrive a few minutes early so your child isn't rushed into the room, and let a teacher greet them by name at the door. Familiar faces build confidence fast.",
-      "Expect a rough day two or three before things settle. That dip is normal, not a sign something is wrong.",
-    ],
-    gradient: "linear-gradient(135deg,#232532,#292b31)",
-  },
-  {
-    slug: "what-school-readiness-really-means-at-4",
-    category: "Learning",
-    title: "What \"school readiness\" really means at 4",
-    excerpt: "It's less about letters, more about these five habits.",
-    body: [
-      "Parents often worry about whether their child knows the alphabet before Primary 1. In practice, five habits matter more: following two-step instructions, sitting through a short story, sharing with peers, using the toilet independently, and expressing needs in words.",
-      "Letters and numbers are taught well within the first term. The habits above are much harder to build quickly, which is why Nursery 2 focuses on them deliberately.",
-    ],
-    gradient: "linear-gradient(135deg,#232532,#292b31)",
-  },
-  {
-    slug: "reading-at-home-without-turning-it-into-homework",
-    category: "Primary Years",
-    title: "Reading at home without turning it into homework",
-    excerpt: "Ten minutes a night, in a way kids actually enjoy.",
-    body: [
-      "The single best predictor of reading progress isn't a workbook — it's ten unhurried minutes a night where reading feels like a treat, not a task.",
-      "Let your child pick the book, even if it's below their level or read for the fifth time. Familiarity builds fluency and confidence, which matters more than difficulty at this stage.",
-    ],
-    gradient: "linear-gradient(135deg,#232532,#292b31)",
-  },
-];
-
 export const navLinks = [
   { href: "/journey", label: "The Journey" },
   { href: "/safety", label: "Safety" },

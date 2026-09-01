@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { blogPosts } from "../lib/data";
+
+// One of the sample posts defaultBlogPosts() (lib/blogPosts.ts) falls back
+// to when Firestore has no real blog posts yet — matches what a fresh
+// deploy actually serves at this URL.
+const SAMPLE_BLOG_SLUG = "helping-a-shy-child-through-the-first-week";
 
 const routes = [
   "/",
@@ -10,7 +14,7 @@ const routes = [
   "/admissions/apply",
   "/events",
   "/blog",
-  `/blog/${blogPosts[0].slug}`,
+  `/blog/${SAMPLE_BLOG_SLUG}`,
   "/portal",
   "/contact",
 ];
@@ -45,6 +49,7 @@ const adminRoutes = [
   { path: "/admin/parents", heading: "Parent Accounts" },
   { path: "/admin/reports", heading: "Progress Reports" },
   { path: "/admin/events", heading: "Events" },
+  { path: "/admin/blog", heading: "Blog Posts" },
 ];
 
 for (const { path, heading } of adminRoutes) {

@@ -44,6 +44,7 @@ const QUICK_LINKS = [
   { href: "/admin/announcements", label: "Announcements" },
   { href: "/admin/events", label: "Events" },
   { href: "/admin/staff", label: "Staff" },
+  { href: "/admin/blog", label: "Blog" },
 ];
 
 function formatNaira(amountKobo: number) {

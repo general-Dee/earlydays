@@ -7,6 +7,7 @@ export const COLLECTIONS = {
   reports: "reports",
   payments: "payments",
   staff: "staff",
+  blog: "blog",
   settings: "settings",
   rateLimits: "rateLimits",
 } as const;

@@ -102,3 +102,21 @@ export type Staff = {
   createdAt: number;
   updatedAt?: number;
 };
+
+export type BlogPost = {
+  id: string;
+  slug: string;
+  category: string;
+  title: string;
+  excerpt: string;
+  body: string[];
+  // Fallback cover treatment shown when no cover photo has been uploaded.
+  gradient: string;
+  coverPhotoUrl?: string;
+  // Needed to delete/replace the file when a new cover photo is uploaded.
+  coverPhotoStoragePath?: string;
+  order: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt?: number;
+};

@@ -6,7 +6,10 @@ rules_version = '2';
 // Audited 2026-08-30: the client-side Storage reads are
 // PortalReportsWidget's getDownloadURL on reports/{uid}/{fileName}, and
 // TeacherGrid's public photo reads on staff/{fileName} — both match the
-// rules below exactly.
+// rules below exactly. blog/{fileName} is read via a plain public URL from
+// the blog pages (fetched server-side via the Admin SDK, not client Storage
+// reads), but still needs public read here since that URL is served
+// directly to the browser.
 service firebase.storage {
   match /b/{bucket}/o {
     match /reports/{uid}/{fileName} {
@@ -15,6 +18,11 @@ service firebase.storage {
     }
 
     match /staff/{staffId}/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /blog/{postId}/{fileName} {
       allow read: if true;
       allow write: if false;
     }
