@@ -154,69 +154,6 @@ export const safetyPoints = [
   { icon: "phone-call", title: "Same-day communication", desc: "Incidents, however small, reach parents the same day — by phone and WhatsApp." },
 ];
 
-export type GalleryImage = {
-  src: string;
-  alt: string;
-  category: "Campus & Grounds" | "Classrooms" | "Play & Discovery";
-  tall?: boolean;
-};
-
-export const galleryImages: GalleryImage[] = [
-  {
-    src: "/ct01.PNG",
-    alt: "Sunflower-painted welcome entrance and gate at the Earlydays campus",
-    category: "Campus & Grounds",
-    tall: true,
-  },
-  {
-    src: "/ct02.PNG",
-    alt: "Classroom block with a covered walkway and green safety fencing",
-    category: "Campus & Grounds",
-  },
-  {
-    src: "/ct03.PNG",
-    alt: "Hand-painted mural running along the perimeter fence of the school",
-    category: "Campus & Grounds",
-  },
-  {
-    src: "/ct04.PNG",
-    alt: "Yellow and green Nursery classroom with a hand-lettered \"Welcome to School\" whiteboard",
-    category: "Classrooms",
-  },
-  {
-    src: "/ct05.PNG",
-    alt: "Pink and yellow classroom decorated with a shapes and numbers wall display and a wall-mounted TV",
-    category: "Classrooms",
-  },
-  {
-    src: "/ct06.PNG",
-    alt: "Yellow and purple classroom with an alphabet wall display and the message \"Learning sets you free\"",
-    category: "Classrooms",
-    tall: true,
-  },
-  {
-    src: "/ct07.PNG",
-    alt: "Yellow and green classroom with shapes and numbers 1 to 29 displayed on the wall",
-    category: "Classrooms",
-  },
-  {
-    src: "/ct08.PNG",
-    alt: "Primary classroom with blue and pink desks and a motivational quote on the wall",
-    category: "Classrooms",
-  },
-  {
-    src: "/ct09.PNG",
-    alt: "Outdoor play area with a foosball table, painted hopscotch grid, and tyre play equipment",
-    category: "Play & Discovery",
-    tall: true,
-  },
-  {
-    src: "/ct10.PNG",
-    alt: "Primary classroom with blue desks and a motivational quote painted on the wall",
-    category: "Classrooms",
-  },
-];
-
 export type Testimonial = { id: string; quote: string; name: string; area: string; initial: string };
 
 export const testimonials: Testimonial[] = [

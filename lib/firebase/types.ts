@@ -103,6 +103,20 @@ export type Staff = {
   updatedAt?: number;
 };
 
+export type GalleryPhoto = {
+  id: string;
+  alt: string;
+  category: "Campus & Grounds" | "Classrooms" | "Play & Discovery";
+  tall?: boolean;
+  photoUrl: string;
+  // Needed to delete the file when the record itself is deleted.
+  photoStoragePath: string;
+  order: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt?: number;
+};
+
 export type BlogPost = {
   id: string;
   slug: string;

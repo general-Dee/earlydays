@@ -193,10 +193,27 @@ describe("staff/{id}", () => {
   });
 });
 
+describe("gallery/{id}", () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "gallery", "g1"), { alt: "Campus photo" });
+    });
+  });
+
+  it("allows even an unauthenticated request to read", async () => {
+    await assertSucceeds(getDoc(doc(asGuest(), "gallery", "g1")));
+  });
+
+  it("denies writes from anyone", async () => {
+    await assertFails(setDoc(doc(asOwner(), "gallery", "g2"), { alt: "Hijacked" }));
+  });
+});
+
 describe("collections with no explicit rule fall through to the catch-all deny", () => {
   const paths: Array<[string, ...string[]]> = [
     ["applications", "app1"],
     ["inquiries", "i1"],
+    ["blog", "b1"],
     ["settings", "term"],
     ["settings", "fees"],
     ["rateLimits", "contact:1.2.3.4"],

@@ -3,20 +3,47 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { X, CaretLeft, CaretRight } from "@phosphor-icons/react";
-import { galleryImages } from "@/lib/data";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { getFirebaseDb } from "@/lib/firebase/client";
+import { COLLECTIONS } from "@/lib/firebase/collections";
+import type { GalleryPhoto } from "@/lib/firebase/types";
+
+type LoadState = "loading" | "error" | "ready";
 
 const CATEGORIES = ["All", "Campus & Grounds", "Classrooms", "Play & Discovery"] as const;
 
 export default function Gallery() {
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
+  const [state, setState] = useState<LoadState>("loading");
   const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]>("All");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  const filtered =
-    activeCategory === "All"
-      ? galleryImages
-      : galleryImages.filter((g) => g.category === activeCategory);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setState("loading");
+      try {
+        const snap = await getDocs(query(collection(getFirebaseDb(), COLLECTIONS.gallery), orderBy("order", "asc")));
+
+        if (cancelled) return;
+
+        setPhotos(snap.docs.map((d) => d.data() as GalleryPhoto));
+        setState("ready");
+      } catch {
+        if (!cancelled) setState("error");
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = activeCategory === "All" ? photos : photos.filter((g) => g.category === activeCategory);
 
   function close() {
     setLightboxIndex(null);
@@ -48,6 +75,22 @@ export default function Gallery() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lightboxIndex, filtered.length]);
 
+  if (state === "loading") {
+    return <p className="text-sm text-slate">Loading the gallery…</p>;
+  }
+
+  if (state === "error") {
+    return (
+      <div className="px-3.5 py-3 rounded-lg bg-clay-soft text-clay text-[0.85rem] font-semibold">
+        Couldn&rsquo;t load the gallery. Please try again.
+      </div>
+    );
+  }
+
+  if (photos.length === 0) {
+    return <p className="text-sm text-slate">Gallery photos are coming soon.</p>;
+  }
+
   return (
     <div>
       <div className="flex gap-2.5 flex-wrap mb-8" role="group" aria-label="Filter gallery by category">
@@ -71,7 +114,7 @@ export default function Gallery() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5">
         {filtered.map((img, i) => (
           <button
-            key={img.src}
+            key={img.id}
             type="button"
             onClick={(e) => {
               openerRef.current = e.currentTarget;
@@ -81,7 +124,7 @@ export default function Gallery() {
             className="relative aspect-[4/3] rounded-xl overflow-hidden border border-line group"
           >
             <Image
-              src={img.src}
+              src={img.photoUrl}
               alt={img.alt}
               fill
               sizes="(min-width: 768px) 33vw, 50vw"
@@ -130,7 +173,7 @@ export default function Gallery() {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={filtered[lightboxIndex].src}
+              src={filtered[lightboxIndex].photoUrl}
               alt={filtered[lightboxIndex].alt}
               fill
               sizes="(min-width: 768px) 768px, 100vw"
