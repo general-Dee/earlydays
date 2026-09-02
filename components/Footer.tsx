@@ -65,7 +65,12 @@ export default function Footer() {
 
         <div className="flex flex-wrap justify-between gap-2.5 text-ink-soft text-xs">
           <span>© 2026 {site.fullName}.</span>
-          <span>NDPA 2023 compliant · Privacy Policy · Terms</span>
+          <div className="flex items-center gap-3.5">
+            <span>NDPA 2023 compliant · Privacy Policy · Terms</span>
+            <Link href="/admin" className="hover:text-sun transition-colors">
+              🔒 Staff
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
