@@ -72,8 +72,9 @@ app/
   error.tsx                Custom error boundary
 
   admin/                   Staff-only pages, gated by AuthProvider + Firebase Auth
-                            (announcements, applications, events, inquiries,
-                            parents, reports — one page per resource)
+                            (announcements, applications, blog, events, gallery,
+                            inquiries, parents, payments, reports, staff,
+                            testimonials — one page per resource)
 
   api/admin/                CRUD routes backing the admin pages above, one
                             subfolder per resource; every handler is wrapped in
@@ -89,9 +90,13 @@ components/                All reusable, presentational pieces — marketing
                             FeesTable, ...), the parent portal (Portal*), and
                             admin CRUD panels (Admin*List / Admin*Panel)
 
-lib/data.ts                 Single source of truth for all static site content —
-                            edit this file to update copy, fees, staff,
-                            blog posts, and the WhatsApp number everywhere at once.
+lib/data.ts                 Truly static site copy — stages/curriculum, how-it-works
+                            steps, day schedules, safety points, nav links, and site
+                            contact info (WhatsApp/phone/email/url). Fees, staff,
+                            blog posts, gallery photos, and testimonials all moved
+                            out of here into Firestore — see lib/feeSettings.ts,
+                            lib/blogPosts.ts, and lib/testimonials.ts below, and the
+                            corresponding admin/ pages, for those.
 
 lib/firebase/                Firebase client/admin init, AuthProvider,
                             Firestore data types (parents, children, payments),
@@ -112,6 +117,15 @@ lib/feeSettings.ts           Firestore-backed termly fee amounts, editable
                             cron job, and the public /admissions fee table
                             — never trusts a client-submitted amount.
 
+lib/blogPosts.ts             Firestore-backed blog posts, editable from /admin
+                            (Blog). Falls back to three sample posts if the
+                            collection is empty or briefly unreachable, so
+                            /blog never renders empty and a build without
+                            real Firebase credentials doesn't crash.
+
+lib/testimonials.ts          Same pattern as lib/blogPosts.ts for homepage
+                            testimonials, editable from /admin (Testimonials).
+
 lib/rate-limit.ts            In-memory rate limiting for the public contact
                             and admissions/apply forms.
 
@@ -125,7 +139,7 @@ test/, e2e/                  Vitest unit tests (component behavior, admin API
 2. ~~`lib/fees.ts` → `FEE_BY_STAGE`~~ — done: termly fees are now admin-editable (`/admin` → Overview → Fee schedule) instead of a code edit. `lib/fees.ts` keeps only the static bracket definitions (labels/ages/which stage codes share a price); real amounts live in Firestore via `lib/feeSettings.ts` and start out at the same sample figures until an admin sets real ones.
 3. **`components/ProspectusCard.tsx`** — points to `/prospectus.pdf`; a placeholder PDF ships in `/public/prospectus.pdf` — replace it with the real prospectus.
 4. ~~`components/TeacherGrid.tsx` / `lib/data.ts` → `teachers`~~ — done: staff profiles (name, role, bio, photo) are now admin-editable (`/admin` → Staff) instead of a code edit. Add real staff through that page — the public Safety page renders whatever's there and shows a placeholder initials square until a photo is uploaded.
-5. ~~`components/GalleryGrid.tsx` / `lib/data.ts` → `galleryCells`~~ — done: real campus photography now lives in `lib/data.ts` → `galleryImages`, with a full `/gallery` page (`components/Gallery.tsx`) and a teaser grid on the Safety page.
+5. ~~`components/Gallery.tsx` / `components/GalleryGrid.tsx`~~ — done: gallery photos (photo, alt text, category) are now admin-editable (`/admin` → Gallery) instead of a code edit. Add real campus photos through that page — the public `/gallery` page and the Safety page teaser grid render whatever's there.
 6. **Firebase + Paystack** — see "Environment setup" above; nothing here is live until real credentials are provided.
 7. **`lib/data.ts` → `site.url`** — placeholder domain; the sitemap, `robots.txt`, and OpenGraph/canonical links all resolve off this, so they won't be correct until it's the real production domain.
 
