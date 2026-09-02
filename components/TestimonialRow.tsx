@@ -1,6 +1,6 @@
-import { testimonials } from "@/lib/data";
+import type { Testimonial } from "@/lib/firebase/types";
 
-export default function TestimonialRow() {
+export default function TestimonialRow({ testimonials }: { testimonials: Testimonial[] }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       {testimonials.map((t) => (

@@ -117,6 +117,18 @@ export type GalleryPhoto = {
   updatedAt?: number;
 };
 
+export type Testimonial = {
+  id: string;
+  quote: string;
+  name: string;
+  area: string;
+  initial: string;
+  order: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt?: number;
+};
+
 export type BlogPost = {
   id: string;
   slug: string;

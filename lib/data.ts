@@ -154,14 +154,6 @@ export const safetyPoints = [
   { icon: "phone-call", title: "Same-day communication", desc: "Incidents, however small, reach parents the same day — by phone and WhatsApp." },
 ];
 
-export type Testimonial = { id: string; quote: string; name: string; area: string; initial: string };
-
-export const testimonials: Testimonial[] = [
-  { id: "aisha-b", quote: "My daughter moved from Nursery 2 to Primary 1 without a single tear — same building, same faces she trusted already.", name: "Aisha B.", area: "Parent, Barnawa", initial: "A" },
-  { id: "emeka-o", quote: "I get a WhatsApp message the same day if anything happens. That alone is worth the switch from her old school.", name: "Emeka O.", area: "Parent, Malali", initial: "E" },
-  { id: "fatima-s", quote: "Two kids, one gate, one uniform, one calendar. It sounds small until you've lived the alternative.", name: "Fatima S.", area: "Parent, Sabon Tasha", initial: "F" },
-];
-
 export const navLinks = [
   { href: "/journey", label: "The Journey" },
   { href: "/safety", label: "Safety" },

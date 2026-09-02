@@ -9,6 +9,7 @@ export const COLLECTIONS = {
   staff: "staff",
   blog: "blog",
   gallery: "gallery",
+  testimonials: "testimonials",
   settings: "settings",
   rateLimits: "rateLimits",
 } as const;

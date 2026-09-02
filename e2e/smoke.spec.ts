@@ -51,6 +51,7 @@ const adminRoutes = [
   { path: "/admin/events", heading: "Events" },
   { path: "/admin/blog", heading: "Blog Posts" },
   { path: "/admin/gallery", heading: "Gallery Photos" },
+  { path: "/admin/testimonials", heading: "Testimonials" },
 ];
 
 for (const { path, heading } of adminRoutes) {

@@ -5,8 +5,15 @@ import SafetyGrid from "@/components/SafetyGrid";
 import TestimonialRow from "@/components/TestimonialRow";
 import Button from "@/components/Button";
 import { waLink, howItWorksSteps } from "@/lib/data";
+import { getTestimonials } from "@/lib/testimonials";
 
-export default function HomePage() {
+// Testimonials are admin-editable (see /admin/testimonials) — revalidate
+// periodically so a new or edited quote shows up here without a redeploy.
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const testimonials = await getTestimonials();
+
   return (
     <main>
       <Hero />
@@ -66,7 +73,7 @@ export default function HomePage() {
       <section className="py-24">
         <div className="wrap">
           <SectionHeader eyebrow="Parent Voices" title="What Kaduna parents say" center />
-          <TestimonialRow />
+          <TestimonialRow testimonials={testimonials} />
         </div>
       </section>
 
