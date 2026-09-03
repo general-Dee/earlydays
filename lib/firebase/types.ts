@@ -1,3 +1,64 @@
+export type AdminArea =
+  | "announcements"
+  | "applications"
+  | "inquiries"
+  | "parents"
+  | "events"
+  | "reports"
+  | "dashboard"
+  | "payments"
+  | "staff"
+  | "blog"
+  | "gallery"
+  | "testimonials";
+
+// Single source of truth for the runtime list of areas — mirrors the
+// `AdminArea` union above. Consumed by the admin-access API's validation and
+// by the admin-access UI's area picker, so the list is never hand-duplicated.
+export const ADMIN_AREAS: readonly AdminArea[] = [
+  "announcements",
+  "applications",
+  "inquiries",
+  "parents",
+  "events",
+  "reports",
+  "dashboard",
+  "payments",
+  "staff",
+  "blog",
+  "gallery",
+  "testimonials",
+];
+
+// Source of truth for who can manage which admin areas. Looked up by uid in
+// `lib/firebase/admin-auth.ts`; `ADMIN_EMAILS`/`ADMIN_EMAILS_<AREA>` env vars
+// remain a bootstrap/break-glass fallback for accounts with no doc here yet.
+// `disabled` is never stored here — same convention as `Parent.disabled`
+// below: it lives only on the Firebase Auth user record, merged in on read.
+export type AdminUser = {
+  uid: string;
+  email: string;
+  displayName: string;
+  // Superadmin status alone grants management of other admins — no area needed.
+  isSuperAdmin: boolean;
+  areas: AdminArea[];
+  createdAt: number;
+  createdBy: string;
+  updatedAt?: number;
+  updatedBy?: string;
+  disabled?: boolean;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  action: string;
+  actorEmail: string;
+  targetUid?: string;
+  targetEmail?: string;
+  detail?: string;
+  createdAt: number;
+};
+
 export type ChildRecord = {
   id: string;
   name: string;

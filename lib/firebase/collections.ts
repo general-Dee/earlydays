@@ -12,6 +12,8 @@ export const COLLECTIONS = {
   testimonials: "testimonials",
   settings: "settings",
   rateLimits: "rateLimits",
+  adminUsers: "adminUsers",
+  auditLog: "auditLog",
 } as const;
 
 export const paths = {

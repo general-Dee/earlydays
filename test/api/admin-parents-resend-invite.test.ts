@@ -6,6 +6,7 @@ const generatePasswordResetLink = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const get = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken, generatePasswordResetLink }),
@@ -18,7 +19,7 @@ vi.mock("@/lib/email/notify", () => ({
 }));
 
 collection.mockImplementation(() => ({ doc }));
-doc.mockImplementation(() => ({ get }));
+doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { get }));
 
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/admin/parents/u1/resend-invite", { method: "POST", headers });
@@ -31,7 +32,8 @@ function context(uid = "u1") {
 beforeEach(() => {
   vi.clearAllMocks();
   collection.mockImplementation(() => ({ doc }));
-  doc.mockImplementation(() => ({ get }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { get }));
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
 });

@@ -9,6 +9,7 @@ const update = vi.fn();
 const file = vi.fn();
 const save = vi.fn();
 const deleteFile = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -29,7 +30,8 @@ const existingPhoto = {
 
 function resetChain() {
   collection.mockImplementation(() => ({ doc }));
-  doc.mockImplementation(() => ({ get, update }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { get, update }));
   file.mockImplementation(() => ({ save, delete: deleteFile }));
 }
 

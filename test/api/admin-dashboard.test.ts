@@ -46,6 +46,9 @@ beforeEach(() => {
         doc: (id: string) => (id === "term" ? { get: termGet, set: termSet } : { get: feesGet, set: feesSet }),
       };
     }
+    if (path === "adminUsers") {
+      return { doc: () => ({ get: () => Promise.resolve({ exists: false }) }) };
+    }
     return { get: paymentsGet };
   });
   applicationsGet.mockResolvedValue(docsFrom([]));

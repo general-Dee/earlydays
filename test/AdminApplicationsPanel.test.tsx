@@ -19,6 +19,10 @@ vi.mock("@/lib/firebase/client", () => ({
   getFirebaseAuth: () => "fake-auth",
 }));
 
+vi.mock("@/lib/firebase/admin-access-context", () => ({
+  useAdminAccess: () => ({ status: "ready", isSuperAdmin: true, areas: [] }),
+}));
+
 const fakeUser = { email: "staff@earlydays.example", getIdToken: vi.fn().mockResolvedValue("tok") };
 
 const sampleApplication = {

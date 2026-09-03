@@ -5,6 +5,7 @@ const verifyIdToken = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const del = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -13,7 +14,8 @@ vi.mock("@/lib/firebase/admin", () => ({
 
 function resetChain() {
   collection.mockImplementation(() => ({ doc }));
-  doc.mockImplementation(() => ({ delete: del }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { delete: del }));
 }
 
 function request(headers: Record<string, string> = {}) {

@@ -6,13 +6,14 @@ const collection = vi.fn();
 const orderBy = vi.fn();
 const get = vi.fn();
 const add = vi.fn();
+const doc = vi.fn(() => ({ get: () => Promise.resolve({ exists: false }) }));
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
   getAdminDb: () => ({ collection }),
 }));
 
-collection.mockImplementation(() => ({ orderBy, add }));
+collection.mockImplementation(() => ({ orderBy, add, doc }));
 orderBy.mockImplementation(() => ({ get }));
 
 function getRequest(headers: Record<string, string> = {}) {
@@ -31,7 +32,7 @@ const validEvent = { title: "Term Starts", date: "2026-09-01", tag: "All Stages"
 
 beforeEach(() => {
   vi.clearAllMocks();
-  collection.mockImplementation(() => ({ orderBy, add }));
+  collection.mockImplementation(() => ({ orderBy, add, doc }));
   orderBy.mockImplementation(() => ({ get }));
 });
 

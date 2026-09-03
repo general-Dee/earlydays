@@ -11,6 +11,7 @@ const orderBy = vi.fn();
 const get = vi.fn();
 const doc = vi.fn();
 const set = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken, createUser, deleteUser, generatePasswordResetLink, getUsers }),
@@ -24,7 +25,7 @@ vi.mock("@/lib/email/notify", () => ({
 
 collection.mockImplementation(() => ({ orderBy, doc }));
 orderBy.mockImplementation(() => ({ get }));
-doc.mockImplementation(() => ({ set }));
+doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { set }));
 
 function getRequest(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/admin/parents", { headers });
@@ -49,7 +50,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   collection.mockImplementation(() => ({ orderBy, doc }));
   orderBy.mockImplementation(() => ({ get }));
-  doc.mockImplementation(() => ({ set }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { set }));
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
   deleteUser.mockResolvedValue(undefined);

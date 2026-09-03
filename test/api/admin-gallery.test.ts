@@ -10,6 +10,7 @@ const set = vi.fn();
 const file = vi.fn();
 const save = vi.fn();
 const deleteFile = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -20,7 +21,8 @@ vi.mock("@/lib/firebase/admin", () => ({
 function resetChain() {
   collection.mockImplementation(() => ({ orderBy, doc }));
   orderBy.mockImplementation(() => ({ get }));
-  doc.mockImplementation(() => ({ id: "g1", set }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { id: "g1", set }));
   file.mockImplementation(() => ({ save, delete: deleteFile }));
 }
 

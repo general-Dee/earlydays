@@ -218,6 +218,8 @@ describe("collections with no explicit rule fall through to the catch-all deny",
     ["settings", "term"],
     ["settings", "fees"],
     ["rateLimits", "contact:1.2.3.4"],
+    ["adminUsers", "u1"],
+    ["auditLog", "log1"],
   ];
 
   for (const [collectionName, id] of paths) {

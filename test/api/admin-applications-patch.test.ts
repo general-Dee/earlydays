@@ -6,6 +6,7 @@ const collection = vi.fn();
 const doc = vi.fn();
 const update = vi.fn();
 const get = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -18,7 +19,7 @@ vi.mock("@/lib/email/notify", () => ({
 }));
 
 collection.mockImplementation(() => ({ doc }));
-doc.mockImplementation(() => ({ update, get }));
+doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update, get }));
 
 const sampleApplication = {
   childName: "Zainab Bello",
@@ -42,7 +43,8 @@ function context(id = "a1") {
 beforeEach(() => {
   vi.clearAllMocks();
   collection.mockImplementation(() => ({ doc }));
-  doc.mockImplementation(() => ({ update, get }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update, get }));
   update.mockResolvedValue(undefined);
   get.mockResolvedValue({ exists: true, data: () => sampleApplication });
   sendApplicationStatusEmail.mockResolvedValue(true);

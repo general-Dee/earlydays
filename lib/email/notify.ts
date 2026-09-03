@@ -105,6 +105,34 @@ export async function sendParentInviteEmail(parent: ParentInvite, resetLink: str
   return true;
 }
 
+type AdminInvite = { displayName: string; email: string };
+
+export async function sendAdminInviteEmail(admin: AdminInvite, resetLink: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: admin.email,
+    subject: "Your Earlydays admin account",
+    text: [
+      `Hi ${admin.displayName},`,
+      "",
+      "You've been added as an Earlydays admin. Use the link below to set your password and log in:",
+      "",
+      resetLink,
+      "",
+      "This link expires in 1 hour. If it has expired, use \"Forgot password\" on the admin login page instead.",
+    ].join("\n"),
+  });
+
+  return true;
+}
+
 type ApplicationStatusUpdate = {
   guardianName: string;
   childName: string;

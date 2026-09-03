@@ -51,6 +51,40 @@ describe("sendPaymentReceiptEmail", () => {
   });
 });
 
+describe("sendAdminInviteEmail", () => {
+  it("includes the reset link and the admin's display name", async () => {
+    const { sendAdminInviteEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendAdminInviteEmail(
+      { displayName: "Musa", email: "musa@earlydays.example" },
+      "https://earlydays.example/reset"
+    );
+
+    expect(sent).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "musa@earlydays.example",
+        text: expect.stringContaining("https://earlydays.example/reset"),
+      })
+    );
+    const text = send.mock.calls[0][0].text as string;
+    expect(text).toContain("Musa");
+  });
+
+  it("does nothing when Resend isn't configured", async () => {
+    delete process.env.RESEND_API_KEY;
+    const { sendAdminInviteEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendAdminInviteEmail(
+      { displayName: "Musa", email: "musa@earlydays.example" },
+      "https://earlydays.example/reset"
+    );
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendFeeReminderEmail", () => {
   it("includes the guardian, term, and fee amount from the fee map", async () => {
     const { sendFeeReminderEmail } = await import("@/lib/email/notify");

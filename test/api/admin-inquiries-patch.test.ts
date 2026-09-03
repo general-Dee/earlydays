@@ -5,6 +5,7 @@ const verifyIdToken = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const update = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -12,7 +13,7 @@ vi.mock("@/lib/firebase/admin", () => ({
 }));
 
 collection.mockImplementation(() => ({ doc }));
-doc.mockImplementation(() => ({ update }));
+doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update }));
 
 function request(headers: Record<string, string> = {}, body?: unknown) {
   return new NextRequest("http://localhost/api/admin/inquiries/i1", {
@@ -29,7 +30,8 @@ function context(id = "i1") {
 beforeEach(() => {
   vi.clearAllMocks();
   collection.mockImplementation(() => ({ doc }));
-  doc.mockImplementation(() => ({ update }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update }));
   update.mockResolvedValue(undefined);
 });
 

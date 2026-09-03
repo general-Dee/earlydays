@@ -6,13 +6,14 @@ const collection = vi.fn();
 const orderBy = vi.fn();
 const get = vi.fn();
 const add = vi.fn();
+const doc = vi.fn(() => ({ get: () => Promise.resolve({ exists: false }) }));
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
   getAdminDb: () => ({ collection }),
 }));
 
-collection.mockImplementation(() => ({ orderBy, add }));
+collection.mockImplementation(() => ({ orderBy, add, doc }));
 orderBy.mockImplementation(() => ({ get }));
 
 function request(headers: Record<string, string> = {}) {
@@ -39,7 +40,7 @@ const validApplication = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  collection.mockImplementation(() => ({ orderBy, add }));
+  collection.mockImplementation(() => ({ orderBy, add, doc }));
   orderBy.mockImplementation(() => ({ get }));
 });
 

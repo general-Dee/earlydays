@@ -5,6 +5,7 @@ const verifyIdToken = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const deleteFn = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -16,7 +17,7 @@ vi.mock("@/lib/email/notify", () => ({
 }));
 
 collection.mockImplementation(() => ({ doc }));
-doc.mockImplementation(() => ({ delete: deleteFn }));
+doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { delete: deleteFn }));
 
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/admin/applications/a1", {
@@ -32,7 +33,8 @@ function context(id = "a1") {
 beforeEach(() => {
   vi.clearAllMocks();
   collection.mockImplementation(() => ({ doc }));
-  doc.mockImplementation(() => ({ delete: deleteFn }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { delete: deleteFn }));
   deleteFn.mockResolvedValue(undefined);
 });
 

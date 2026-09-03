@@ -5,10 +5,11 @@ const verifyIdToken = vi.fn();
 const doc = vi.fn();
 const paymentGet = vi.fn();
 const parentGet = vi.fn();
+const collection = vi.fn(() => ({ doc: () => ({ get: () => Promise.resolve({ exists: false }) }) }));
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
-  getAdminDb: () => ({ doc }),
+  getAdminDb: () => ({ doc, collection }),
 }));
 
 function request(url: string, headers: Record<string, string> = {}) {

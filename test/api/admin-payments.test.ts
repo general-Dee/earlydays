@@ -24,6 +24,7 @@ beforeEach(() => {
   for (const key of Object.keys(paymentsGetByPath)) delete paymentsGetByPath[key];
 
   collection.mockImplementation((path: string) => {
+    if (path === "adminUsers") return { doc: () => ({ get: () => Promise.resolve({ exists: false }) }) };
     if (path === "parents") return { get: parentsGet };
     if (!paymentsGetByPath[path]) {
       paymentsGetByPath[path] = vi.fn().mockResolvedValue(docsFrom([]));
@@ -76,6 +77,7 @@ describe("GET /api/admin/payments", () => {
     });
 
     collection.mockImplementation((path: string) => {
+      if (path === "adminUsers") return { doc: () => ({ get: () => Promise.resolve({ exists: false }) }) };
       if (path === "parents") return { get: parentsGet };
       if (path === "parents/u1/payments") {
         return {

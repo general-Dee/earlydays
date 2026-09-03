@@ -7,6 +7,7 @@ const orderBy = vi.fn();
 const get = vi.fn();
 const doc = vi.fn();
 const set = vi.fn();
+let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken }),
@@ -16,7 +17,8 @@ vi.mock("@/lib/firebase/admin", () => ({
 function resetChain() {
   collection.mockImplementation(() => ({ orderBy, doc }));
   orderBy.mockImplementation(() => ({ get }));
-  doc.mockImplementation(() => ({ id: "t1", set }));
+  docCalls = 0;
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { id: "t1", set }));
 }
 
 function getRequest(headers: Record<string, string> = {}) {
