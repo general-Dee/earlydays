@@ -14,6 +14,7 @@ export default function JourneyPage() {
       <section className="py-20">
         <div className="wrap">
           <SectionHeader
+            level={1}
             eyebrow="The Earlydays Difference"
             title="The only school transition your child will ever need"
             desc="Most families juggle two schools and two culture shocks — a new gate, new teachers, new rules, right when consistency matters most. At Earlydays it's one continuous pathway from Creche to Primary 6. Tap a stage to see exactly what that year looks like."

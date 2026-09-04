@@ -24,6 +24,7 @@
     "resend": "^4.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@firebase/rules-unit-testing": "^3.0.4",
     "@playwright/test": "1.46.0",
     "@testing-library/dom": "^10.4.1",

@@ -13,6 +13,7 @@ export default function ApplyPage() {
     <main className="py-20">
       <div className="wrap max-w-[640px]">
         <SectionHeader
+          level={1}
           eyebrow="Admissions"
           title="Apply for admission"
           desc="Fill in a few details about your child and we'll follow up within a school day."

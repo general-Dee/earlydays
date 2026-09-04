@@ -42,10 +42,10 @@ export default function PathwayVisualizer() {
 
       <div className="mt-11 bg-ground-card border border-line rounded-card p-8 md:p-9 flex flex-col md:flex-row gap-8 md:gap-9">
         <div className="flex-1">
-          <span className="font-mono text-[0.7rem] text-sun uppercase tracking-[0.08em] mb-2.5 block">
+          <span className="font-mono text-[0.7rem] text-accent-light uppercase tracking-[0.08em] mb-2.5 block">
             {stage.tag} · Age {stage.age}
           </span>
-          <h3 className="font-display font-medium text-ink text-2xl mb-2">{stage.name}</h3>
+          <h2 className="font-display font-medium text-ink text-2xl mb-2">{stage.name}</h2>
           <p className="text-ink/[0.78]">{stage.desc}</p>
         </div>
         <ul className="flex-1 mt-3 pl-4.5 text-ink/[0.78] text-[0.92rem] space-y-1.5 list-disc">

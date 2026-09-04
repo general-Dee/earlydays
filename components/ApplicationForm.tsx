@@ -81,7 +81,7 @@ export default function ApplicationForm() {
 
   return (
     <div className="card p-8">
-      <h4 className="font-display font-medium text-xl mb-0.5 text-ink">Application details</h4>
+      <h2 className="font-display font-medium text-xl mb-0.5 text-ink">Application details</h2>
       <p className="text-[0.85rem] text-slate">Takes about two minutes — we&rsquo;ll reach out to confirm next steps.</p>
 
       <form onSubmit={handleSubmit}>

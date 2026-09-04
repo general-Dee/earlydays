@@ -16,6 +16,7 @@ export default function SafetyPage() {
       <section className="py-20">
         <div className="wrap">
           <SectionHeader
+            level={1}
             eyebrow="Safety & Trust"
             title="The safety questions that keep Kaduna parents up at night"
             desc="You're trusting us with your most important person. Here's exactly how we earn that trust — before you have to ask."

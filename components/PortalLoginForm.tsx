@@ -68,7 +68,7 @@ export default function PortalLoginForm() {
 
   return (
     <div className="card p-8 md:p-9">
-      <h4 className="font-display font-medium text-xl mb-0.5 text-ink">Parent Login</h4>
+      <h2 className="font-display font-medium text-xl mb-0.5 text-ink">Parent Login</h2>
       <p className="text-[0.85rem] text-slate">Log in with the email and password the school issued you.</p>
 
       <form onSubmit={handleSubmit}>

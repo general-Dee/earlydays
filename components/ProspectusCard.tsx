@@ -7,7 +7,7 @@ export default function ProspectusCard() {
   return (
     <div className="bg-ground-card border border-line rounded-card p-8 flex flex-col justify-between">
       <div>
-        <h4 className="font-display font-medium text-ink text-xl mb-1.5">Get the full prospectus</h4>
+        <h2 className="font-display font-medium text-ink text-xl mb-1.5">Get the full prospectus</h2>
         <p className="text-ink/[0.72] text-sm mb-0">
           Curriculum, daily schedule, uniform list, and full fee breakdown in one PDF.
         </p>
@@ -15,7 +15,7 @@ export default function ProspectusCard() {
       <a
         href="/prospectus.pdf"
         onClick={() => track("prospectus_download")}
-        className="btn btn-primary btn-sm mt-5 justify-center"
+        className="btn btn-primary btn-sm mt-5 justify-center text-accent-light border-accent-light hover:bg-accent-light/[0.12]"
       >
         Download Prospectus
       </a>

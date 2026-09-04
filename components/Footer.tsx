@@ -14,7 +14,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2.5 mb-3.5">
               <span className="flex bg-[#f3f5fe] rounded-md p-1">
-                <Image src="/logo.png" alt="Earlydays" width={22} height={22} className="block" />
+                <Image src="/logo.png" alt="" width={22} height={22} className="block" />
               </span>
               <span className="font-display font-medium text-lg text-ink">{site.name}</span>
             </div>
@@ -25,7 +25,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-ink text-sm font-medium mb-3.5">Visit</h4>
+            <h2 className="text-ink text-sm font-medium mb-3.5">Visit</h2>
             <a
               href={waLink("Hi, I'd like to know more about Earlydays")}
               target="_blank"
@@ -42,7 +42,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-ink text-sm font-medium mb-3.5">Explore</h4>
+            <h2 className="text-ink text-sm font-medium mb-3.5">Explore</h2>
             <Link href="/journey" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">The Journey</Link>
             <Link href="/gallery" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Gallery</Link>
             <Link href="/admissions" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Admissions &amp; Fees</Link>
@@ -51,7 +51,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-ink text-sm font-medium mb-3.5">Follow</h4>
+            <h2 className="text-ink text-sm font-medium mb-3.5">Follow</h2>
             <a href="#" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Instagram</a>
             <a href="#" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Facebook</a>
           </div>
@@ -59,7 +59,7 @@ export default function Footer() {
 
         <div className="mt-12 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h4 className="text-ink text-sm font-medium mb-1">Stay in the loop</h4>
+            <h2 className="text-ink text-sm font-medium mb-1">Stay in the loop</h2>
             <p className="text-ink-soft text-sm mb-0">Occasional news and announcements — no spam.</p>
           </div>
           <NewsletterSignupForm />

@@ -19,6 +19,7 @@ export default async function FaqPage() {
     <main className="py-20">
       <div className="wrap">
         <SectionHeader
+          level={1}
           eyebrow="Questions"
           title="Frequently asked questions"
           desc="Fees, admissions, safety, and the daily schedule — the questions parents ask most."

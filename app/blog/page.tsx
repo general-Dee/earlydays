@@ -19,6 +19,7 @@ export default async function BlogPage() {
     <main className="py-20">
       <div className="wrap">
         <SectionHeader
+          level={1}
           eyebrow="From Earlydays"
           title="Straight answers for Kaduna parents, no fluff"
           desc="Real questions from real parents — settling in, school readiness, and everything between naptime and Primary 6."

@@ -52,7 +52,7 @@ export default function ContactForm() {
 
   return (
     <div className="card p-8 mt-6">
-      <h4 className="font-display font-medium text-xl mb-0.5 text-ink">Send an inquiry</h4>
+      <h2 className="font-display font-medium text-xl mb-0.5 text-ink">Send an inquiry</h2>
       <p className="text-[0.85rem] text-slate">Prefer not to switch apps? Send us a message here instead.</p>
 
       <form onSubmit={handleSubmit}>

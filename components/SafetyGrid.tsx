@@ -19,7 +19,7 @@ export default function SafetyGrid() {
             <div className="w-11 h-11 rounded-lg bg-sun-soft text-accent-light flex items-center justify-center mb-4">
               <IconComponent size={22} weight="regular" />
             </div>
-            <h4 className="font-display font-medium text-base mb-1.5 text-ink">{s.title}</h4>
+            <h2 className="font-display font-medium text-base mb-1.5 text-ink">{s.title}</h2>
             <p className="text-sm mb-0 text-ink/[0.78]">{s.desc}</p>
           </div>
         );

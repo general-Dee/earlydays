@@ -173,7 +173,7 @@ export default function EventsList() {
               </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between gap-3 mb-1">
-                  <h4 className="text-base text-ink font-medium">{e.title}</h4>
+                  <h2 className="text-base text-ink font-medium">{e.title}</h2>
                   <span className="text-xs font-medium px-3 py-1.5 rounded-md bg-paper text-ink/[0.85] whitespace-nowrap">
                     {e.tag}
                   </span>

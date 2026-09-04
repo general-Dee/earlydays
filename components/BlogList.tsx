@@ -16,7 +16,7 @@ export default function BlogList({ posts: allPosts, limit }: { posts: BlogPost[]
             <span className="font-mono text-[0.68rem] uppercase text-sun font-medium tracking-wider">
               {p.category}
             </span>
-            <h4 className="font-display font-medium text-base mt-2 mb-1.5 text-ink">{p.title}</h4>
+            <h2 className="font-display font-medium text-base mt-2 mb-1.5 text-ink">{p.title}</h2>
             <p className="text-sm mb-0 text-ink/[0.78]">{p.excerpt}</p>
           </div>
         </Link>

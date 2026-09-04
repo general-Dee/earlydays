@@ -13,6 +13,7 @@ export default function GalleryPage() {
       <section className="py-20">
         <div className="wrap">
           <SectionHeader
+            level={1}
             eyebrow="Gallery"
             title="A look around Earlydays"
             desc="Real classrooms, real grounds — filter by area or open any photo for a closer look."

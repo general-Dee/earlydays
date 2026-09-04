@@ -41,7 +41,7 @@ export default function DayInLife() {
       <div className="card grid grid-cols-1 md:grid-cols-[0.5fr_1.5fr] gap-4 md:gap-10 p-6 md:p-10">
         <div className="font-mono text-4xl text-accent-light font-medium">{step.time}</div>
         <div>
-          <h4 className="font-display font-medium text-xl mb-2 text-ink">{step.title}</h4>
+          <h2 className="font-display font-medium text-xl mb-2 text-ink">{step.title}</h2>
           <p className="mb-0 text-ink/[0.78]">{step.desc}</p>
         </div>
       </div>

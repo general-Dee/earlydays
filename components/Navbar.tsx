@@ -16,7 +16,7 @@ export default function Navbar() {
       <nav className="wrap flex items-center justify-between py-4">
         <Link href="/" className="flex items-center gap-2.5 font-display font-medium text-xl text-ink">
           <span className="flex bg-[#f3f5fe] rounded-md p-1">
-            <Image src="/logo.png" alt="Earlydays" width={32} height={32} className="block" />
+            <Image src="/logo.png" alt="" width={32} height={32} className="block" />
           </span>
           Earlydays
         </Link>

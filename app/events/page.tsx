@@ -12,6 +12,7 @@ export default function EventsPage() {
     <main className="py-20">
       <div className="wrap">
         <SectionHeader
+          level={1}
           eyebrow="What's Coming Up"
           title="Term dates & events"
           desc="Resumption dates, open days, and school events, kept up to date by the school office."

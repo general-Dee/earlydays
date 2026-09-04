@@ -25,7 +25,7 @@ export default async function HomePage() {
             {howItWorksSteps.map((step) => (
               <div key={step.number}>
                 <span className="font-mono text-sun text-sm font-medium">{step.number}</span>
-                <h4 className="font-display font-medium text-lg text-ink mt-2 mb-1.5">{step.title}</h4>
+                <h2 className="font-display font-medium text-lg text-ink mt-2 mb-1.5">{step.title}</h2>
                 <p className="text-sm text-ink/[0.78] mb-0">{step.desc}</p>
               </div>
             ))}
@@ -89,7 +89,12 @@ export default async function HomePage() {
                 picture what&apos;s next.
               </p>
             </div>
-            <Button href={waLink("Hi, I'd like to book a tour for my child")} external variant="primary">
+            <Button
+              href={waLink("Hi, I'd like to book a tour for my child")}
+              external
+              variant="primary"
+              className="text-accent-light border-accent-light hover:bg-accent-light/[0.12]"
+            >
               Book a Visit
             </Button>
           </div>

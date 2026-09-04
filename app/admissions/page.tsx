@@ -21,6 +21,7 @@ export default function AdmissionsPage() {
       <section className="py-20 pb-0">
         <div className="wrap">
           <SectionHeader
+            level={1}
             eyebrow="Admissions"
             title="Start your child's journey at Earlydays"
             desc="Apply online in a few minutes — we'll follow up within a school day."

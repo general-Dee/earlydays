@@ -14,6 +14,7 @@ export default function ContactPage() {
     <main className="py-20">
       <div className="wrap max-w-[640px]">
         <SectionHeader
+          level={1}
           eyebrow="Get in Touch"
           title="We'd love to show you around"
           desc="The fastest way to reach us is WhatsApp — most inquiries get a same-day reply."

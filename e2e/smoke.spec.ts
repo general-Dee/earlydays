@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 // One of the sample posts defaultBlogPosts() (lib/blogPosts.ts) falls back
@@ -15,6 +16,7 @@ const routes = [
   "/events",
   "/blog",
   `/blog/${SAMPLE_BLOG_SLUG}`,
+  "/faq",
   "/portal",
   "/contact",
 ];
@@ -24,6 +26,12 @@ for (const route of routes) {
     const response = await page.goto(route);
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
+  });
+
+  test(`${route} has no automatically detectable accessibility issues`, async ({ page }) => {
+    await page.goto(route);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
   });
 }
 
@@ -52,24 +60,36 @@ const adminRoutes = [
   { path: "/admin/blog", heading: "Blog Posts" },
   { path: "/admin/gallery", heading: "Gallery Photos" },
   { path: "/admin/testimonials", heading: "Testimonials" },
+  { path: "/admin/faqs", heading: "FAQs" },
+  { path: "/admin/subscribers", heading: "Subscribers" },
 ];
 
 for (const { path, heading } of adminRoutes) {
   test(`${path} shows the login gate when logged out`, async ({ page }) => {
     const response = await page.goto(path);
     expect(response?.status()).toBeLessThan(400);
-    await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Log In" })).toBeVisible();
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Password")).toBeVisible();
+    // Scoped to <main> — the footer's newsletter signup form also has an
+    // "Email" field, so a page-wide getByLabel("Email") would be ambiguous.
+    const main = page.locator("main");
+    await expect(main.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Log In" })).toBeVisible();
+    await expect(main.getByLabel("Email")).toBeVisible();
+    await expect(main.getByLabel("Password")).toBeVisible();
+  });
+
+  test(`${path} login gate has no automatically detectable accessibility issues`, async ({ page }) => {
+    await page.goto(path);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
   });
 }
 
 test("/portal shows the login gate when logged out", async ({ page }) => {
   const response = await page.goto("/portal");
   expect(response?.status()).toBeLessThan(400);
-  await expect(page.getByRole("heading", { name: "Parent Login" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Log In" })).toBeVisible();
-  await expect(page.getByLabel("Email")).toBeVisible();
-  await expect(page.getByLabel("Password")).toBeVisible();
+  const main = page.locator("main");
+  await expect(main.getByRole("heading", { name: "Parent Login" })).toBeVisible();
+  await expect(main.getByRole("button", { name: "Log In" })).toBeVisible();
+  await expect(main.getByLabel("Email")).toBeVisible();
+  await expect(main.getByLabel("Password")).toBeVisible();
 });

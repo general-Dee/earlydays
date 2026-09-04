@@ -25,7 +25,7 @@ export default function PortalPage() {
             <div key={f.title} className="flex gap-3.5 mb-5.5">
               <span className="w-2 h-2 rounded-full bg-sun mt-2 flex-shrink-0" />
               <div>
-                <h4 className="text-base mb-1 text-ink font-medium">{f.title}</h4>
+                <h2 className="text-base mb-1 text-ink font-medium">{f.title}</h2>
                 <p className="text-sm mb-0 text-ink/[0.78]">{f.desc}</p>
               </div>
             </div>
