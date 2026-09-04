@@ -47,6 +47,8 @@ const QUICK_LINKS = [
   { href: "/admin/blog", label: "Blog" },
   { href: "/admin/gallery", label: "Gallery" },
   { href: "/admin/testimonials", label: "Testimonials" },
+  { href: "/admin/faqs", label: "FAQs" },
+  { href: "/admin/subscribers", label: "Subscribers" },
   { href: "/admin/access", label: "Admin Access" },
 ];
 

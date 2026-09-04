@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { X, CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { X, CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/collections";
@@ -16,6 +16,7 @@ export default function Gallery() {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]>("All");
+  const [search, setSearch] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
@@ -43,7 +44,9 @@ export default function Gallery() {
     };
   }, []);
 
-  const filtered = activeCategory === "All" ? photos : photos.filter((g) => g.category === activeCategory);
+  const byCategory = activeCategory === "All" ? photos : photos.filter((g) => g.category === activeCategory);
+  const needle = search.trim().toLowerCase();
+  const filtered = needle ? byCategory.filter((g) => g.alt.toLowerCase().includes(needle)) : byCategory;
 
   function close() {
     setLightboxIndex(null);
@@ -93,23 +96,41 @@ export default function Gallery() {
 
   return (
     <div>
-      <div className="flex gap-2.5 flex-wrap mb-8" role="group" aria-label="Filter gallery by category">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setActiveCategory(cat)}
-            aria-pressed={activeCategory === cat}
-            className={`px-4 py-2 rounded-full border font-medium text-sm transition-colors ${
-              activeCategory === cat
-                ? "bg-sun/[0.16] border-sun text-accent-light"
-                : "bg-transparent text-ink border-line hover:border-sun/60"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3.5 mb-8">
+        <div className="flex gap-2.5 flex-wrap" role="group" aria-label="Filter gallery by category">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory(cat)}
+              aria-pressed={activeCategory === cat}
+              className={`px-4 py-2 rounded-full border font-medium text-sm transition-colors ${
+                activeCategory === cat
+                  ? "bg-sun/[0.16] border-sun text-accent-light"
+                  : "bg-transparent text-ink border-line hover:border-sun/60"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative ml-auto w-full sm:w-56">
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search photos…"
+            aria-label="Search gallery photos"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-line bg-chalk text-ink text-[0.85rem]"
+          />
+        </div>
       </div>
+
+      {filtered.length === 0 && (
+        <p className="text-sm text-slate">No photos match your search.</p>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5">
         {filtered.map((img, i) => (

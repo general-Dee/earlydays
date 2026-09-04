@@ -161,6 +161,7 @@ export const navLinks = [
   { href: "/admissions", label: "Admissions" },
   { href: "/events", label: "Events" },
   { href: "/blog", label: "Blog" },
+  { href: "/faq", label: "FAQs" },
   { href: "/contact", label: "Contact" },
   { href: "/portal", label: "Portal" },
 ];

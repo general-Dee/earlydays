@@ -10,7 +10,9 @@ export type AdminArea =
   | "staff"
   | "blog"
   | "gallery"
-  | "testimonials";
+  | "testimonials"
+  | "faqs"
+  | "subscribers";
 
 // Single source of truth for the runtime list of areas — mirrors the
 // `AdminArea` union above. Consumed by the admin-access API's validation and
@@ -28,6 +30,8 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   "blog",
   "gallery",
   "testimonials",
+  "faqs",
+  "subscribers",
 ];
 
 // Source of truth for who can manage which admin areas. Looked up by uid in
@@ -188,6 +192,32 @@ export type Testimonial = {
   createdBy: string;
   createdAt: number;
   updatedAt?: number;
+};
+
+export type Faq = {
+  id: string;
+  question: string;
+  answer: string;
+  order: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt?: number;
+};
+
+export type Subscriber = {
+  id: string;
+  email: string;
+  name?: string;
+  createdAt: number;
+};
+
+export type EventRsvp = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  guestCount: number;
+  createdAt: number;
 };
 
 export type BlogPost = {

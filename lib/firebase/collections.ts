@@ -10,6 +10,9 @@ export const COLLECTIONS = {
   blog: "blog",
   gallery: "gallery",
   testimonials: "testimonials",
+  faqs: "faqs",
+  subscribers: "subscribers",
+  rsvps: "rsvps",
   settings: "settings",
   rateLimits: "rateLimits",
   adminUsers: "adminUsers",
@@ -20,4 +23,6 @@ export const paths = {
   parent: (uid: string) => `${COLLECTIONS.parents}/${uid}`,
   payments: (uid: string) => `${COLLECTIONS.parents}/${uid}/${COLLECTIONS.payments}`,
   payment: (uid: string, reference: string) => `${paths.payments(uid)}/${reference}`,
+  eventRsvps: (eventId: string) => `${COLLECTIONS.events}/${eventId}/${COLLECTIONS.rsvps}`,
+  eventRsvp: (eventId: string, rsvpId: string) => `${paths.eventRsvps(eventId)}/${rsvpId}`,
 };

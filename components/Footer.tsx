@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { track } from "@vercel/analytics";
 import { site, waLink } from "@/lib/data";
+import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 
 export default function Footer() {
   return (
@@ -46,6 +47,7 @@ export default function Footer() {
             <Link href="/gallery" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Gallery</Link>
             <Link href="/admissions" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Admissions &amp; Fees</Link>
             <Link href="/events" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">Events</Link>
+            <Link href="/faq" className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">FAQs</Link>
           </div>
 
           <div>
@@ -55,8 +57,16 @@ export default function Footer() {
           </div>
         </div>
 
+        <div className="mt-12 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-ink text-sm font-medium mb-1">Stay in the loop</h4>
+            <p className="text-ink-soft text-sm mb-0">Occasional news and announcements — no spam.</p>
+          </div>
+          <NewsletterSignupForm />
+        </div>
+
         <div
-          className="mt-12 mb-6 h-px"
+          className="mt-8 mb-6 h-px"
           style={{
             background:
               "linear-gradient(to right, transparent, rgba(233,233,237,0.16) 48px, rgba(233,233,237,0.16) calc(100% - 48px), transparent)",

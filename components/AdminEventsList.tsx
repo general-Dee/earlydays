@@ -3,9 +3,69 @@
 import { useEffect, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import type { CalendarEvent } from "@/lib/firebase/types";
+import type { CalendarEvent, EventRsvp } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
+type RsvpLoadState = "loading" | "error" | "ready";
+
+function EventRsvps({ user, eventId }: { user: User; eventId: string }) {
+  const [rsvps, setRsvps] = useState<EventRsvp[]>([]);
+  const [state, setState] = useState<RsvpLoadState>("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setState("loading");
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(`/api/admin/events/${eventId}/rsvps`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setState("error");
+          return;
+        }
+
+        const data = (await res.json()) as { rsvps: EventRsvp[] };
+        setRsvps(data.rsvps);
+        setState("ready");
+      } catch {
+        if (!cancelled) setState("error");
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, eventId]);
+
+  if (state === "loading") return <p className="text-xs text-slate mt-2">Loading RSVPs…</p>;
+  if (state === "error") return <p className="text-xs text-clay mt-2">Couldn&rsquo;t load RSVPs.</p>;
+  if (rsvps.length === 0) return <p className="text-xs text-slate mt-2">No RSVPs yet.</p>;
+
+  const totalGuests = rsvps.reduce((sum, r) => sum + r.guestCount, 0);
+
+  return (
+    <div className="mt-2.5 border-t border-line pt-2.5">
+      <p className="text-xs text-slate mb-1.5">
+        {rsvps.length} {rsvps.length === 1 ? "RSVP" : "RSVPs"} · {totalGuests} {totalGuests === 1 ? "guest" : "guests"}
+      </p>
+      <ul className="flex flex-col gap-1">
+        {rsvps.map((r) => (
+          <li key={r.id} className="text-xs text-ink">
+            {r.name} · {r.email}
+            {r.phone ? ` · ${r.phone}` : ""} · {r.guestCount} {r.guestCount === 1 ? "guest" : "guests"}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function AdminEventsList({ user }: { user: User }) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -17,6 +77,7 @@ export default function AdminEventsList({ user }: { user: User }) {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [openRsvpsId, setOpenRsvpsId] = useState<string | null>(null);
 
   async function createEvent(e: React.FormEvent) {
     e.preventDefault();
@@ -196,14 +257,24 @@ export default function AdminEventsList({ user }: { user: User }) {
               <p className="text-sm mt-2 mb-0">{event.desc}</p>
               <div className="flex items-center justify-between gap-2.5 mt-2.5">
                 <span className="text-xs text-slate">{event.tag}</span>
-                <button
-                  onClick={() => deleteEvent(event.id)}
-                  disabled={deletingId === event.id}
-                  className="btn btn-ghost btn-sm"
-                >
-                  Delete
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOpenRsvpsId(openRsvpsId === event.id ? null : event.id)}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    {openRsvpsId === event.id ? "Hide RSVPs" : "View RSVPs"}
+                  </button>
+                  <button
+                    onClick={() => deleteEvent(event.id)}
+                    disabled={deletingId === event.id}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
+              {openRsvpsId === event.id && <EventRsvps user={user} eventId={event.id} />}
             </li>
           ))}
         </ul>

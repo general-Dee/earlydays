@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import SectionHeader from "@/components/SectionHeader";
-import BlogList from "@/components/BlogList";
+import BlogSearch from "@/components/BlogSearch";
 import { getBlogPosts } from "@/lib/blogPosts";
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ export default async function BlogPage() {
           title="Straight answers for Kaduna parents, no fluff"
           desc="Real questions from real parents — settling in, school readiness, and everything between naptime and Primary 6."
         />
-        <BlogList posts={posts} />
+        <BlogSearch posts={posts} />
       </div>
     </main>
   );
