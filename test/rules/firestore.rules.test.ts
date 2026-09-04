@@ -41,11 +41,35 @@ beforeEach(async () => {
 });
 
 describe("parents/{uid}", () => {
-  it("lets the owner read and create their own doc", async () => {
-    const data = { guardianName: "Aisha", email: "a@b.com", children: [], createdAt: Date.now() };
-    await assertSucceeds(setDoc(doc(asOwner(), "parents", OWNER_UID), data));
-    await assertSucceeds(getDoc(doc(asOwner(), "parents", OWNER_UID)));
-  });
+  // Longer timeout: this is the first test to hit the emulator, so it also
+  // pays the cold-start connection cost that later tests in this file don't.
+  it(
+    "lets the owner read their own doc, but denies self-service create",
+    async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), "parents", OWNER_UID), {
+          guardianName: "Aisha",
+          email: "a@b.com",
+          children: [],
+          createdAt: Date.now(),
+        });
+      });
+
+      await assertSucceeds(getDoc(doc(asOwner(), "parents", OWNER_UID)));
+
+      // OTHER_UID has no parents doc yet — this is exactly the self-signup
+      // shape (own uid, no admin-provisioned doc) that used to be allowed.
+      await assertFails(
+        setDoc(doc(asOther(), "parents", OTHER_UID), {
+          guardianName: "Hijacker",
+          email: "hijacker@b.com",
+          children: [],
+          createdAt: Date.now(),
+        })
+      );
+    },
+    15000
+  );
 
   it("lets the owner self-service edit their guardianName and phone", async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {

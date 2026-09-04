@@ -1,7 +1,10 @@
 rules_version = '2';
 
 // Payment writes only ever happen via the Admin SDK (server routes
-// bypass these rules), so `payments` is client-write:false here.
+// bypass these rules), so `payments` is client-write:false here. Parent
+// accounts are provisioned the same way (see app/api/admin/parents/route.ts) —
+// there is no legitimate client-side signup flow, so `parents/{uid}` is
+// create:false too, same as its delete:false.
 //
 // Audited 2026-09-02: every client-side Firestore read in components/
 // (parents/{uid}, parents/{uid}/payments, parents/{uid}/reports,
@@ -16,7 +19,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /parents/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow create: if request.auth != null && request.auth.uid == uid;
+      allow create: if false;
       // Self-service profile editing (portal) may only touch guardianName/phone —
       // children, email, uid, and createdAt stay admin-managed via the Admin SDK.
       allow update: if request.auth != null && request.auth.uid == uid

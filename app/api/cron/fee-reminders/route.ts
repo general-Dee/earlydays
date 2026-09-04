@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendFeeReminderEmail } from "@/lib/email/notify";
 import { sendWhatsAppFeeReminder } from "@/lib/whatsapp";
@@ -12,8 +13,13 @@ import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 export const runtime = "nodejs";
 
 export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (req: NextRequest) => {
-  const authHeader = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get("authorization") ?? "";
+  const expected = `Bearer ${cronSecret}`;
+  const authorized =
+    !!cronSecret && authHeader.length === expected.length && timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
