@@ -17,13 +17,28 @@ rules_version = '2';
 // `npm run test:rules`) — update that suite when you change a rule here.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Mirrors MAX_NAME_LENGTH/MAX_PHONE_LENGTH in components/PortalProfileForm.tsx
+    // so a direct SDK/REST call (bypassing the portal UI) can't write an
+    // oversized or malformed value even though key-level rules allow the write.
+    // A field only needs to be checked when present — parent docs aren't
+    // guaranteed to have `phone` set, and updateDoc() never removes a field
+    // you don't mention, so the other (unchanged) field may be absent here.
+    function validField(field, maxLen) {
+      return !(field in request.resource.data)
+        || (request.resource.data[field] is string && request.resource.data[field].size() <= maxLen);
+    }
+    function validGuardianUpdate() {
+      return validField("guardianName", 200) && validField("phone", 50);
+    }
+
     match /parents/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow create: if false;
       // Self-service profile editing (portal) may only touch guardianName/phone —
       // children, email, uid, and createdAt stay admin-managed via the Admin SDK.
       allow update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["guardianName", "phone"]);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["guardianName", "phone"])
+        && validGuardianUpdate();
       allow delete: if false;
 
       match /payments/{reference} {
@@ -38,6 +53,9 @@ service cloud.firestore {
     }
 
     match /announcements/{id} {
+      // Any authenticated user may read, not just parents — fine today since
+      // parents are the only authenticated user type; revisit if a second
+      // type (e.g. a staff portal) is introduced.
       allow read: if request.auth != null;
       allow write: if false;
     }

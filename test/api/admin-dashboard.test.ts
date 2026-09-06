@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const TEST_TERM = "Term 2";
 
 const verifyIdToken = vi.fn();
+const getUser = vi.fn();
 const collection = vi.fn();
 const applicationsGet = vi.fn();
 const inquiriesGet = vi.fn();
@@ -15,7 +16,7 @@ const feesGet = vi.fn();
 const feesSet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
-  getAdminAuth: () => ({ verifyIdToken }),
+  getAdminAuth: () => ({ verifyIdToken, getUser }),
   getAdminDb: () => ({ collection }),
 }));
 
@@ -37,6 +38,7 @@ function docsFrom(items: unknown[]) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getUser.mockResolvedValue({ disabled: false });
   collection.mockImplementation((path: string) => {
     if (path === "applications") return { get: applicationsGet };
     if (path === "inquiries") return { get: inquiriesGet };

@@ -199,9 +199,23 @@ describe("DELETE /api/admin/access/[uid]", () => {
     const res = await DELETE(req, context);
 
     expect(res.status).toBe(200);
-    expect(deleteDoc).toHaveBeenCalled();
+    expect(deleteDoc).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ revoked: true, revokedBy: "boss@earlydays.example" })
+    );
+    expect(revokeRefreshTokens).toHaveBeenCalledWith("target1");
     expect(logAdminAction).toHaveBeenCalledWith(
       expect.objectContaining({ action: "admin.removed", targetUid: "target1" })
     );
+  });
+
+  it("404s when the target admin doc no longer exists", async () => {
+    targetDocState.set("target1", { exists: false });
+    const { DELETE } = await import("@/app/api/admin/access/[uid]/route");
+    const { req, context } = deleteRequest("target1", { authorization: "Bearer ok" });
+    const res = await DELETE(req, context);
+
+    expect(res.status).toBe(404);
+    expect(update).not.toHaveBeenCalled();
   });
 });

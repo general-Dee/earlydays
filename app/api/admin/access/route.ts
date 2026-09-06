@@ -17,7 +17,10 @@ const GET_USERS_BATCH_SIZE = 100;
 
 export const GET = withSuperAdminRoute("GET /api/admin/access", async (req: NextRequest) => {
   const snapshot = await getAdminDb().collection(COLLECTIONS.adminUsers).orderBy("createdAt", "desc").get();
-  const admins = snapshot.docs.map((doc) => doc.data() as AdminUser);
+  // Revoked docs are tombstones left by DELETE /api/admin/access/[uid] (see
+  // resolveAdminIdentity) — exclude them so a removed admin doesn't show up
+  // as active.
+  const admins = snapshot.docs.map((doc) => doc.data() as AdminUser).filter((a) => !a.revoked);
 
   // `disabled` lives only on the Firebase Auth user record, never in
   // Firestore — batch it in (getUsers caps at 100 identifiers per call)

@@ -33,7 +33,7 @@ async function verifyBearerToken(
   }
 
   try {
-    const decoded = await getAdminAuth().verifyIdToken(authHeader.slice("Bearer ".length));
+    const decoded = await getAdminAuth().verifyIdToken(authHeader.slice("Bearer ".length), true);
     return { uid: decoded.uid, email: decoded.email };
   } catch {
     return NextResponse.json({ error: "Invalid or expired session" }, { status: 401 });
@@ -46,14 +46,32 @@ async function verifyBearerToken(
 // implicit superadmin — this is both the bootstrap path for the very first
 // admin and a permanent break-glass fallback that doesn't require a
 // migration script.
+//
+// Future consideration: replacing this doc-lookup + env-fallback model with
+// Firebase custom claims would remove the per-request Firestore/Auth reads,
+// but is a larger rearchitecture (claims require a refresh-token round trip
+// to propagate) and is out of scope for now.
 async function resolveAdminIdentity(uid: string, email: string | undefined): Promise<AdminIdentity | null> {
   if (!email) return null;
+
+  // Checked ahead of both the doc and env-var branches below, so a disabled
+  // Firebase Auth user is denied either way — previously only the doc branch
+  // checked this, leaving env-fallback admins un-revocable by disabling them.
+  let authUser;
+  try {
+    authUser = await getAdminAuth().getUser(uid);
+  } catch {
+    return null;
+  }
+  if (authUser.disabled) return null;
 
   const doc = await getAdminDb().collection(COLLECTIONS.adminUsers).doc(uid).get();
   if (doc.exists) {
     const data = doc.data() as AdminUser;
-    const disabled = (await getAdminAuth().getUser(uid)).disabled;
-    if (disabled) return null;
+    // Permanent tombstone left by DELETE /api/admin/access/[uid] — deny
+    // unconditionally, before ever falling through to the env-var fallback
+    // below, so a removed admin can't be resurrected via ADMIN_EMAILS*.
+    if (data.revoked) return null;
     return { uid, email, isSuperAdmin: data.isSuperAdmin, areas: data.areas ?? [] };
   }
 

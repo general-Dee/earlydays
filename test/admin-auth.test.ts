@@ -129,6 +129,26 @@ describe("requireAdminEmail", () => {
     const res = await requireAdminEmail(request({ authorization: "Bearer ok" }), "blog");
     expect((res as Response).status).toBe(403);
   });
+
+  it("403s a disabled admin authorized only via the env-var fallback (no adminUsers doc)", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ uid: "u7", email: "staff@earlydays.example" });
+    getUser.mockResolvedValue({ disabled: true });
+    const { requireAdminEmail } = await import("@/lib/firebase/admin-auth");
+
+    const res = await requireAdminEmail(request({ authorization: "Bearer ok" }), "applications");
+    expect((res as Response).status).toBe(403);
+  });
+
+  it("403s a revoked adminUsers doc even though the email also matches ADMIN_EMAILS (no resurrection)", async () => {
+    process.env.ADMIN_EMAILS = "removed@earlydays.example";
+    verifyIdToken.mockResolvedValue({ uid: "u8", email: "removed@earlydays.example" });
+    mockAdminDoc({ isSuperAdmin: true, areas: [], revoked: true });
+    const { requireAdminEmail } = await import("@/lib/firebase/admin-auth");
+
+    const res = await requireAdminEmail(request({ authorization: "Bearer ok" }), "applications");
+    expect((res as Response).status).toBe(403);
+  });
 });
 
 describe("requireSuperAdmin", () => {

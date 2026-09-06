@@ -101,7 +101,30 @@ export const DELETE = withSuperAdminRoute<{ params: { uid: string } }>(
       return NextResponse.json({ error: "You can't remove your own admin access" }, { status: 400 });
     }
 
-    await getAdminDb().collection(COLLECTIONS.adminUsers).doc(params.uid).delete();
+    const docRef = getAdminDb().collection(COLLECTIONS.adminUsers).doc(params.uid);
+    const existing = await docRef.get();
+    if (!existing.exists) {
+      return NextResponse.json({ error: "This admin account no longer exists" }, { status: 404 });
+    }
+
+    // Soft-revoke instead of deleting: a tombstone doc lets resolveAdminIdentity
+    // deny this uid unconditionally, even if the email also matches
+    // ADMIN_EMAILS*/ADMIN_EMAILS_<AREA> — a hard delete would let the env-var
+    // fallback silently re-grant access on the next request.
+    await docRef.update({
+      revoked: true,
+      revokedAt: Date.now(),
+      revokedBy: actor.email,
+    });
+
+    // Invalidate any already-issued ID token now, rather than waiting for it
+    // to expire naturally (verifyIdToken checks revocation on every request).
+    try {
+      await getAdminAuth().revokeRefreshTokens(params.uid);
+    } catch {
+      // Auth user may already be gone; the Firestore tombstone alone still
+      // denies future admin-route access for this uid.
+    }
 
     await logAdminAction({
       action: "admin.removed",

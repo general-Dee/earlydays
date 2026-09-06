@@ -51,6 +51,13 @@ export type AdminUser = {
   updatedAt?: number;
   updatedBy?: string;
   disabled?: boolean;
+  // Set by DELETE /api/admin/access/[uid] instead of deleting the doc, so a
+  // removed admin whose email also matches ADMIN_EMAILS*/ADMIN_EMAILS_<AREA>
+  // can't be silently resurrected by the env-var fallback. Permanent tombstone
+  // — never cleared once set.
+  revoked?: boolean;
+  revokedAt?: number;
+  revokedBy?: string;
 };
 
 export type AuditLogEntry = {

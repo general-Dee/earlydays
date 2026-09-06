@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const verifyIdToken = vi.fn();
+const getUser = vi.fn();
 const createUser = vi.fn();
 const deleteUser = vi.fn();
 const generatePasswordResetLink = vi.fn();
@@ -14,7 +15,7 @@ const set = vi.fn();
 let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
-  getAdminAuth: () => ({ verifyIdToken, createUser, deleteUser, generatePasswordResetLink, getUsers }),
+  getAdminAuth: () => ({ verifyIdToken, getUser, createUser, deleteUser, generatePasswordResetLink, getUsers }),
   getAdminDb: () => ({ collection }),
 }));
 
@@ -48,6 +49,7 @@ const validBody = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getUser.mockResolvedValue({ disabled: false });
   collection.mockImplementation(() => ({ orderBy, doc }));
   orderBy.mockImplementation(() => ({ get }));
   docCalls = 0;

@@ -2,13 +2,14 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const verifyIdToken = vi.fn();
+const getUser = vi.fn();
 const doc = vi.fn();
 const paymentGet = vi.fn();
 const parentGet = vi.fn();
 const collection = vi.fn(() => ({ doc: () => ({ get: () => Promise.resolve({ exists: false }) }) }));
 
 vi.mock("@/lib/firebase/admin", () => ({
-  getAdminAuth: () => ({ verifyIdToken }),
+  getAdminAuth: () => ({ verifyIdToken, getUser }),
   getAdminDb: () => ({ doc, collection }),
 }));
 
@@ -22,6 +23,7 @@ function context(reference = "edy_1") {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getUser.mockResolvedValue({ disabled: false });
   doc.mockImplementation((path: string) => {
     if (path === "parents/u1") return { get: parentGet };
     return { get: paymentGet };

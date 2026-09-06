@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
 let testEnv: RulesTestEnvironment;
 
@@ -94,6 +94,16 @@ describe("parents/{uid}", () => {
     );
   });
 
+  it("denies a guardianName/phone update with the wrong type or an oversized value", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "parents", OWNER_UID), { guardianName: "Aisha", phone: "+2348000000000" });
+    });
+    await assertFails(updateDoc(doc(asOwner(), "parents", OWNER_UID), { guardianName: 12345 }));
+    await assertFails(updateDoc(doc(asOwner(), "parents", OWNER_UID), { guardianName: "x".repeat(201) }));
+    await assertFails(updateDoc(doc(asOwner(), "parents", OWNER_UID), { phone: { nested: true } }));
+    await assertFails(updateDoc(doc(asOwner(), "parents", OWNER_UID), { phone: "1".repeat(51) }));
+  });
+
   it("denies another authenticated user reading, creating, or updating it", async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), "parents", OWNER_UID), { guardianName: "Aisha" });
@@ -176,6 +186,10 @@ describe("announcements/{id}", () => {
     await assertSucceeds(getDoc(doc(asOwner(), "announcements", "a1")));
   });
 
+  it("allows any authenticated user to read via a list query", async () => {
+    await assertSucceeds(getDocs(query(collection(asOwner(), "announcements"))));
+  });
+
   it("denies an unauthenticated request", async () => {
     await assertFails(getDoc(doc(asGuest(), "announcements", "a1")));
   });
@@ -188,12 +202,16 @@ describe("announcements/{id}", () => {
 describe("events/{id}", () => {
   beforeEach(async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), "events", "e1"), { title: "Sports Day" });
+      await setDoc(doc(ctx.firestore(), "events", "e1"), { title: "Sports Day", date: "2026-10-01" });
     });
   });
 
   it("allows even an unauthenticated request to read", async () => {
     await assertSucceeds(getDoc(doc(asGuest(), "events", "e1")));
+  });
+
+  it("allows even an unauthenticated request to read via a list query", async () => {
+    await assertSucceeds(getDocs(query(collection(asGuest(), "events"), orderBy("date"))));
   });
 
   it("denies writes from anyone", async () => {
@@ -204,12 +222,16 @@ describe("events/{id}", () => {
 describe("staff/{id}", () => {
   beforeEach(async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), "staff", "s1"), { name: "Mrs. Grace A." });
+      await setDoc(doc(ctx.firestore(), "staff", "s1"), { name: "Mrs. Grace A.", order: 1 });
     });
   });
 
   it("allows even an unauthenticated request to read", async () => {
     await assertSucceeds(getDoc(doc(asGuest(), "staff", "s1")));
+  });
+
+  it("allows even an unauthenticated request to read via a list query", async () => {
+    await assertSucceeds(getDocs(query(collection(asGuest(), "staff"), orderBy("order"))));
   });
 
   it("denies writes from anyone", async () => {
@@ -220,7 +242,7 @@ describe("staff/{id}", () => {
 describe("gallery/{id}", () => {
   beforeEach(async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), "gallery", "g1"), { alt: "Campus photo" });
+      await setDoc(doc(ctx.firestore(), "gallery", "g1"), { alt: "Campus photo", order: 1 });
     });
   });
 
@@ -228,8 +250,31 @@ describe("gallery/{id}", () => {
     await assertSucceeds(getDoc(doc(asGuest(), "gallery", "g1")));
   });
 
+  it("allows even an unauthenticated request to read via a list query", async () => {
+    await assertSucceeds(getDocs(query(collection(asGuest(), "gallery"), orderBy("order"))));
+  });
+
   it("denies writes from anyone", async () => {
     await assertFails(setDoc(doc(asOwner(), "gallery", "g2"), { alt: "Hijacked" }));
+  });
+});
+
+describe("events/{id}/rsvps/{rsvpId}", () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, "events", "e1"), { title: "Sports Day" });
+      await setDoc(doc(db, "events", "e1", "rsvps", "r1"), { name: "Aisha", guestCount: 2 });
+    });
+  });
+
+  it("falls through to the catch-all deny for both authenticated and unauthenticated reads", async () => {
+    await assertFails(getDoc(doc(asOwner(), "events", "e1", "rsvps", "r1")));
+    await assertFails(getDoc(doc(asGuest(), "events", "e1", "rsvps", "r1")));
+  });
+
+  it("falls through to the catch-all deny for writes", async () => {
+    await assertFails(setDoc(doc(asOwner(), "events", "e1", "rsvps", "r2"), { name: "Hijacked" }));
   });
 });
 

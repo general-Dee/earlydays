@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const verifyIdToken = vi.fn();
+const getUser = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const get = vi.fn();
@@ -11,7 +12,7 @@ const fileDelete = vi.fn();
 let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
-  getAdminAuth: () => ({ verifyIdToken }),
+  getAdminAuth: () => ({ verifyIdToken, getUser }),
   getAdminDb: () => ({ collection }),
   getAdminBucket: () => ({ file }),
 }));
@@ -33,6 +34,7 @@ function context(id = "s1") {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getUser.mockResolvedValue({ disabled: false });
   resetChain();
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
