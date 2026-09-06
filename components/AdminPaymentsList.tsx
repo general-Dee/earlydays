@@ -32,6 +32,35 @@ function getSearchText(payment: AdminPaymentRow): string {
   return [payment.guardianName, payment.childName, payment.reference].filter(Boolean).join(" ");
 }
 
+function escapeCsvField(value: string): string {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function paymentsToCsv(payments: AdminPaymentRow[]): string {
+  const rows = payments.map((p) =>
+    [
+      p.reference,
+      p.guardianName,
+      p.guardianEmail,
+      p.childName,
+      p.term,
+      (p.amountKobo / 100).toFixed(2),
+      p.status,
+      p.channel ?? "",
+      new Date(p.createdAt).toISOString(),
+      p.paidAt ? new Date(p.paidAt).toISOString() : "",
+    ]
+      .map(escapeCsvField)
+      .join(",")
+  );
+  return ["Reference,Guardian,Guardian Email,Child,Term,Amount (NGN),Status,Channel,Created At,Paid At", ...rows].join(
+    "\n"
+  );
+}
+
 export default function AdminPaymentsList({ user }: { user: User }) {
   const [payments, setPayments] = useState<AdminPaymentRow[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -46,6 +75,18 @@ export default function AdminPaymentsList({ user }: { user: User }) {
     termFiltered,
     getSearchText
   );
+
+  function exportCsv() {
+    const blob = new Blob([paymentsToCsv(filtered)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payments-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -90,9 +131,16 @@ export default function AdminPaymentsList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Payments</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading payments…</p>}
