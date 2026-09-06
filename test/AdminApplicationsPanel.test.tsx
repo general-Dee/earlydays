@@ -171,6 +171,51 @@ describe("AdminApplicationsPanel", () => {
     expect(screen.queryByText(/Femi Okafor/)).not.toBeInTheDocument();
   });
 
+  it("exports only the status-filtered applications as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const accepted = { ...sampleApplication, id: "a2", childName: "Bola Adeyemi", status: "accepted" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ applications: [sampleApplication, accepted] }),
+      })
+    );
+
+    // jsdom's Blob shim doesn't implement .text()/.arrayBuffer(), so capture
+    // the CSV content at construction time instead of reading it back off a Blob.
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminApplicationsPanel />);
+    await screen.findByText(/Femi Okafor/);
+
+    await userEvent.selectOptions(screen.getByLabelText("Filter by status"), "accepted");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^applications-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Bola Adeyemi");
+    expect(capturedContent).not.toContain("Femi Okafor");
+
+    createElementSpy.mockRestore();
+  });
+
   it("paginates when there are more records than fit on one page", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     const many = Array.from({ length: 21 }, (_, i) => ({

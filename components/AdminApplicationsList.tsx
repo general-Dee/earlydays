@@ -27,6 +27,36 @@ function getSearchText(app: Application): string {
   return [app.childName, app.guardianName, app.email, app.phone].filter(Boolean).join(" ");
 }
 
+function escapeCsvField(value: string): string {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function applicationsToCsv(applications: Application[]): string {
+  const rows = applications.map((app) =>
+    [
+      app.childName,
+      app.childDob,
+      stageLabel(app.desiredStage),
+      app.guardianName,
+      app.email ?? "",
+      app.phone ?? "",
+      app.status,
+      app.notes,
+      app.referenceCode,
+      new Date(app.createdAt).toISOString(),
+    ]
+      .map(escapeCsvField)
+      .join(",")
+  );
+  return [
+    "Child Name,Date of Birth,Desired Stage,Guardian Name,Email,Phone,Status,Notes,Reference Code,Created At",
+    ...rows,
+  ].join("\n");
+}
+
 export default function AdminApplicationsList({ user }: { user: User }) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -137,6 +167,18 @@ export default function AdminApplicationsList({ user }: { user: User }) {
     }
   }
 
+  function exportCsv() {
+    const blob = new Blob([applicationsToCsv(filtered)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `applications-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -180,9 +222,16 @@ export default function AdminApplicationsList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Applications</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createApplication} className="mt-5 flex flex-col gap-2.5">
