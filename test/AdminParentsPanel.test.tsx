@@ -423,4 +423,51 @@ describe("AdminParentsPanel", () => {
     expect(screen.getByText("Chidi Okoye")).toBeInTheDocument();
     expect(screen.queryByText("Aisha Bello")).not.toBeInTheDocument();
   });
+
+  it("exports only the stage-filtered parents' children as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const other = {
+      uid: "u2",
+      guardianName: "Chidi Okoye",
+      email: "chidi@example.com",
+      children: [{ id: "c2", name: "Emeka", stage: "P1" }],
+      createdAt: Date.now(),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ parents: [fakeParent, other] }) })
+    );
+
+    // jsdom's Blob shim doesn't implement .text()/.arrayBuffer(), so capture
+    // the CSV content at construction time instead of reading it back off a Blob.
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminParentsPanel />);
+    await screen.findByText("Aisha Bello");
+
+    await userEvent.selectOptions(screen.getByLabelText("Filter by stage"), "P1");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^parents-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Chidi Okoye,chidi@example.com,,Emeka,P1");
+    expect(capturedContent).not.toContain("Aisha Bello");
+
+    createElementSpy.mockRestore();
+  });
 });

@@ -100,6 +100,35 @@ function getSearchText(parent: Parent): string {
     .join(" ");
 }
 
+function escapeCsvField(value: string): string {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function parentsToCsv(parents: Parent[]): string {
+  const rows = parents.flatMap((parent) =>
+    parent.children.map((child) =>
+      [
+        parent.guardianName,
+        parent.email,
+        parent.phone ?? "",
+        child.name,
+        child.stage,
+        child.admissionNo ?? "",
+        new Date(parent.createdAt).toISOString(),
+      ]
+        .map(escapeCsvField)
+        .join(",")
+    )
+  );
+  return [
+    "Guardian,Guardian Email,Guardian Phone,Child Name,Stage,Admission No,Account Created At",
+    ...rows,
+  ].join("\n");
+}
+
 export default function AdminParentsList({ user }: { user: User }) {
   const [parents, setParents] = useState<Parent[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -366,6 +395,18 @@ export default function AdminParentsList({ user }: { user: User }) {
     }
   }
 
+  function exportCsv() {
+    const blob = new Blob([parentsToCsv(filtered)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `parents-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -409,9 +450,16 @@ export default function AdminParentsList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Parent Accounts</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createParent} className="mt-5 flex flex-col gap-2.5">
