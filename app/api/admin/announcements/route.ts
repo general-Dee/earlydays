@@ -3,6 +3,9 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { sendNewAnnouncementEmail } from "@/lib/email/notify";
+import { logRouteError } from "@/lib/api/errors";
+import type { Parent } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
@@ -34,5 +37,20 @@ export const POST = withAdminRoute("announcements", "POST /api/admin/announcemen
 
   const ref = await getAdminDb().collection(COLLECTIONS.announcements).add(announcement);
 
-  return NextResponse.json({ id: ref.id, ...announcement });
+  const parentsSnap = await getAdminDb().collection(COLLECTIONS.parents).get();
+  let emailsSent = 0;
+  for (const parentDoc of parentsSnap.docs) {
+    const parent = parentDoc.data() as Parent;
+    try {
+      const sent = await sendNewAnnouncementEmail(
+        { guardianName: parent.guardianName, email: parent.email },
+        { title: announcement.title, body: announcement.body }
+      );
+      if (sent) emailsSent++;
+    } catch (err) {
+      logRouteError("POST /api/admin/announcements", "failed to send new-announcement email", err);
+    }
+  }
+
+  return NextResponse.json({ id: ref.id, ...announcement, emailsSent });
 });

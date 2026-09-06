@@ -404,3 +404,35 @@ export async function sendNewReportEmail(
 
   return true;
 }
+
+export async function sendNewAnnouncementEmail(
+  parent: { guardianName: string; email: string },
+  announcement: { title: string; body: string }
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: parent.email,
+    subject: `New announcement: ${announcement.title}`,
+    text: [
+      `Hi ${parent.guardianName},`,
+      "",
+      announcement.title,
+      "",
+      announcement.body,
+      "",
+      `View it in the parent portal: ${site.url}/portal`,
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n"),
+  });
+
+  return true;
+}

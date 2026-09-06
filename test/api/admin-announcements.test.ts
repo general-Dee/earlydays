@@ -8,13 +8,23 @@ const orderBy = vi.fn();
 const get = vi.fn();
 const add = vi.fn();
 const doc = vi.fn(() => ({ get: () => Promise.resolve({ exists: false }) }));
+const parentsGet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken, getUser }),
   getAdminDb: () => ({ collection }),
 }));
 
-collection.mockImplementation(() => ({ orderBy, add, doc }));
+const sendNewAnnouncementEmail = vi.fn();
+vi.mock("@/lib/email/notify", () => ({
+  sendNewAnnouncementEmail: (...args: unknown[]) => sendNewAnnouncementEmail(...args),
+}));
+
+function collectionImpl(name: string) {
+  return name === "parents" ? { get: parentsGet } : { orderBy, add, doc };
+}
+
+collection.mockImplementation(collectionImpl);
 orderBy.mockImplementation(() => ({ get }));
 
 function getRequest(headers: Record<string, string> = {}) {
@@ -32,8 +42,10 @@ function postRequest(headers: Record<string, string> = {}, body?: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   getUser.mockResolvedValue({ disabled: false });
-  collection.mockImplementation(() => ({ orderBy, add, doc }));
+  collection.mockImplementation(collectionImpl);
   orderBy.mockImplementation(() => ({ get }));
+  parentsGet.mockResolvedValue({ docs: [] });
+  sendNewAnnouncementEmail.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -152,6 +164,53 @@ describe("POST /api/admin/announcements", () => {
         createdBy: "staff@earlydays.example",
       })
     );
+  });
+
+  it("emails every parent and returns the emailsSent count", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    add.mockResolvedValue({ id: "a1" });
+    parentsGet.mockResolvedValue({
+      docs: [
+        { data: () => ({ guardianName: "Aisha Bello", email: "aisha@example.com" }) },
+        { data: () => ({ guardianName: "Chidi Okoye", email: "chidi@example.com" }) },
+      ],
+    });
+
+    const { POST } = await import("@/app/api/admin/announcements/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, { title: "Closed Friday", body: "School closed for a holiday" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.emailsSent).toBe(2);
+    expect(sendNewAnnouncementEmail).toHaveBeenCalledWith(
+      { guardianName: "Aisha Bello", email: "aisha@example.com" },
+      { title: "Closed Friday", body: "School closed for a holiday" }
+    );
+    expect(sendNewAnnouncementEmail).toHaveBeenCalledWith(
+      { guardianName: "Chidi Okoye", email: "chidi@example.com" },
+      { title: "Closed Friday", body: "School closed for a holiday" }
+    );
+  });
+
+  it("still returns 200 with the created announcement when a notification email fails", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    add.mockResolvedValue({ id: "a1" });
+    parentsGet.mockResolvedValue({
+      docs: [{ data: () => ({ guardianName: "Aisha Bello", email: "aisha@example.com" }) }],
+    });
+    sendNewAnnouncementEmail.mockRejectedValue(new Error("resend down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { POST } = await import("@/app/api/admin/announcements/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, { title: "Closed Friday", body: "School closed for a holiday" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toMatchObject({ id: "a1", title: "Closed Friday", emailsSent: 0 });
+
+    consoleSpy.mockRestore();
   });
 
   it("returns a generic 500 when Firestore throws", async () => {

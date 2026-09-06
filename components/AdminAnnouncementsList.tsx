@@ -14,12 +14,14 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+  const [emailsSent, setEmailsSent] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function createAnnouncement(e: React.FormEvent) {
     e.preventDefault();
     setPosting(true);
     setPostError(null);
+    setEmailsSent(null);
 
     try {
       const idToken = await user.getIdToken();
@@ -38,8 +40,9 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
         return;
       }
 
-      const created = (await res.json()) as Announcement;
+      const created = (await res.json()) as Announcement & { emailsSent: number };
       setAnnouncements((current) => [created, ...current]);
+      setEmailsSent(created.emailsSent);
       setTitle("");
       setBody("");
     } catch {
@@ -141,6 +144,12 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
           {posting ? "Posting…" : "Post Announcement"}
         </button>
       </form>
+
+      {emailsSent !== null && (
+        <div className="mt-4 px-3.5 py-3 rounded-lg bg-leaf-soft text-leaf text-[0.85rem] font-semibold">
+          Announcement posted — emailed {emailsSent} parent{emailsSent === 1 ? "" : "s"}.
+        </div>
+      )}
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading announcements…</p>}
 

@@ -85,6 +85,43 @@ describe("sendNewReportEmail", () => {
   });
 });
 
+describe("sendNewAnnouncementEmail", () => {
+  it("includes the title, body, and a link back to the portal", async () => {
+    const { sendNewAnnouncementEmail } = await import("@/lib/email/notify");
+    const { site } = await import("@/lib/data");
+
+    const sent = await sendNewAnnouncementEmail(
+      { guardianName: "Aisha", email: "a@b.com" },
+      { title: "Closed Friday", body: "School closed for a holiday." }
+    );
+
+    expect(sent).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "a@b.com",
+        subject: expect.stringContaining("Closed Friday"),
+        text: expect.stringContaining("School closed for a holiday."),
+      })
+    );
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining(`${site.url}/portal`) })
+    );
+  });
+
+  it("does nothing when Resend isn't configured", async () => {
+    delete process.env.RESEND_API_KEY;
+    const { sendNewAnnouncementEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendNewAnnouncementEmail(
+      { guardianName: "Aisha", email: "a@b.com" },
+      { title: "Closed Friday", body: "School closed for a holiday." }
+    );
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendAdminInviteEmail", () => {
   it("includes the reset link and the admin's display name", async () => {
     const { sendAdminInviteEmail } = await import("@/lib/email/notify");

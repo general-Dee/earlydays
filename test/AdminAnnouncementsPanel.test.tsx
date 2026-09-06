@@ -85,7 +85,7 @@ describe("AdminAnnouncementsPanel", () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: async () => ({ ...fakeAnnouncement, id: "a2", title: "New Notice", body: "Details here" }),
+          json: async () => ({ ...fakeAnnouncement, id: "a2", title: "New Notice", body: "Details here", emailsSent: 3 }),
         });
       }
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ announcements: [] }) });
@@ -109,6 +109,7 @@ describe("AdminAnnouncementsPanel", () => {
         body: JSON.stringify({ title: "New Notice", body: "Details here" }),
       })
     );
+    expect(screen.getByText("Announcement posted — emailed 3 parents.")).toBeInTheDocument();
   });
 
   it("deletes an announcement via the delete button", async () => {
