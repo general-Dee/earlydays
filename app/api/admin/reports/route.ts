@@ -3,7 +3,8 @@ import { getAdminDb, getAdminBucket } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
-import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
+import { sendNewReportEmail } from "@/lib/email/notify";
+import type { ChildRecord, Parent, ProgressReport } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
@@ -93,6 +94,16 @@ export const POST = withAdminRoute("reports", "POST /api/admin/reports", async (
         logRouteError("POST /api/admin/reports", `failed to clean up orphaned file ${storagePath}`, cleanupErr);
       });
     return NextResponse.json({ error: "Couldn't save the report. Please try again." }, { status: 500 });
+  }
+
+  try {
+    const parent = parentSnap.data() as Parent;
+    await sendNewReportEmail(
+      { guardianName: parent.guardianName, email: parent.email },
+      { childName: trimmedChildName, term: trimmedTerm }
+    );
+  } catch (err) {
+    logRouteError("POST /api/admin/reports", "failed to send new-report notification email", err);
   }
 
   return NextResponse.json(report);

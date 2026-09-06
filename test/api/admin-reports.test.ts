@@ -20,6 +20,11 @@ vi.mock("@/lib/firebase/admin", () => ({
   getAdminBucket: () => ({ file }),
 }));
 
+const sendNewReportEmail = vi.fn();
+vi.mock("@/lib/email/notify", () => ({
+  sendNewReportEmail: (...args: unknown[]) => sendNewReportEmail(...args),
+}));
+
 function resetChain() {
   collection.mockImplementation(() => ({ orderBy, doc }));
   orderBy.mockImplementation(() => ({ get }));
@@ -82,10 +87,14 @@ beforeEach(() => {
   resetChain();
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
-  docGet.mockResolvedValue({ exists: true });
+  docGet.mockResolvedValue({
+    exists: true,
+    data: () => ({ guardianName: "Aisha Bello", email: "aisha@example.com" }),
+  });
   save.mockResolvedValue(undefined);
   set.mockResolvedValue(undefined);
   deleteFile.mockResolvedValue(undefined);
+  sendNewReportEmail.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -211,6 +220,31 @@ describe("POST /api/admin/reports", () => {
       })
     );
     expect(json).toMatchObject({ id: "r1", storagePath: "reports/u1/r1.pdf" });
+  });
+
+  it("sends a new-report notification email to the parent on success", async () => {
+    const { POST } = await import("@/app/api/admin/reports/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }));
+
+    expect(res.status).toBe(200);
+    expect(sendNewReportEmail).toHaveBeenCalledWith(
+      { guardianName: "Aisha Bello", email: "aisha@example.com" },
+      { childName: "Zainab", term: "Term 3" }
+    );
+  });
+
+  it("still returns 200 when the notification email fails", async () => {
+    sendNewReportEmail.mockRejectedValue(new Error("resend down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { POST } = await import("@/app/api/admin/reports/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toMatchObject({ id: "r1", storagePath: "reports/u1/r1.pdf" });
+
+    consoleSpy.mockRestore();
   });
 
   it("cleans up the uploaded file when saving the report doc fails", async () => {

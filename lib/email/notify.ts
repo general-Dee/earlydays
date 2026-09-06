@@ -374,3 +374,33 @@ export async function sendFeeReminderEmail(
 
   return true;
 }
+
+export async function sendNewReportEmail(
+  parent: { guardianName: string; email: string },
+  report: { childName: string; term: string }
+): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: parent.email,
+    subject: `New ${report.term} report for ${report.childName}`,
+    text: [
+      `Hi ${parent.guardianName},`,
+      "",
+      `A new ${report.term} progress report for ${report.childName} is now available in the parent portal.`,
+      "",
+      `View it here: ${site.url}/portal`,
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n"),
+  });
+
+  return true;
+}
