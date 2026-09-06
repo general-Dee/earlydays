@@ -12,6 +12,20 @@ function getSearchText(subscriber: Subscriber): string {
   return [subscriber.email, subscriber.name].filter(Boolean).join(" ");
 }
 
+function escapeCsvField(value: string): string {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function subscribersToCsv(subscribers: Subscriber[]): string {
+  const rows = subscribers.map((s) =>
+    [s.email, s.name ?? "", new Date(s.createdAt).toISOString()].map(escapeCsvField).join(",")
+  );
+  return ["Email,Name,Created At", ...rows].join("\n");
+}
+
 export default function AdminSubscribersList({ user }: { user: User }) {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -58,6 +72,18 @@ export default function AdminSubscribersList({ user }: { user: User }) {
     };
   }, [user]);
 
+  function exportCsv() {
+    const blob = new Blob([subscribersToCsv(subscribers)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async function deleteSubscriber(id: string) {
     const previous = subscribers;
     setDeletingId(id);
@@ -87,9 +113,16 @@ export default function AdminSubscribersList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Subscribers</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && subscribers.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading subscribers…</p>}
