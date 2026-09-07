@@ -6,6 +6,34 @@ function stageLabel(code: string): string {
   return stages.find((s) => s.code === code)?.name ?? code;
 }
 
+// Lazy on purpose: constructing the Resend client eagerly at module load
+// would run during Next.js's build-time route collection, which shouldn't
+// depend on runtime secrets being present.
+//
+// Shared core for every outbound email below. Returns false (a no-op, not a
+// throw) when Resend isn't configured, so every caller's existing "did this
+// actually send" checks keep working unchanged.
+async function sendEmail(to: string, subject: string, text: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL;
+
+  if (!apiKey || !from) return false;
+
+  const resend = new Resend(apiKey);
+  await resend.emails.send({ from, to, subject, text });
+
+  return true;
+}
+
+// Same as sendEmail, but for the three "notify the school" senders below,
+// whose recipient is CONTACT_NOTIFY_EMAIL rather than a parent's address.
+async function sendSchoolNotification(subject: string, text: string): Promise<void> {
+  const to = process.env.CONTACT_NOTIFY_EMAIL;
+  if (!to) return;
+
+  await sendEmail(to, subject, text);
+}
+
 type ContactInquiry = {
   name: string;
   email: string | null;
@@ -13,30 +41,17 @@ type ContactInquiry = {
   message: string;
 };
 
-// Lazy on purpose, same reasoning as lib/firebase/admin.ts: constructing the
-// client eagerly at module load would run during Next.js's build-time route
-// collection, which shouldn't depend on runtime secrets being present.
 export async function sendContactNotification(inquiry: ContactInquiry) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_NOTIFY_EMAIL;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !to || !from) return;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to,
-    subject: `New inquiry from ${inquiry.name}`,
-    text: [
+  await sendSchoolNotification(
+    `New inquiry from ${inquiry.name}`,
+    [
       `Name: ${inquiry.name}`,
       `Email: ${inquiry.email ?? "—"}`,
       `Phone: ${inquiry.phone ?? "—"}`,
       "",
       inquiry.message,
-    ].join("\n"),
-  });
+    ].join("\n")
+  );
 }
 
 type ApplicationSubmission = {
@@ -50,19 +65,9 @@ type ApplicationSubmission = {
 };
 
 export async function sendApplicationNotification(application: ApplicationSubmission) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_NOTIFY_EMAIL;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !to || !from) return;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to,
-    subject: `New admission application: ${application.childName}`,
-    text: [
+  await sendSchoolNotification(
+    `New admission application: ${application.childName}`,
+    [
       `Child: ${application.childName} (DOB: ${application.childDob})`,
       `Desired stage: ${application.desiredStage}`,
       `Guardian: ${application.guardianName}`,
@@ -70,31 +75,21 @@ export async function sendApplicationNotification(application: ApplicationSubmis
       `Phone: ${application.phone ?? "—"}`,
       "",
       application.notes || "(no additional notes)",
-    ].join("\n"),
-  });
+    ].join("\n")
+  );
 }
 
 export async function sendRsvpNotification(eventTitle: string, rsvp: EventRsvp) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_NOTIFY_EMAIL;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !to || !from) return;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to,
-    subject: `New RSVP for ${eventTitle}`,
-    text: [
+  await sendSchoolNotification(
+    `New RSVP for ${eventTitle}`,
+    [
       `Event: ${eventTitle}`,
       `Name: ${rsvp.name}`,
       `Email: ${rsvp.email}`,
       `Phone: ${rsvp.phone ?? "—"}`,
       `Guests: ${rsvp.guestCount}`,
-    ].join("\n"),
-  });
+    ].join("\n")
+  );
 }
 
 type ParentInvite = {
@@ -103,18 +98,10 @@ type ParentInvite = {
 };
 
 export async function sendParentInviteEmail(parent: ParentInvite, resetLink: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from) return false;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to: parent.email,
-    subject: "Your Earlydays parent portal account",
-    text: [
+  return sendEmail(
+    parent.email,
+    "Your Earlydays parent portal account",
+    [
       `Hi ${parent.guardianName},`,
       "",
       "The school has set up your Earlydays parent portal account. Use the link below to set your password and log in:",
@@ -122,27 +109,17 @@ export async function sendParentInviteEmail(parent: ParentInvite, resetLink: str
       resetLink,
       "",
       "This link expires in 1 hour. If it has expired, use \"Forgot password\" on the portal login page instead.",
-    ].join("\n"),
-  });
-
-  return true;
+    ].join("\n")
+  );
 }
 
 type AdminInvite = { displayName: string; email: string };
 
 export async function sendAdminInviteEmail(admin: AdminInvite, resetLink: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from) return false;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to: admin.email,
-    subject: "Your Earlydays admin account",
-    text: [
+  return sendEmail(
+    admin.email,
+    "Your Earlydays admin account",
+    [
       `Hi ${admin.displayName},`,
       "",
       "You've been added as an Earlydays admin. Use the link below to set your password and log in:",
@@ -150,10 +127,8 @@ export async function sendAdminInviteEmail(admin: AdminInvite, resetLink: string
       resetLink,
       "",
       "This link expires in 1 hour. If it has expired, use \"Forgot password\" on the admin login page instead.",
-    ].join("\n"),
-  });
-
-  return true;
+    ].join("\n")
+  );
 }
 
 type ApplicationStatusUpdate = {
@@ -224,21 +199,7 @@ export async function sendApplicationStatusEmail(
   const content = statusEmailContent(status, application);
   if (!content || !application.email) return false;
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from) return false;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to: application.email,
-    subject: content.subject,
-    text: content.text,
-  });
-
-  return true;
+  return sendEmail(application.email, content.subject, content.text);
 }
 
 type ApplicationConfirmation = {
@@ -251,18 +212,10 @@ export async function sendApplicationConfirmationEmail(
   application: ApplicationConfirmation,
   referenceCode: string
 ): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from) return false;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to: application.email,
-    subject: `Application received for ${application.childName}`,
-    text: [
+  return sendEmail(
+    application.email,
+    `Application received for ${application.childName}`,
+    [
       `Hi ${application.guardianName},`,
       "",
       `We've received ${application.childName}'s application. Our admissions team will follow up within a school day.`,
@@ -275,10 +228,8 @@ export async function sendApplicationConfirmationEmail(
       "",
       "Warmly,",
       "The Earlydays Admissions Team",
-    ].join("\n"),
-  });
-
-  return true;
+    ].join("\n")
+  );
 }
 
 function formatNaira(amountKobo: number): string {
@@ -296,18 +247,10 @@ export async function sendPaymentReceiptEmail(
   parent: { guardianName: string; email: string },
   payment: PaymentReceipt
 ): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from) return false;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to: parent.email,
-    subject: `Payment received for ${payment.childName}`,
-    text: [
+  return sendEmail(
+    parent.email,
+    `Payment received for ${payment.childName}`,
+    [
       `Hi ${parent.guardianName},`,
       "",
       `We've received your ${payment.term} fee payment of ${formatNaira(payment.amountKobo)} for ${payment.childName}. Thank you!`,
@@ -320,10 +263,8 @@ export async function sendPaymentReceiptEmail(
       "",
       "Warmly,",
       "The Earlydays Team",
-    ].join("\n"),
-  });
-
-  return true;
+    ].join("\n")
+  );
 }
 
 type UnpaidChild = {
@@ -337,12 +278,7 @@ export async function sendFeeReminderEmail(
   term: string,
   feesByStage: Record<string, number>
 ): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from || unpaidChildren.length === 0) return false;
-
-  const resend = new Resend(apiKey);
+  if (unpaidChildren.length === 0) return false;
 
   const childList = unpaidChildren
     .map((c) => {
@@ -352,11 +288,10 @@ export async function sendFeeReminderEmail(
     })
     .join("\n");
 
-  await resend.emails.send({
-    from,
-    to: parent.email,
-    subject: `${term} fee reminder`,
-    text: [
+  return sendEmail(
+    parent.email,
+    `${term} fee reminder`,
+    [
       `Hi ${parent.guardianName},`,
       "",
       `This is a friendly reminder that ${term} fees are still outstanding for:`,
@@ -369,28 +304,18 @@ export async function sendFeeReminderEmail(
       "",
       "Warmly,",
       "The Earlydays Team",
-    ].join("\n"),
-  });
-
-  return true;
+    ].join("\n")
+  );
 }
 
 export async function sendNewReportEmail(
   parent: { guardianName: string; email: string },
   report: { childName: string; term: string }
 ): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from) return false;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to: parent.email,
-    subject: `New ${report.term} report for ${report.childName}`,
-    text: [
+  return sendEmail(
+    parent.email,
+    `New ${report.term} report for ${report.childName}`,
+    [
       `Hi ${parent.guardianName},`,
       "",
       `A new ${report.term} progress report for ${report.childName} is now available in the parent portal.`,
@@ -399,28 +324,18 @@ export async function sendNewReportEmail(
       "",
       "Warmly,",
       "The Earlydays Team",
-    ].join("\n"),
-  });
-
-  return true;
+    ].join("\n")
+  );
 }
 
 export async function sendNewAnnouncementEmail(
   parent: { guardianName: string; email: string },
   announcement: { title: string; body: string }
 ): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM_EMAIL;
-
-  if (!apiKey || !from) return false;
-
-  const resend = new Resend(apiKey);
-
-  await resend.emails.send({
-    from,
-    to: parent.email,
-    subject: `New announcement: ${announcement.title}`,
-    text: [
+  return sendEmail(
+    parent.email,
+    `New announcement: ${announcement.title}`,
+    [
       `Hi ${parent.guardianName},`,
       "",
       announcement.title,
@@ -431,8 +346,6 @@ export async function sendNewAnnouncementEmail(
       "",
       "Warmly,",
       "The Earlydays Team",
-    ].join("\n"),
-  });
-
-  return true;
+    ].join("\n")
+  );
 }
