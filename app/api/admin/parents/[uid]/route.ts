@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { logAdminAction } from "@/lib/audit";
 import { validateChildren, validateEmail, validateGuardianName, validatePhone } from "../validation";
 
 export const runtime = "nodejs";
@@ -89,6 +90,18 @@ export const PATCH = withAdminRoute<{ params: { uid: string } }>(
     if (Object.keys(patch).length > 0) {
       await getAdminDb().collection(COLLECTIONS.parents).doc(params.uid).update(patch);
     }
+
+    // Enable/disable is the notable action when present; otherwise this is a
+    // plain field edit and `detail` records which fields the admin touched
+    // (an email change in particular is worth being able to trace).
+    const changedFields = Object.keys(patch);
+    await logAdminAction({
+      action: disabled === true ? "parent.disabled" : disabled === false ? "parent.enabled" : "parent.updated",
+      actorEmail: admin.email,
+      targetUid: params.uid,
+      ...(trimmedEmail !== undefined ? { targetEmail: trimmedEmail } : {}),
+      ...(changedFields.length > 0 ? { detail: changedFields.join(", ") } : {}),
+    });
 
     return NextResponse.json({ uid: params.uid, ...patch, ...(disabled !== undefined ? { disabled } : {}) });
   }

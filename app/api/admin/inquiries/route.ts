@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,13 @@ export const POST = withAdminRoute("inquiries", "POST /api/admin/inquiries", asy
   };
 
   const ref = await getAdminDb().collection(COLLECTIONS.inquiries).add(inquiry);
+
+  await logAdminAction({
+    action: "inquiry.created",
+    actorEmail: admin.email,
+    ...(inquiry.email ? { targetEmail: inquiry.email } : {}),
+    detail: inquiry.name,
+  });
 
   return NextResponse.json({ id: ref.id, ...inquiry });
 });

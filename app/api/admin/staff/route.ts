@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { Staff } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -97,6 +98,12 @@ export const POST = withAdminRoute("staff", "POST /api/admin/staff", async (req:
     }
     return NextResponse.json({ error: "Couldn't save this staff member. Please try again." }, { status: 500 });
   }
+
+  await logAdminAction({
+    action: "staff.created",
+    actorEmail: admin.email,
+    detail: staff.name,
+  });
 
   return NextResponse.json(staff);
 });

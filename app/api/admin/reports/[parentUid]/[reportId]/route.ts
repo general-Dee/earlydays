@@ -3,6 +3,7 @@ import { getAdminBucket, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { logAdminAction } from "@/lib/audit";
 import type { ProgressReport } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -29,6 +30,15 @@ export const DELETE = withAdminRoute<{ params: { parentUid: string; reportId: st
     }
 
     await reportRef.delete();
+
+    await logAdminAction({
+      action: "report.deleted",
+      actorEmail: admin.email,
+      targetUid: params.parentUid,
+      ...(snap.exists
+        ? { detail: `${(snap.data() as ProgressReport).childName} — ${(snap.data() as ProgressReport).term}` }
+        : {}),
+    });
 
     return NextResponse.json({ ok: true });
   }

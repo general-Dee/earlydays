@@ -7,6 +7,7 @@ const collection = vi.fn();
 const doc = vi.fn();
 const docGet = vi.fn();
 const orderBy = vi.fn();
+const limit = vi.fn();
 const listGet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
@@ -22,7 +23,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   collection.mockImplementation(() => ({ doc, orderBy }));
   doc.mockImplementation(() => ({ get: docGet }));
-  orderBy.mockImplementation(() => ({ get: listGet }));
+  orderBy.mockImplementation(() => ({ limit }));
+  limit.mockImplementation(() => ({ get: listGet }));
   docGet.mockResolvedValue({ exists: false });
   process.env.ADMIN_EMAILS = "boss@earlydays.example";
   verifyIdToken.mockResolvedValue({ uid: "actor1", email: "boss@earlydays.example" });
@@ -75,5 +77,6 @@ describe("GET /api/admin/audit", () => {
     expect(json.entries).toEqual(entries);
     expect(collection).toHaveBeenCalledWith("auditLog");
     expect(orderBy).toHaveBeenCalledWith("createdAt", "desc");
+    expect(limit).toHaveBeenCalledWith(500);
   });
 });

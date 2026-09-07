@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
 import { generateReferenceCode } from "@/lib/referenceCode";
+import { logAdminAction } from "@/lib/audit";
 import { stages } from "@/lib/data";
 
 export const runtime = "nodejs";
@@ -72,6 +73,13 @@ export const POST = withAdminRoute("applications", "POST /api/admin/applications
   };
 
   const ref = await getAdminDb().collection(COLLECTIONS.applications).add(application);
+
+  await logAdminAction({
+    action: "application.created",
+    actorEmail: admin.email,
+    ...(application.email ? { targetEmail: application.email } : {}),
+    detail: application.childName,
+  });
 
   return NextResponse.json({ id: ref.id, ...application });
 });

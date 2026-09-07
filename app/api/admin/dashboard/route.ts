@@ -5,6 +5,7 @@ import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import { FEE_BRACKETS } from "@/lib/fees";
 import { feeKoboByStageCode, getFeeAmounts, setFeeAmounts } from "@/lib/feeSettings";
 import { getCurrentTerm, setCurrentTerm } from "@/lib/termSettings";
+import { logAdminAction } from "@/lib/audit";
 import { TERMS } from "@/lib/data";
 import type { Application, ApplicationStatus, Inquiry, Parent, PaymentRecord } from "@/lib/firebase/types";
 
@@ -96,6 +97,12 @@ export const PATCH = withAdminRoute("dashboard", "PATCH /api/admin/dashboard", a
       return NextResponse.json({ error: "Please select a valid term" }, { status: 400 });
     }
     await setCurrentTerm(currentTerm, admin.email);
+
+    await logAdminAction({
+      action: "settings.term_changed",
+      actorEmail: admin.email,
+      detail: currentTerm,
+    });
   }
 
   let updatedFeeAmounts: Record<string, number> | undefined;
@@ -116,6 +123,14 @@ export const PATCH = withAdminRoute("dashboard", "PATCH /api/admin/dashboard", a
     }
     await setFeeAmounts(validated, admin.email);
     updatedFeeAmounts = validated;
+
+    await logAdminAction({
+      action: "settings.fees_changed",
+      actorEmail: admin.email,
+      detail: Object.entries(validated)
+        .map(([id, amount]) => `${id}: ${amount}`)
+        .join(", "),
+    });
   }
 
   return NextResponse.json({

@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { GalleryPhoto } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -112,6 +113,12 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
         });
     }
 
+    await logAdminAction({
+      action: "gallery.updated",
+      actorEmail: admin.email,
+      detail: responsePatch.alt ?? existing.alt,
+    });
+
     return NextResponse.json({ ...existing, ...responsePatch, id: params.id });
   }
 );
@@ -136,6 +143,12 @@ export const DELETE = withAdminRoute<{ params: { id: string } }>(
     }
 
     await photoRef.delete();
+
+    await logAdminAction({
+      action: "gallery.deleted",
+      actorEmail: admin.email,
+      ...(snap.exists ? { detail: (snap.data() as GalleryPhoto).alt } : {}),
+    });
 
     return NextResponse.json({ ok: true });
   }

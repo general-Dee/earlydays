@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { BlogPost } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -129,6 +130,12 @@ export const POST = withAdminRoute("blog", "POST /api/admin/blog", async (req: N
     }
     return NextResponse.json({ error: "Couldn't save this post. Please try again." }, { status: 500 });
   }
+
+  await logAdminAction({
+    action: "blog.created",
+    actorEmail: admin.email,
+    detail: post.title,
+  });
 
   return NextResponse.json(post);
 });

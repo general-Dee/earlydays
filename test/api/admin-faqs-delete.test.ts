@@ -6,6 +6,7 @@ const getUser = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const del = vi.fn();
+const auditSet = vi.fn();
 let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
@@ -13,10 +14,24 @@ vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ collection }),
 }));
 
+// Call order per request: (1) resolveAdminIdentity's `adminUsers/{uid}` lookup
+// — "no doc" so the ADMIN_EMAILS* env fallback applies; (2) the FAQ doc
+// itself, read (for the audit entry's question) then deleted; (3)
+// logAdminAction's `auditLog` doc write.
 function resetChain() {
   collection.mockImplementation(() => ({ doc }));
   docCalls = 0;
-  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { delete: del }));
+  doc.mockImplementation(() => {
+    const call = docCalls++;
+    if (call === 0) return { get: () => Promise.resolve({ exists: false }) };
+    if (call === 1) {
+      return {
+        get: () => Promise.resolve({ exists: true, data: () => ({ question: "What ages do you take?" }) }),
+        delete: del,
+      };
+    }
+    return { id: "log1", set: auditSet };
+  });
 }
 
 function request(headers: Record<string, string> = {}) {
@@ -34,6 +49,7 @@ beforeEach(() => {
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
   del.mockResolvedValue(undefined);
+  auditSet.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -67,5 +83,19 @@ describe("DELETE /api/admin/faqs/[id]", () => {
     expect(collection).toHaveBeenCalledWith("faqs");
     expect(doc).toHaveBeenCalledWith("f1");
     expect(del).toHaveBeenCalled();
+  });
+
+  it("logs the deletion to the audit trail with the FAQ's question", async () => {
+    const { DELETE } = await import("@/app/api/admin/faqs/[id]/route");
+    await DELETE(request({ authorization: "Bearer ok" }), context());
+
+    expect(collection).toHaveBeenCalledWith("auditLog");
+    expect(auditSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "faq.deleted",
+        actorEmail: "staff@earlydays.example",
+        detail: "What ages do you take?",
+      })
+    );
   });
 });

@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendNewReportEmail } from "@/lib/email/notify";
+import { logAdminAction } from "@/lib/audit";
 import type { ChildRecord, Parent, ProgressReport } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -105,6 +106,13 @@ export const POST = withAdminRoute("reports", "POST /api/admin/reports", async (
   } catch (err) {
     logRouteError("POST /api/admin/reports", "failed to send new-report notification email", err);
   }
+
+  await logAdminAction({
+    action: "report.uploaded",
+    actorEmail: admin.email,
+    targetUid: trimmedParentUid,
+    detail: `${trimmedChildName} — ${trimmedTerm}`,
+  });
 
   return NextResponse.json(report);
 });

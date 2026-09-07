@@ -6,6 +6,7 @@ const getUser = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const deleteFn = vi.fn();
+const auditSet = vi.fn();
 let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
@@ -13,8 +14,27 @@ vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ collection }),
 }));
 
-collection.mockImplementation(() => ({ doc }));
-doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { delete: deleteFn }));
+// Call order per request: (1) resolveAdminIdentity's `adminUsers/{uid}` lookup
+// — "no doc" so the ADMIN_EMAILS* env fallback applies; (2) the inquiry doc
+// itself, read (for the audit entry's name/email) then deleted; (3)
+// logAdminAction's `auditLog` doc write.
+function resetChain() {
+  collection.mockImplementation(() => ({ doc }));
+  docCalls = 0;
+  doc.mockImplementation(() => {
+    const call = docCalls++;
+    if (call === 0) return { get: () => Promise.resolve({ exists: false }) };
+    if (call === 1) {
+      return {
+        get: () => Promise.resolve({ exists: true, data: () => ({ name: "A Parent", email: "parent@example.com" }) }),
+        delete: deleteFn,
+      };
+    }
+    return { id: "log1", set: auditSet };
+  });
+}
+
+resetChain();
 
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/admin/inquiries/i1", {
@@ -30,10 +50,9 @@ function context(id = "i1") {
 beforeEach(() => {
   vi.clearAllMocks();
   getUser.mockResolvedValue({ disabled: false });
-  collection.mockImplementation(() => ({ doc }));
-  docCalls = 0;
-  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { delete: deleteFn }));
+  resetChain();
   deleteFn.mockResolvedValue(undefined);
+  auditSet.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -76,5 +95,22 @@ describe("DELETE /api/admin/inquiries/[id]", () => {
     expect(collection).toHaveBeenCalledWith("inquiries");
     expect(doc).toHaveBeenCalledWith("i1");
     expect(deleteFn).toHaveBeenCalled();
+  });
+
+  it("logs the deletion to the audit trail with the inquirer's name and email", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    const { DELETE } = await import("@/app/api/admin/inquiries/[id]/route");
+    await DELETE(request({ authorization: "Bearer ok" }), context("i1"));
+
+    expect(collection).toHaveBeenCalledWith("auditLog");
+    expect(auditSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "inquiry.deleted",
+        actorEmail: "staff@earlydays.example",
+        targetEmail: "parent@example.com",
+        detail: "A Parent",
+      })
+    );
   });
 });

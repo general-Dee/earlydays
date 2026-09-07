@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { sendApplicationStatusEmail } from "@/lib/email/notify";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
+import { logAdminAction } from "@/lib/audit";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 
@@ -29,6 +30,14 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
     await ref.update({ status });
 
     const application = snapshot.data() as Application;
+
+    await logAdminAction({
+      action: "application.status_changed",
+      actorEmail: admin.email,
+      ...(application.email ? { targetEmail: application.email } : {}),
+      detail: `${application.childName}: ${status}`,
+    });
+
     let emailSent = false;
     try {
       emailSent = await sendApplicationStatusEmail(
@@ -52,7 +61,21 @@ export const DELETE = withAdminRoute<{ params: { id: string } }>(
   "applications",
   "DELETE /api/admin/applications/[id]",
   async (req: NextRequest, admin, { params }) => {
-    await getAdminDb().collection(COLLECTIONS.applications).doc(params.id).delete();
+    const ref = getAdminDb().collection(COLLECTIONS.applications).doc(params.id);
+
+    // Read before deleting so the audit entry names the child rather than an
+    // opaque doc id. A missing doc still deletes as a no-op, same as before.
+    const snapshot = await ref.get();
+    const application = snapshot.exists ? (snapshot.data() as Application) : undefined;
+
+    await ref.delete();
+
+    await logAdminAction({
+      action: "application.deleted",
+      actorEmail: admin.email,
+      ...(application?.email ? { targetEmail: application.email } : {}),
+      ...(application?.childName ? { detail: application.childName } : {}),
+    });
 
     return NextResponse.json({ ok: true });
   }

@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { GalleryPhoto } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -93,6 +94,12 @@ export const POST = withAdminRoute("gallery", "POST /api/admin/gallery", async (
       });
     return NextResponse.json({ error: "Couldn't save this photo. Please try again." }, { status: 500 });
   }
+
+  await logAdminAction({
+    action: "gallery.created",
+    actorEmail: admin.email,
+    detail: galleryPhoto.alt,
+  });
 
   return NextResponse.json(galleryPhoto);
 });

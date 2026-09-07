@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -52,6 +53,12 @@ export const POST = withAdminRoute("events", "POST /api/admin/events", async (re
   };
 
   const ref = await getAdminDb().collection(COLLECTIONS.events).add(event);
+
+  await logAdminAction({
+    action: "event.created",
+    actorEmail: admin.email,
+    detail: `${event.title} (${event.date})`,
+  });
 
   return NextResponse.json({ id: ref.id, ...event });
 });

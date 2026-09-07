@@ -5,6 +5,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { BlogPost } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -145,6 +146,12 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
         });
     }
 
+    await logAdminAction({
+      action: "blog.updated",
+      actorEmail: admin.email,
+      detail: responsePatch.title ?? existing.title,
+    });
+
     return NextResponse.json({ ...existing, ...responsePatch, id: params.id });
   }
 );
@@ -169,6 +176,12 @@ export const DELETE = withAdminRoute<{ params: { id: string } }>(
     }
 
     await postRef.delete();
+
+    await logAdminAction({
+      action: "blog.deleted",
+      actorEmail: admin.email,
+      ...(snap.exists ? { detail: (snap.data() as BlogPost).title } : {}),
+    });
 
     return NextResponse.json({ ok: true });
   }

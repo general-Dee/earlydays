@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
 import { sendNewAnnouncementEmail } from "@/lib/email/notify";
+import { logAdminAction } from "@/lib/audit";
 import { logRouteError } from "@/lib/api/errors";
 import type { Parent } from "@/lib/firebase/types";
 
@@ -36,6 +37,12 @@ export const POST = withAdminRoute("announcements", "POST /api/admin/announcemen
   };
 
   const ref = await getAdminDb().collection(COLLECTIONS.announcements).add(announcement);
+
+  await logAdminAction({
+    action: "announcement.created",
+    actorEmail: admin.email,
+    detail: announcement.title,
+  });
 
   const parentsSnap = await getAdminDb().collection(COLLECTIONS.parents).get();
   let emailsSent = 0;

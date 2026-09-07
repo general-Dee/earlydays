@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { Testimonial } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -61,6 +62,12 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
 
     await testimonialRef.update(patch);
 
+    await logAdminAction({
+      action: "testimonial.updated",
+      actorEmail: admin.email,
+      detail: (patch.name as string | undefined) ?? existing.name,
+    });
+
     return NextResponse.json({ ...existing, ...patch, id: params.id });
   }
 );
@@ -69,7 +76,19 @@ export const DELETE = withAdminRoute<{ params: { id: string } }>(
   "testimonials",
   "DELETE /api/admin/testimonials/[id]",
   async (req: NextRequest, admin, { params }) => {
-    await getAdminDb().collection(COLLECTIONS.testimonials).doc(params.id).delete();
+    const testimonialRef = getAdminDb().collection(COLLECTIONS.testimonials).doc(params.id);
+
+    // Read before deleting so the audit entry names the testimonial's author
+    // rather than an opaque doc id. A missing doc still deletes as a no-op.
+    const snap = await testimonialRef.get();
+
+    await testimonialRef.delete();
+
+    await logAdminAction({
+      action: "testimonial.deleted",
+      actorEmail: admin.email,
+      ...(snap.exists ? { detail: (snap.data() as Testimonial).name } : {}),
+    });
 
     return NextResponse.json({ ok: true });
   }

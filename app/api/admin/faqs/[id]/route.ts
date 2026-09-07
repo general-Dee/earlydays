@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { Faq } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -47,6 +48,12 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
 
     await faqRef.update(patch);
 
+    await logAdminAction({
+      action: "faq.updated",
+      actorEmail: admin.email,
+      detail: (patch.question as string | undefined) ?? existing.question,
+    });
+
     return NextResponse.json({ ...existing, ...patch, id: params.id });
   }
 );
@@ -55,7 +62,19 @@ export const DELETE = withAdminRoute<{ params: { id: string } }>(
   "faqs",
   "DELETE /api/admin/faqs/[id]",
   async (req: NextRequest, admin, { params }) => {
-    await getAdminDb().collection(COLLECTIONS.faqs).doc(params.id).delete();
+    const faqRef = getAdminDb().collection(COLLECTIONS.faqs).doc(params.id);
+
+    // Read before deleting so the audit entry names the FAQ rather than an
+    // opaque doc id. A missing doc still deletes as a no-op, same as before.
+    const snap = await faqRef.get();
+
+    await faqRef.delete();
+
+    await logAdminAction({
+      action: "faq.deleted",
+      actorEmail: admin.email,
+      ...(snap.exists ? { detail: (snap.data() as Faq).question } : {}),
+    });
 
     return NextResponse.json({ ok: true });
   }

@@ -5,6 +5,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
+import { logAdminAction } from "@/lib/audit";
 import { site } from "@/lib/data";
 import { validateChildren, validateEmail, validateGuardianName, validatePhone } from "./validation";
 import type { Parent } from "@/lib/firebase/types";
@@ -105,6 +106,14 @@ export const POST = withAdminRoute("parents", "POST /api/admin/parents", async (
       logRouteError("POST /api/admin/parents", "failed to send parent invite email", err);
     }
   }
+
+  await logAdminAction({
+    action: "parent.created",
+    actorEmail: admin.email,
+    targetUid: parent.uid,
+    targetEmail: parent.email,
+    detail: parent.guardianName,
+  });
 
   return NextResponse.json({ ...parent, resetLink, emailSent });
 });

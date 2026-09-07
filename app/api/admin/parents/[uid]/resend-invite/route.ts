@@ -4,6 +4,7 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
+import { logAdminAction } from "@/lib/audit";
 import { site } from "@/lib/data";
 import type { Parent } from "@/lib/firebase/types";
 
@@ -34,6 +35,13 @@ export const POST = withAdminRoute<{ params: { uid: string } }>(
     } catch (err) {
       logRouteError("POST /api/admin/parents/[uid]/resend-invite", "failed to send parent invite email", err);
     }
+
+    await logAdminAction({
+      action: "parent.invite_resent",
+      actorEmail: admin.email,
+      targetUid: params.uid,
+      targetEmail: parent.email,
+    });
 
     return NextResponse.json({ resetLink, emailSent });
   }

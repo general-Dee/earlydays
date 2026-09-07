@@ -60,7 +60,9 @@ export default function AdminAuditLogList({ user }: { user: User }) {
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
       <div className="mb-1">
         <h4 className="font-display text-xl mb-0.5">Audit Log</h4>
-        <p className="text-[0.85rem] text-slate">Admin account create/update/disable/remove actions.</p>
+        <p className="text-[0.85rem] text-slate">
+          Every change an admin makes — parents, applications, reports, content, and admin accounts. Most recent 500.
+        </p>
       </div>
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading audit log…</p>}

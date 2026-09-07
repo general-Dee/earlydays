@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { Testimonial } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -51,6 +52,12 @@ export const POST = withAdminRoute("testimonials", "POST /api/admin/testimonials
   };
 
   await testimonialRef.set(testimonial);
+
+  await logAdminAction({
+    action: "testimonial.created",
+    actorEmail: admin.email,
+    detail: testimonial.name,
+  });
 
   return NextResponse.json(testimonial);
 });

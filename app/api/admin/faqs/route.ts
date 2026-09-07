@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { logAdminAction } from "@/lib/audit";
 import type { Faq } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
@@ -41,6 +42,12 @@ export const POST = withAdminRoute("faqs", "POST /api/admin/faqs", async (req: N
   };
 
   await faqRef.set(faq);
+
+  await logAdminAction({
+    action: "faq.created",
+    actorEmail: admin.email,
+    detail: faq.question,
+  });
 
   return NextResponse.json(faq);
 });
