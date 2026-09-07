@@ -8,6 +8,7 @@ import { TERMS } from "@/lib/data";
 import type { PaymentRecord, PaymentStatus } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import { formatNaira } from "@/lib/currency";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -24,10 +25,6 @@ const statusStyle: Record<PaymentStatus, string> = {
   success: "bg-leaf-soft text-leaf",
   failed: "bg-clay-soft text-clay",
 };
-
-function formatNaira(amountKobo: number) {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
-}
 
 function getSearchText(payment: AdminPaymentRow): string {
   return [payment.guardianName, payment.childName, payment.reference].filter(Boolean).join(" ");

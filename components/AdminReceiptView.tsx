@@ -3,13 +3,10 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { site } from "@/lib/data";
+import { formatNaira } from "@/lib/currency";
 import type { PaymentRecord } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "not-found" | "error" | "ready";
-
-function formatNaira(amountKobo: number) {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
-}
 
 export default function AdminReceiptView({
   user,

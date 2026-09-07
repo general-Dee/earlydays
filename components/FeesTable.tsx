@@ -1,9 +1,6 @@
 import { FEE_BRACKETS } from "@/lib/fees";
 import { defaultFeeAmounts, getFeeAmounts } from "@/lib/feeSettings";
-
-function formatNaira(amountKobo: number) {
-  return (amountKobo / 100).toLocaleString("en-NG");
-}
+import { formatNaira } from "@/lib/currency";
 
 export default async function FeesTable() {
   // Unlike the payment/cron/admin paths, a public marketing page should
@@ -32,7 +29,7 @@ export default async function FeesTable() {
             <td className={`px-4.5 py-4 text-sm ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>{bracket.label}</td>
             <td className={`px-4.5 py-4 text-sm ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>{bracket.ageRange}</td>
             <td className={`px-4.5 py-4 text-sm font-medium text-ink ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>
-              ₦{formatNaira(amounts[bracket.id] ?? bracket.defaultAmountKobo)}
+              {formatNaira(amounts[bracket.id] ?? bracket.defaultAmountKobo)}
             </td>
           </tr>
         ))}

@@ -6,13 +6,10 @@ import type { User } from "firebase/auth";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { site } from "@/lib/data";
+import { formatNaira } from "@/lib/currency";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "not-found" | "error" | "ready";
-
-function formatNaira(amountKobo: number) {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
-}
 
 export default function PortalReceiptView({ user, reference }: { user: User; reference: string }) {
   const [payment, setPayment] = useState<PaymentRecord | null>(null);

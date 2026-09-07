@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { site, stages } from "@/lib/data";
+import { formatNaira } from "@/lib/currency";
 import type { ApplicationStatus, EventRsvp } from "@/lib/firebase/types";
 
 function stageLabel(code: string): string {
@@ -230,10 +231,6 @@ export async function sendApplicationConfirmationEmail(
       "The Earlydays Admissions Team",
     ].join("\n")
   );
-}
-
-function formatNaira(amountKobo: number): string {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
 }
 
 type PaymentReceipt = {

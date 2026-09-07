@@ -6,6 +6,7 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { TERMS } from "@/lib/data";
 import { FEE_BRACKETS } from "@/lib/fees";
+import { formatNaira } from "@/lib/currency";
 import AdminFeeChart, { type TermBreakdownEntry } from "@/components/AdminFeeChart";
 import type { ApplicationStatus } from "@/lib/firebase/types";
 
@@ -52,10 +53,6 @@ const QUICK_LINKS = [
   { href: "/admin/access", label: "Admin Access" },
   { href: "/admin/audit", label: "Audit Log" },
 ];
-
-function formatNaira(amountKobo: number) {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
-}
 
 export default function AdminDashboardOverview({ user }: { user: User }) {
   const [data, setData] = useState<DashboardData | null>(null);

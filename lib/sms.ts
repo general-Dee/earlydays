@@ -1,12 +1,9 @@
 import { stages } from "@/lib/data";
 import { normalizeNigerianPhone } from "@/lib/phone";
+import { formatNaira } from "@/lib/currency";
 
 function stageLabel(code: string): string {
   return stages.find((s) => s.code === code)?.name ?? code;
-}
-
-function formatNaira(amountKobo: number): string {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
 }
 
 type UnpaidChild = {

@@ -1,6 +1,4 @@
-function formatNaira(amountKobo: number) {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
-}
+import { formatNaira } from "@/lib/currency";
 
 export type TermBreakdownEntry = {
   term: string;
