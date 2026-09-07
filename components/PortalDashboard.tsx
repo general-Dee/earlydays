@@ -6,6 +6,7 @@ import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/fires
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { formatNaira } from "@/lib/currency";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
 import AnnouncementsFeed from "@/components/AnnouncementsFeed";
 import PortalEventsWidget from "@/components/PortalEventsWidget";
@@ -13,21 +14,18 @@ import PortalReportsWidget from "@/components/PortalReportsWidget";
 import PortalProfileForm from "@/components/PortalProfileForm";
 import PortalPayPanel from "@/components/PortalPayPanel";
 
-function formatNaira(amountKobo: number) {
-  return `₦${(amountKobo / 100).toLocaleString("en-NG")}`;
-}
-
 const statusStyle: Record<PaymentRecord["status"], string> = {
   success: "bg-leaf-soft text-leaf",
   pending: "bg-sun-soft text-clay",
   failed: "bg-clay-soft text-clay",
 };
 
+type LoadState = "loading" | "error" | "notFound" | "ready";
+
 export default function PortalDashboard({ user }: { user: User }) {
   const [parent, setParent] = useState<Parent | null>(null);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [state, setState] = useState<LoadState>("loading");
 
   const reloadPayments = useCallback(async () => {
     const paymentsSnap = await getDocs(
@@ -43,11 +41,11 @@ export default function PortalDashboard({ user }: { user: User }) {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
+      setState("loading");
       try {
         const parentSnap = await getDoc(doc(getFirebaseDb(), COLLECTIONS.parents, user.uid));
         if (!parentSnap.exists()) {
-          if (!cancelled) setNotFound(true);
+          if (!cancelled) setState("notFound");
           return;
         }
 
@@ -58,14 +56,13 @@ export default function PortalDashboard({ user }: { user: User }) {
           )
         );
 
-        if (!cancelled) {
-          setParent(parentSnap.data() as Parent);
-          setPayments(paymentsSnap.docs.map((d) => d.data() as PaymentRecord));
-        }
+        if (cancelled) return;
+
+        setParent(parentSnap.data() as Parent);
+        setPayments(paymentsSnap.docs.map((d) => d.data() as PaymentRecord));
+        setState("ready");
       } catch {
-        if (!cancelled) setNotFound(true);
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setState("error");
       }
     }
 
@@ -90,15 +87,21 @@ export default function PortalDashboard({ user }: { user: User }) {
       <AnnouncementsFeed />
       <PortalEventsWidget />
 
-      {loading && <p className="text-sm text-slate mt-5">Loading your records…</p>}
+      {state === "loading" && <p className="text-sm text-slate mt-5">Loading your records…</p>}
 
-      {!loading && notFound && (
+      {state === "error" && (
+        <div className="mt-4 px-3.5 py-3 rounded-lg bg-clay-soft text-clay text-[0.85rem] font-semibold">
+          Couldn&rsquo;t load your records. Please try again.
+        </div>
+      )}
+
+      {state === "notFound" && (
         <div className="mt-4 px-3.5 py-3 rounded-lg bg-sun-soft text-clay text-[0.85rem] font-semibold">
           We couldn&rsquo;t find a parent record for this account yet. Contact the school office to have your children linked to your portal login.
         </div>
       )}
 
-      {!loading && parent && (
+      {state === "ready" && parent && (
         <>
           <PortalProfileForm
             uid={user.uid}

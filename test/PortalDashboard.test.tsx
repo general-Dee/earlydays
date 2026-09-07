@@ -97,12 +97,12 @@ describe("PortalDashboard", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows a not-found message when the read fails", async () => {
+  it("shows an error message when the read fails", async () => {
     getDoc.mockRejectedValue(new Error("permission-denied"));
 
     render(<PortalDashboard user={fakeUser} />);
 
-    expect(await screen.findByText(/We couldn’t find a parent record/)).toBeInTheDocument();
+    expect(await screen.findByText("Couldn’t load your records. Please try again.")).toBeInTheDocument();
   });
 
   it("renders children and payment history once loaded", async () => {
