@@ -6,6 +6,7 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import { stages } from "@/lib/data";
 import type { Parent } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -100,17 +101,11 @@ function getSearchText(parent: Parent): string {
     .join(" ");
 }
 
-function escapeCsvField(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
 function parentsToCsv(parents: Parent[]): string {
-  const rows = parents.flatMap((parent) =>
-    parent.children.map((child) =>
-      [
+  return toCsv(
+    ["Guardian", "Guardian Email", "Guardian Phone", "Child Name", "Stage", "Admission No", "Account Created At"],
+    parents.flatMap((parent) =>
+      parent.children.map((child) => [
         parent.guardianName,
         parent.email,
         parent.phone ?? "",
@@ -118,15 +113,9 @@ function parentsToCsv(parents: Parent[]): string {
         child.stage,
         child.admissionNo ?? "",
         new Date(parent.createdAt).toISOString(),
-      ]
-        .map(escapeCsvField)
-        .join(",")
+      ])
     )
   );
-  return [
-    "Guardian,Guardian Email,Guardian Phone,Child Name,Stage,Admission No,Account Created At",
-    ...rows,
-  ].join("\n");
 }
 
 export default function AdminParentsList({ user }: { user: User }) {
@@ -396,15 +385,7 @@ export default function AdminParentsList({ user }: { user: User }) {
   }
 
   function exportCsv() {
-    const blob = new Blob([parentsToCsv(filtered)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `parents-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadCsv("parents", parentsToCsv(filtered));
   }
 
   useEffect(() => {

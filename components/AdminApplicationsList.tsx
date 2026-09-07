@@ -6,6 +6,7 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 import { stages } from "@/lib/data";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -27,16 +28,21 @@ function getSearchText(app: Application): string {
   return [app.childName, app.guardianName, app.email, app.phone].filter(Boolean).join(" ");
 }
 
-function escapeCsvField(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
 function applicationsToCsv(applications: Application[]): string {
-  const rows = applications.map((app) =>
+  return toCsv(
     [
+      "Child Name",
+      "Date of Birth",
+      "Desired Stage",
+      "Guardian Name",
+      "Email",
+      "Phone",
+      "Status",
+      "Notes",
+      "Reference Code",
+      "Created At",
+    ],
+    applications.map((app) => [
       app.childName,
       app.childDob,
       stageLabel(app.desiredStage),
@@ -47,14 +53,8 @@ function applicationsToCsv(applications: Application[]): string {
       app.notes,
       app.referenceCode,
       new Date(app.createdAt).toISOString(),
-    ]
-      .map(escapeCsvField)
-      .join(",")
+    ])
   );
-  return [
-    "Child Name,Date of Birth,Desired Stage,Guardian Name,Email,Phone,Status,Notes,Reference Code,Created At",
-    ...rows,
-  ].join("\n");
 }
 
 export default function AdminApplicationsList({ user }: { user: User }) {
@@ -168,15 +168,7 @@ export default function AdminApplicationsList({ user }: { user: User }) {
   }
 
   function exportCsv() {
-    const blob = new Blob([applicationsToCsv(filtered)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `applications-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadCsv("applications", applicationsToCsv(filtered));
   }
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Subscriber } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -12,18 +13,11 @@ function getSearchText(subscriber: Subscriber): string {
   return [subscriber.email, subscriber.name].filter(Boolean).join(" ");
 }
 
-function escapeCsvField(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
 function subscribersToCsv(subscribers: Subscriber[]): string {
-  const rows = subscribers.map((s) =>
-    [s.email, s.name ?? "", new Date(s.createdAt).toISOString()].map(escapeCsvField).join(",")
+  return toCsv(
+    ["Email", "Name", "Created At"],
+    subscribers.map((s) => [s.email, s.name ?? "", new Date(s.createdAt).toISOString()])
   );
-  return ["Email,Name,Created At", ...rows].join("\n");
 }
 
 export default function AdminSubscribersList({ user }: { user: User }) {
@@ -73,15 +67,7 @@ export default function AdminSubscribersList({ user }: { user: User }) {
   }, [user]);
 
   function exportCsv() {
-    const blob = new Blob([subscribersToCsv(subscribers)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadCsv("subscribers", subscribersToCsv(filtered));
   }
 
   async function deleteSubscriber(id: string) {
@@ -114,7 +100,7 @@ export default function AdminSubscribersList({ user }: { user: User }) {
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
         <div className="flex items-center gap-2">
-          {state === "ready" && subscribers.length > 0 && (
+          {state === "ready" && filtered.length > 0 && (
             <button onClick={exportCsv} className="btn btn-ghost btn-sm">
               Export CSV
             </button>

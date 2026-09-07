@@ -7,6 +7,7 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import { TERMS } from "@/lib/data";
 import type { PaymentRecord, PaymentStatus } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -32,16 +33,21 @@ function getSearchText(payment: AdminPaymentRow): string {
   return [payment.guardianName, payment.childName, payment.reference].filter(Boolean).join(" ");
 }
 
-function escapeCsvField(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
 function paymentsToCsv(payments: AdminPaymentRow[]): string {
-  const rows = payments.map((p) =>
+  return toCsv(
     [
+      "Reference",
+      "Guardian",
+      "Guardian Email",
+      "Child",
+      "Term",
+      "Amount (NGN)",
+      "Status",
+      "Channel",
+      "Created At",
+      "Paid At",
+    ],
+    payments.map((p) => [
       p.reference,
       p.guardianName,
       p.guardianEmail,
@@ -52,12 +58,7 @@ function paymentsToCsv(payments: AdminPaymentRow[]): string {
       p.channel ?? "",
       new Date(p.createdAt).toISOString(),
       p.paidAt ? new Date(p.paidAt).toISOString() : "",
-    ]
-      .map(escapeCsvField)
-      .join(",")
-  );
-  return ["Reference,Guardian,Guardian Email,Child,Term,Amount (NGN),Status,Channel,Created At,Paid At", ...rows].join(
-    "\n"
+    ])
   );
 }
 
@@ -77,15 +78,7 @@ export default function AdminPaymentsList({ user }: { user: User }) {
   );
 
   function exportCsv() {
-    const blob = new Blob([paymentsToCsv(filtered)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `payments-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadCsv("payments", paymentsToCsv(filtered));
   }
 
   useEffect(() => {
