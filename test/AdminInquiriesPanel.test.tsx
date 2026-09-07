@@ -184,6 +184,55 @@ describe("AdminInquiriesPanel", () => {
     expect(screen.queryByText("Aisha")).not.toBeInTheDocument();
   });
 
+  it("exports only the status-filtered inquiries as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          inquiries: [
+            { id: "i1", name: "Aisha", email: "a@b.com", phone: null, message: "Book a tour", status: "new", createdAt: Date.now() },
+            { id: "i2", name: "Chidi", email: "c@d.com", phone: null, message: "Fee question", status: "resolved", createdAt: Date.now() },
+          ],
+        }),
+      })
+    );
+
+    // jsdom's Blob shim doesn't implement .text()/.arrayBuffer(), so capture
+    // the CSV content at construction time instead of reading it back off a Blob.
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminInquiriesPanel />);
+    await screen.findByText("Aisha");
+
+    await userEvent.selectOptions(screen.getByLabelText("Filter by status"), "resolved");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^inquiries-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Chidi");
+    expect(capturedContent).not.toContain("Aisha");
+
+    createElementSpy.mockRestore();
+  });
+
   it("adds an inquiry submitted through the create form", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     const created = { ...sampleInquiry, id: "i9", name: "New Visitor" };

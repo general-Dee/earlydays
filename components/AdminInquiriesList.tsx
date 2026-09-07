@@ -5,6 +5,7 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Inquiry, InquiryStatus } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -18,6 +19,20 @@ const statusStyle: Record<InquiryStatus, string> = {
 
 function getSearchText(inquiry: Inquiry): string {
   return [inquiry.name, inquiry.email, inquiry.phone, inquiry.message].filter(Boolean).join(" ");
+}
+
+function inquiriesToCsv(inquiries: Inquiry[]): string {
+  return toCsv(
+    ["Name", "Email", "Phone", "Message", "Status", "Created At"],
+    inquiries.map((i) => [
+      i.name,
+      i.email ?? "",
+      i.phone ?? "",
+      i.message,
+      i.status,
+      new Date(i.createdAt).toISOString(),
+    ])
+  );
 }
 
 export default function AdminInquiriesList({ user }: { user: User }) {
@@ -74,6 +89,10 @@ export default function AdminInquiriesList({ user }: { user: User }) {
     } finally {
       setPosting(false);
     }
+  }
+
+  function exportCsv() {
+    downloadCsv("inquiries", inquiriesToCsv(filtered));
   }
 
   async function deleteInquiry(id: string) {
@@ -167,9 +186,16 @@ export default function AdminInquiriesList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Inquiries</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createInquiry} className="mt-5 flex flex-col gap-2.5">
