@@ -325,6 +325,28 @@ export async function sendNewReportEmail(
   );
 }
 
+export async function sendNewEventEmail(
+  parent: { guardianName: string; email: string },
+  event: { title: string; date: string; desc: string }
+): Promise<boolean> {
+  return sendEmail(
+    parent.email,
+    `New event: ${event.title}`,
+    [
+      `Hi ${parent.guardianName},`,
+      "",
+      `${event.title} — ${event.date}`,
+      "",
+      event.desc,
+      "",
+      `View it in the parent portal: ${site.url}/portal`,
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n")
+  );
+}
+
 export async function sendNewAnnouncementEmail(
   parent: { guardianName: string; email: string },
   announcement: { title: string; body: string }

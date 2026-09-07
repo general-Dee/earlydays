@@ -8,13 +8,23 @@ const orderBy = vi.fn();
 const get = vi.fn();
 const add = vi.fn();
 const doc = vi.fn(() => ({ get: () => Promise.resolve({ exists: false }) }));
+const parentsGet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
   getAdminAuth: () => ({ verifyIdToken, getUser }),
   getAdminDb: () => ({ collection }),
 }));
 
-collection.mockImplementation(() => ({ orderBy, add, doc }));
+const sendNewEventEmail = vi.fn();
+vi.mock("@/lib/email/notify", () => ({
+  sendNewEventEmail: (...args: unknown[]) => sendNewEventEmail(...args),
+}));
+
+function collectionImpl(name: string) {
+  return name === "parents" ? { get: parentsGet } : { orderBy, add, doc };
+}
+
+collection.mockImplementation(collectionImpl);
 orderBy.mockImplementation(() => ({ get }));
 
 function getRequest(headers: Record<string, string> = {}) {
@@ -34,8 +44,10 @@ const validEvent = { title: "Term Starts", date: "2026-09-01", tag: "All Stages"
 beforeEach(() => {
   vi.clearAllMocks();
   getUser.mockResolvedValue({ disabled: false });
-  collection.mockImplementation(() => ({ orderBy, add, doc }));
+  collection.mockImplementation(collectionImpl);
   orderBy.mockImplementation(() => ({ get }));
+  parentsGet.mockResolvedValue({ docs: [] });
+  sendNewEventEmail.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -182,5 +194,52 @@ describe("POST /api/admin/events", () => {
         createdBy: "staff@earlydays.example",
       })
     );
+  });
+
+  it("emails every parent and returns the emailsSent count", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    add.mockResolvedValue({ id: "e1" });
+    parentsGet.mockResolvedValue({
+      docs: [
+        { data: () => ({ guardianName: "Aisha Bello", email: "aisha@example.com" }) },
+        { data: () => ({ guardianName: "Chidi Okoye", email: "chidi@example.com" }) },
+      ],
+    });
+
+    const { POST } = await import("@/app/api/admin/events/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, validEvent));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.emailsSent).toBe(2);
+    expect(sendNewEventEmail).toHaveBeenCalledWith(
+      { guardianName: "Aisha Bello", email: "aisha@example.com" },
+      { title: validEvent.title, date: validEvent.date, desc: validEvent.desc }
+    );
+    expect(sendNewEventEmail).toHaveBeenCalledWith(
+      { guardianName: "Chidi Okoye", email: "chidi@example.com" },
+      { title: validEvent.title, date: validEvent.date, desc: validEvent.desc }
+    );
+  });
+
+  it("still returns 200 with the created event when a notification email fails", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    add.mockResolvedValue({ id: "e1" });
+    parentsGet.mockResolvedValue({
+      docs: [{ data: () => ({ guardianName: "Aisha Bello", email: "aisha@example.com" }) }],
+    });
+    sendNewEventEmail.mockRejectedValue(new Error("resend down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { POST } = await import("@/app/api/admin/events/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, validEvent));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toMatchObject({ id: "e1", title: validEvent.title, emailsSent: 0 });
+
+    consoleSpy.mockRestore();
   });
 });

@@ -76,6 +76,7 @@ export default function AdminEventsList({ user }: { user: User }) {
   const [desc, setDesc] = useState("");
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+  const [emailsSent, setEmailsSent] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [openRsvpsId, setOpenRsvpsId] = useState<string | null>(null);
 
@@ -83,6 +84,7 @@ export default function AdminEventsList({ user }: { user: User }) {
     e.preventDefault();
     setPosting(true);
     setPostError(null);
+    setEmailsSent(null);
 
     try {
       const idToken = await user.getIdToken();
@@ -101,8 +103,9 @@ export default function AdminEventsList({ user }: { user: User }) {
         return;
       }
 
-      const created = (await res.json()) as CalendarEvent;
+      const created = (await res.json()) as CalendarEvent & { emailsSent: number };
       setEvents((current) => [...current, created].sort((a, b) => a.date.localeCompare(b.date)));
+      setEmailsSent(created.emailsSent);
       setTitle("");
       setDate("");
       setTag("");
@@ -221,6 +224,12 @@ export default function AdminEventsList({ user }: { user: User }) {
           {posting ? "Adding…" : "Add Event"}
         </button>
       </form>
+
+      {emailsSent !== null && (
+        <div className="mt-4 px-3.5 py-3 rounded-lg bg-leaf-soft text-leaf text-[0.85rem] font-semibold">
+          Event added — emailed {emailsSent} parent{emailsSent === 1 ? "" : "s"}.
+        </div>
+      )}
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading events…</p>}
 
