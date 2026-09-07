@@ -193,6 +193,53 @@ describe("AdminAccessPanel", () => {
     expect(screen.queryByText("Musa Ibrahim")).not.toBeInTheDocument();
   });
 
+  it("exports only the search-filtered admins as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const secondAdmin = {
+      ...fakeAdmin,
+      uid: "u3",
+      email: "zainab@earlydays.example",
+      displayName: "Zainab Bello",
+      areas: ["events"],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ admins: [fakeAdmin, secondAdmin] }) })
+    );
+
+    // jsdom's Blob shim doesn't implement .text()/.arrayBuffer(), so capture
+    // the CSV content at construction time instead of reading it back off a Blob.
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminAccessPanel />);
+    await screen.findByText("Musa Ibrahim");
+
+    await userEvent.type(screen.getByLabelText("Search admin accounts"), "zainab");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^admin-accounts-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Zainab Bello");
+    expect(capturedContent).not.toContain("Musa Ibrahim");
+
+    createElementSpy.mockRestore();
+  });
+
   it("disables the deactivate and remove controls on the signed-in user's own row", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     const selfRow = { ...fakeAdmin, uid: "u1", displayName: "Boss", isSuperAdmin: true, areas: [] };

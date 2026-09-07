@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminAuditLogPanel from "@/components/AdminAuditLogPanel";
 
 const useAuth = vi.fn();
@@ -37,6 +38,10 @@ const fakeEntry = {
 beforeEach(() => {
   vi.clearAllMocks();
   fakeUser.getIdToken.mockResolvedValue("tok");
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("AdminAuditLogPanel", () => {
@@ -93,5 +98,62 @@ describe("AdminAuditLogPanel", () => {
     render(<AdminAuditLogPanel />);
 
     expect(await screen.findByText("No audit log entries yet.")).toBeInTheDocument();
+  });
+
+  it("exports only the search-filtered entries as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          entries: [
+            fakeEntry,
+            {
+              id: "log2",
+              action: "admin.disabled",
+              actorEmail: "boss@earlydays.example",
+              targetUid: "u3",
+              targetEmail: "zainab@earlydays.example",
+              detail: "",
+              createdAt: Date.now(),
+            },
+          ],
+        }),
+      })
+    );
+
+    // jsdom's Blob shim doesn't implement .text()/.arrayBuffer(), so capture
+    // the CSV content at construction time instead of reading it back off a Blob.
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminAuditLogPanel />);
+    await screen.findByText("admin.created");
+
+    await userEvent.type(screen.getByLabelText("Search audit log"), "musa");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^audit-log-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("admin.created");
+    expect(capturedContent).not.toContain("admin.disabled");
+
+    createElementSpy.mockRestore();
   });
 });

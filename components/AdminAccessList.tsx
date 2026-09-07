@@ -5,6 +5,7 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ADMIN_AREAS, type AdminArea, type AdminUser } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -70,6 +71,20 @@ function getSearchText(admin: AdminRow): string {
   return [admin.displayName, admin.email, ...admin.areas].join(" ");
 }
 
+function adminsToCsv(admins: AdminRow[]): string {
+  return toCsv(
+    ["Display Name", "Email", "Superadmin", "Areas", "Disabled", "Created At"],
+    admins.map((a) => [
+      a.displayName,
+      a.email,
+      a.isSuperAdmin ? "Yes" : "No",
+      a.areas.join("; "),
+      a.disabled ? "Yes" : "No",
+      new Date(a.createdAt).toISOString(),
+    ])
+  );
+}
+
 export default function AdminAccessList({ user }: { user: User }) {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -94,6 +109,10 @@ export default function AdminAccessList({ user }: { user: User }) {
     admins,
     getSearchText
   );
+
+  function exportCsv() {
+    downloadCsv("admin-accounts", adminsToCsv(filtered));
+  }
 
   async function createAdmin(e: React.FormEvent) {
     e.preventDefault();
@@ -310,9 +329,16 @@ export default function AdminAccessList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Admin Accounts</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createAdmin} className="mt-5 flex flex-col gap-2.5">

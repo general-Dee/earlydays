@@ -4,11 +4,26 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import type { AuditLogEntry } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
 function getSearchText(entry: AuditLogEntry): string {
   return [entry.action, entry.actorEmail, entry.targetEmail ?? entry.targetUid ?? "", entry.detail ?? ""].join(" ");
+}
+
+function entriesToCsv(entries: AuditLogEntry[]): string {
+  return toCsv(
+    ["Action", "Actor Email", "Target Email", "Target UID", "Detail", "Created At"],
+    entries.map((e) => [
+      e.action,
+      e.actorEmail,
+      e.targetEmail ?? "",
+      e.targetUid ?? "",
+      e.detail ?? "",
+      new Date(e.createdAt).toISOString(),
+    ])
+  );
 }
 
 export default function AdminAuditLogList({ user }: { user: User }) {
@@ -56,6 +71,10 @@ export default function AdminAuditLogList({ user }: { user: User }) {
     };
   }, [user]);
 
+  function exportCsv() {
+    downloadCsv("audit-log", entriesToCsv(filtered));
+  }
+
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
       <div className="mb-1">
@@ -84,14 +103,21 @@ export default function AdminAuditLogList({ user }: { user: User }) {
       )}
 
       {state === "ready" && entries.length > 0 && (
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by action, actor, or target…"
-          aria-label="Search audit log"
-          className="mt-5 w-full text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
-        />
+        <div className="mt-5 flex items-center gap-2.5">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by action, actor, or target…"
+            aria-label="Search audit log"
+            className="flex-1 text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+          />
+          {filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+        </div>
       )}
 
       {state === "ready" && entries.length > 0 && filtered.length === 0 && (
