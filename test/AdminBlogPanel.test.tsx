@@ -112,6 +112,29 @@ describe("AdminBlogPanel", () => {
     expect(body.get("title")).toBe("Helping a shy child through the first week");
   });
 
+  it("shows an emailsSent banner after publishing a post", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...fakePost, emailsSent: 3 }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ posts: [] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminBlogPanel />);
+    await screen.findByText("No blog posts yet.");
+
+    await userEvent.type(screen.getByPlaceholderText("Slug (e.g. helping-a-shy-child)"), "helping-a-shy-child");
+    await userEvent.type(screen.getByPlaceholderText("Category"), "Settling In");
+    await userEvent.type(screen.getByPlaceholderText("Title"), "Helping a shy child through the first week");
+    await userEvent.type(screen.getByPlaceholderText("Excerpt"), "Small routines that make drop-off easier for both of you.");
+    await userEvent.type(screen.getByPlaceholderText("Body — separate paragraphs with a blank line"), "Paragraph one.");
+    await userEvent.click(screen.getByRole("button", { name: "Add Post" }));
+
+    expect(await screen.findByText("Post published — emailed 3 subscribers.")).toBeInTheDocument();
+  });
+
   it("deletes a post via the delete button", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {

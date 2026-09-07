@@ -85,7 +85,7 @@ export default function PortalDashboard({ user }: { user: User }) {
       </div>
 
       <AnnouncementsFeed />
-      <PortalEventsWidget />
+      <PortalEventsWidget parent={parent} />
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading your records…</p>}
 

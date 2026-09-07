@@ -242,6 +242,43 @@ describe("sendNewsletterEmail", () => {
   });
 });
 
+describe("sendNewBlogPostEmail", () => {
+  it("includes the title, excerpt, and a link to the post", async () => {
+    const { sendNewBlogPostEmail } = await import("@/lib/email/notify");
+    const { site } = await import("@/lib/data");
+
+    const sent = await sendNewBlogPostEmail(
+      { email: "a@b.com", name: "Aisha" },
+      { title: "Helping a shy child through the first week", excerpt: "Small routines that help.", slug: "helping-a-shy-child" }
+    );
+
+    expect(sent).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "a@b.com",
+        subject: expect.stringContaining("Helping a shy child through the first week"),
+        text: expect.stringContaining("Small routines that help."),
+      })
+    );
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining(`${site.url}/blog/helping-a-shy-child`) })
+    );
+  });
+
+  it("does nothing when Resend isn't configured", async () => {
+    delete process.env.RESEND_API_KEY;
+    const { sendNewBlogPostEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendNewBlogPostEmail(
+      { email: "a@b.com" },
+      { title: "Title", excerpt: "Excerpt", slug: "slug" }
+    );
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendEventReminderEmail", () => {
   it("includes the event title, date, and description", async () => {
     const { sendEventReminderEmail } = await import("@/lib/email/notify");

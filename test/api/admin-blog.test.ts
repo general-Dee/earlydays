@@ -14,6 +14,7 @@ const set = vi.fn();
 const file = vi.fn();
 const save = vi.fn();
 const deleteFile = vi.fn();
+const subscribersGet = vi.fn();
 let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
@@ -22,14 +23,25 @@ vi.mock("@/lib/firebase/admin", () => ({
   getAdminBucket: () => ({ file, name: "test-bucket" }),
 }));
 
+const sendNewBlogPostEmail = vi.fn();
+vi.mock("@/lib/email/notify", () => ({
+  sendNewBlogPostEmail: (...args: unknown[]) => sendNewBlogPostEmail(...args),
+}));
+
+function collectionImpl(name: string) {
+  return name === "subscribers" ? { get: subscribersGet } : { orderBy, doc, where };
+}
+
 function resetChain() {
-  collection.mockImplementation(() => ({ orderBy, doc, where }));
+  collection.mockImplementation(collectionImpl);
   orderBy.mockImplementation(() => ({ get }));
   where.mockImplementation(() => ({ limit }));
   limit.mockImplementation(() => ({ get: uniquenessGet }));
   docCalls = 0;
   doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { id: "p1", set }));
   file.mockImplementation(() => ({ save, delete: deleteFile }));
+  subscribersGet.mockResolvedValue({ docs: [] });
+  sendNewBlogPostEmail.mockResolvedValue(true);
 }
 
 function getRequest(headers: Record<string, string> = {}) {
@@ -237,6 +249,47 @@ describe("POST /api/admin/blog", () => {
 
     expect(res.status).toBe(500);
     expect(deleteFile).toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
+
+  it("emails every subscriber and returns the emailsSent count", async () => {
+    subscribersGet.mockResolvedValue({
+      docs: [
+        { data: () => ({ email: "aisha@example.com", name: "Aisha Bello" }) },
+        { data: () => ({ email: "chidi@example.com", name: "Chidi Okoye" }) },
+      ],
+    });
+
+    const { POST } = await import("@/app/api/admin/blog/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.emailsSent).toBe(2);
+    expect(sendNewBlogPostEmail).toHaveBeenCalledWith(
+      { email: "aisha@example.com", name: "Aisha Bello" },
+      { title: "Helping a shy child through the first week", excerpt: "Small routines that make drop-off easier for both of you.", slug: "helping-a-shy-child" }
+    );
+    expect(sendNewBlogPostEmail).toHaveBeenCalledWith(
+      { email: "chidi@example.com", name: "Chidi Okoye" },
+      { title: "Helping a shy child through the first week", excerpt: "Small routines that make drop-off easier for both of you.", slug: "helping-a-shy-child" }
+    );
+  });
+
+  it("still 200s with emailsSent 0 when a send fails", async () => {
+    subscribersGet.mockResolvedValue({
+      docs: [{ data: () => ({ email: "aisha@example.com", name: "Aisha Bello" }) }],
+    });
+    sendNewBlogPostEmail.mockRejectedValue(new Error("resend down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { POST } = await import("@/app/api/admin/blog/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.emailsSent).toBe(0);
 
     consoleSpy.mockRestore();
   });

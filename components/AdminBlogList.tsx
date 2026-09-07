@@ -33,6 +33,7 @@ export default function AdminBlogList({ user }: { user: User }) {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [emailsSent, setEmailsSent] = useState<number | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
@@ -82,6 +83,7 @@ export default function AdminBlogList({ user }: { user: User }) {
     e.preventDefault();
     setSubmitting(true);
     setSubmitError(null);
+    setEmailsSent(null);
 
     try {
       const idToken = await user.getIdToken();
@@ -107,8 +109,9 @@ export default function AdminBlogList({ user }: { user: User }) {
         return;
       }
 
-      const created = (await res.json()) as BlogPost;
+      const created = (await res.json()) as BlogPost & { emailsSent: number };
       setPosts((current) => [...current, created].sort((a, b) => a.order - b.order));
+      setEmailsSent(created.emailsSent);
       setSlug("");
       setCategory("");
       setTitle("");
@@ -271,6 +274,12 @@ export default function AdminBlogList({ user }: { user: User }) {
           {submitting ? "Saving…" : "Add Post"}
         </button>
       </form>
+
+      {emailsSent !== null && (
+        <div className="mt-4 px-3.5 py-3 rounded-lg bg-leaf-soft text-leaf text-[0.85rem] font-semibold">
+          Post published — emailed {emailsSent} subscriber{emailsSent === 1 ? "" : "s"}.
+        </div>
+      )}
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading posts…</p>}
 

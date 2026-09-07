@@ -4,8 +4,9 @@ import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
+import { sendNewBlogPostEmail } from "@/lib/email/notify";
 import { logAdminAction } from "@/lib/audit";
-import type { BlogPost } from "@/lib/firebase/types";
+import type { BlogPost, Subscriber } from "@/lib/firebase/types";
 
 export const runtime = "nodejs";
 
@@ -137,5 +138,20 @@ export const POST = withAdminRoute("blog", "POST /api/admin/blog", async (req: N
     detail: post.title,
   });
 
-  return NextResponse.json(post);
+  const subscribersSnap = await getAdminDb().collection(COLLECTIONS.subscribers).get();
+  let emailsSent = 0;
+  for (const subscriberDoc of subscribersSnap.docs) {
+    const subscriber = subscriberDoc.data() as Subscriber;
+    try {
+      const sent = await sendNewBlogPostEmail(
+        { email: subscriber.email, name: subscriber.name },
+        { title: post.title, excerpt: post.excerpt, slug: post.slug }
+      );
+      if (sent) emailsSent++;
+    } catch (err) {
+      logRouteError("POST /api/admin/blog", "failed to send new-blog-post email", err);
+    }
+  }
+
+  return NextResponse.json({ ...post, emailsSent });
 });

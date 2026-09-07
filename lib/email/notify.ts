@@ -347,6 +347,28 @@ export async function sendNewEventEmail(
   );
 }
 
+export async function sendNewBlogPostEmail(
+  subscriber: { email: string; name?: string },
+  post: { title: string; excerpt: string; slug: string }
+): Promise<boolean> {
+  return sendEmail(
+    subscriber.email,
+    `New post: ${post.title}`,
+    [
+      subscriber.name ? `Hi ${subscriber.name},` : "Hi,",
+      "",
+      post.title,
+      "",
+      post.excerpt,
+      "",
+      `Read it here: ${site.url}/blog/${post.slug}`,
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n")
+  );
+}
+
 export async function sendEventReminderEmail(
   rsvp: { name: string; email: string },
   event: { title: string; date: string; desc: string }
