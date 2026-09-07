@@ -347,6 +347,46 @@ export async function sendNewEventEmail(
   );
 }
 
+export async function sendEventReminderEmail(
+  rsvp: { name: string; email: string },
+  event: { title: string; date: string; desc: string }
+): Promise<boolean> {
+  return sendEmail(
+    rsvp.email,
+    `Reminder: ${event.title} is tomorrow`,
+    [
+      `Hi ${rsvp.name},`,
+      "",
+      `Just a reminder that ${event.title} is happening tomorrow (${event.date}).`,
+      "",
+      event.desc,
+      "",
+      "See you there!",
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n")
+  );
+}
+
+export async function sendNewsletterEmail(
+  subscriber: { email: string; name?: string },
+  newsletter: { subject: string; body: string }
+): Promise<boolean> {
+  return sendEmail(
+    subscriber.email,
+    newsletter.subject,
+    [
+      subscriber.name ? `Hi ${subscriber.name},` : "Hi,",
+      "",
+      newsletter.body,
+      "",
+      "Warmly,",
+      "The Earlydays Team",
+    ].join("\n")
+  );
+}
+
 export async function sendNewAnnouncementEmail(
   parent: { guardianName: string; email: string },
   announcement: { title: string; body: string }

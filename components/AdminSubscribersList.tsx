@@ -25,6 +25,12 @@ export default function AdminSubscribersList({ user }: { user: User }) {
   const [state, setState] = useState<LoadState>("loading");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [emailsSent, setEmailsSent] = useState<number | null>(null);
+
   const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
     subscribers,
     getSearchText
@@ -70,6 +76,40 @@ export default function AdminSubscribersList({ user }: { user: User }) {
     downloadCsv("subscribers", subscribersToCsv(filtered));
   }
 
+  async function sendNewsletter(e: React.FormEvent) {
+    e.preventDefault();
+    setSending(true);
+    setSendError(null);
+    setEmailsSent(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/admin/subscribers", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ subject, body }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setSendError(data.error ?? "Couldn't send this newsletter. Please try again.");
+        return;
+      }
+
+      const result = (await res.json()) as { emailsSent: number };
+      setEmailsSent(result.emailsSent);
+      setSubject("");
+      setBody("");
+    } catch {
+      setSendError("Couldn't send this newsletter. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function deleteSubscriber(id: string) {
     const previous = subscribers;
     setDeletingId(id);
@@ -110,6 +150,35 @@ export default function AdminSubscribersList({ user }: { user: User }) {
           </button>
         </div>
       </div>
+
+      <form onSubmit={sendNewsletter} className="mt-5 flex flex-col gap-2.5">
+        <input
+          type="text"
+          placeholder="Subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          required
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        <textarea
+          placeholder="Newsletter body"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          required
+          rows={4}
+          className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+        {sendError && <p className="text-[0.8rem] text-clay mb-0">{sendError}</p>}
+        <button type="submit" disabled={sending} className="btn btn-primary btn-sm self-start">
+          {sending ? "Sending…" : "Send Newsletter"}
+        </button>
+      </form>
+
+      {emailsSent !== null && (
+        <div className="mt-4 px-3.5 py-3 rounded-lg bg-leaf-soft text-leaf text-[0.85rem] font-semibold">
+          Newsletter sent — emailed {emailsSent} subscriber{emailsSent === 1 ? "" : "s"}.
+        </div>
+      )}
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading subscribers…</p>}
 

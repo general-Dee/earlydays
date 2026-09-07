@@ -147,4 +147,28 @@ describe("AdminSubscribersPanel", () => {
 
     createElementSpy.mockRestore();
   });
+
+  it("sends a newsletter to every subscriber", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/admin/subscribers" && init?.method === "POST") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ emailsSent: 1 }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ subscribers: [fakeSubscriber] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminSubscribersPanel />);
+    await screen.findByText("parent@example.com");
+
+    await userEvent.type(screen.getByPlaceholderText("Subject"), "This month at Earlydays");
+    await userEvent.type(screen.getByPlaceholderText("Newsletter body"), "Here's what's new.");
+    await userEvent.click(screen.getByRole("button", { name: "Send Newsletter" }));
+
+    expect(await screen.findByText("Newsletter sent — emailed 1 subscriber.")).toBeInTheDocument();
+    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(postCall?.[0]).toBe("/api/admin/subscribers");
+    const body = JSON.parse((postCall?.[1]?.body as string) ?? "{}");
+    expect(body).toEqual({ subject: "This month at Earlydays", body: "Here's what's new." });
+  });
 });

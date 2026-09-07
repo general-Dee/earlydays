@@ -202,3 +202,75 @@ describe("sendFeeReminderEmail", () => {
     expect(send).not.toHaveBeenCalled();
   });
 });
+
+describe("sendNewsletterEmail", () => {
+  it("uses the given subject and body, greeting the subscriber by name", async () => {
+    const { sendNewsletterEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendNewsletterEmail(
+      { email: "a@b.com", name: "Aisha" },
+      { subject: "This month at Earlydays", body: "Here's what's new." }
+    );
+
+    expect(sent).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "a@b.com",
+        subject: "This month at Earlydays",
+        text: expect.stringContaining("Hi Aisha,"),
+      })
+    );
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining("Here's what's new.") }));
+  });
+
+  it("greets a subscriber with no name generically", async () => {
+    const { sendNewsletterEmail } = await import("@/lib/email/notify");
+
+    await sendNewsletterEmail({ email: "a@b.com" }, { subject: "Hello", body: "Body" });
+
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining("Hi,") }));
+  });
+
+  it("does nothing when Resend isn't configured", async () => {
+    delete process.env.RESEND_API_KEY;
+    const { sendNewsletterEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendNewsletterEmail({ email: "a@b.com" }, { subject: "Hello", body: "Body" });
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendEventReminderEmail", () => {
+  it("includes the event title, date, and description", async () => {
+    const { sendEventReminderEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendEventReminderEmail(
+      { name: "Aisha", email: "a@b.com" },
+      { title: "Sports Day", date: "2026-09-08", desc: "Bring a water bottle." }
+    );
+
+    expect(sent).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "a@b.com",
+        subject: expect.stringContaining("Sports Day"),
+        text: expect.stringContaining("Bring a water bottle."),
+      })
+    );
+  });
+
+  it("does nothing when Resend isn't configured", async () => {
+    delete process.env.RESEND_API_KEY;
+    const { sendEventReminderEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendEventReminderEmail(
+      { name: "Aisha", email: "a@b.com" },
+      { title: "Sports Day", date: "2026-09-08", desc: "Bring a water bottle." }
+    );
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
