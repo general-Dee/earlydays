@@ -17,6 +17,7 @@ export const COLLECTIONS = {
   rateLimits: "rateLimits",
   adminUsers: "adminUsers",
   auditLog: "auditLog",
+  cronRuns: "cronRuns",
 } as const;
 
 export const paths = {

@@ -70,6 +70,19 @@ export type AuditLogEntry = {
   createdAt: number;
 };
 
+export type CronJobName = "event-reminders" | "fee-reminders";
+
+export type CronRunRecord = {
+  id: string;
+  job: CronJobName;
+  createdAt: number;
+  // Open bag rather than a discriminated union so the read route and list UI
+  // don't need to branch per job (event-reminders: eventsChecked/emailsSent;
+  // fee-reminders: emailsSent/whatsappSent/smsSent).
+  counts: Record<string, number>;
+  failures: number;
+};
+
 export type ChildRecord = {
   id: string;
   name: string;

@@ -38,6 +38,11 @@ vi.mock("@/lib/sms", () => ({
   sendSmsFeeReminder: (...args: unknown[]) => sendSmsFeeReminder(...args),
 }));
 
+const recordCronRun = vi.fn();
+vi.mock("@/lib/cronRuns", () => ({
+  recordCronRun: (...args: unknown[]) => recordCronRun(...args),
+}));
+
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/cron/fee-reminders", { headers });
 }
@@ -103,6 +108,11 @@ describe("GET /api/cron/fee-reminders", () => {
     );
     expect(sendWhatsAppFeeReminder).not.toHaveBeenCalled();
     expect(sendSmsFeeReminder).not.toHaveBeenCalled();
+    expect(recordCronRun).toHaveBeenCalledWith({
+      job: "fee-reminders",
+      counts: { emailsSent: 1, whatsappSent: 0, smsSent: 0 },
+      failures: 0,
+    });
   });
 
   it("skips a parent whose child already paid for the current term", async () => {
@@ -228,5 +238,10 @@ describe("GET /api/cron/fee-reminders", () => {
 
     expect(res.status).toBe(200);
     expect(json).toEqual({ ok: true, emailsSent: 1, whatsappSent: 0, smsSent: 1 });
+    expect(recordCronRun).toHaveBeenCalledWith({
+      job: "fee-reminders",
+      counts: { emailsSent: 1, whatsappSent: 0, smsSent: 1 },
+      failures: 1,
+    });
   });
 });

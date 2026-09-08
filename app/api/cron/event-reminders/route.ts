@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendEventReminderEmail } from "@/lib/email/notify";
+import { recordCronRun } from "@/lib/cronRuns";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import type { CalendarEvent, EventRsvp } from "@/lib/firebase/types";
@@ -31,24 +32,30 @@ export const GET = withRouteErrorHandling("GET /api/cron/event-reminders", async
 
   let eventsChecked = 0;
   let emailsSent = 0;
+  let failures = 0;
 
-  for (const eventDoc of eventsSnap.docs) {
-    eventsChecked++;
-    const event = eventDoc.data() as CalendarEvent;
-    const rsvpsSnap = await db.collection(paths.eventRsvps(eventDoc.id)).get();
+  try {
+    for (const eventDoc of eventsSnap.docs) {
+      eventsChecked++;
+      const event = eventDoc.data() as CalendarEvent;
+      const rsvpsSnap = await db.collection(paths.eventRsvps(eventDoc.id)).get();
 
-    for (const rsvpDoc of rsvpsSnap.docs) {
-      const rsvp = rsvpDoc.data() as EventRsvp;
-      try {
-        const sent = await sendEventReminderEmail(
-          { name: rsvp.name, email: rsvp.email },
-          { title: event.title, date: event.date, desc: event.desc }
-        );
-        if (sent) emailsSent++;
-      } catch (err) {
-        logRouteError("GET /api/cron/event-reminders", "failed to send event reminder email", err);
+      for (const rsvpDoc of rsvpsSnap.docs) {
+        const rsvp = rsvpDoc.data() as EventRsvp;
+        try {
+          const sent = await sendEventReminderEmail(
+            { name: rsvp.name, email: rsvp.email },
+            { title: event.title, date: event.date, desc: event.desc }
+          );
+          if (sent) emailsSent++;
+        } catch (err) {
+          failures++;
+          logRouteError("GET /api/cron/event-reminders", "failed to send event reminder email", err);
+        }
       }
     }
+  } finally {
+    await recordCronRun({ job: "event-reminders", counts: { eventsChecked, emailsSent }, failures });
   }
 
   return NextResponse.json({ ok: true, eventsChecked, emailsSent });

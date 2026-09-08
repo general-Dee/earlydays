@@ -15,6 +15,11 @@ vi.mock("@/lib/email/notify", () => ({
   sendEventReminderEmail: (...args: unknown[]) => sendEventReminderEmail(...args),
 }));
 
+const recordCronRun = vi.fn();
+vi.mock("@/lib/cronRuns", () => ({
+  recordCronRun: (...args: unknown[]) => recordCronRun(...args),
+}));
+
 function collectionImpl(path: string) {
   return path === "events" ? { where } : { get: rsvpsGet };
 }
@@ -74,6 +79,11 @@ describe("GET /api/cron/event-reminders", () => {
       { name: "Chidi Okoye", email: "chidi@example.com" },
       { title: "Sports Day", date: "2026-09-08", desc: "Bring a water bottle." }
     );
+    expect(recordCronRun).toHaveBeenCalledWith({
+      job: "event-reminders",
+      counts: { eventsChecked: 1, emailsSent: 2 },
+      failures: 0,
+    });
   });
 
   it("skips events not happening tomorrow", async () => {
@@ -102,6 +112,11 @@ describe("GET /api/cron/event-reminders", () => {
 
     expect(res.status).toBe(200);
     expect(json).toEqual({ ok: true, eventsChecked: 1, emailsSent: 0 });
+    expect(recordCronRun).toHaveBeenCalledWith({
+      job: "event-reminders",
+      counts: { eventsChecked: 1, emailsSent: 0 },
+      failures: 1,
+    });
 
     consoleSpy.mockRestore();
   });

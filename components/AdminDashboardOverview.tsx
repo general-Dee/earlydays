@@ -53,6 +53,7 @@ const QUICK_LINKS = [
   { href: "/admin/access", label: "Admin Access" },
   { href: "/admin/audit", label: "Audit Log" },
   { href: "/admin/rate-limits", label: "Rate Limits" },
+  { href: "/admin/cron-runs", label: "Cron Runs" },
 ];
 
 export default function AdminDashboardOverview({ user }: { user: User }) {
