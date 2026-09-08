@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminRateLimitsPanel from "@/components/AdminRateLimitsPanel";
 
 const useAuth = vi.fn();
@@ -29,6 +30,10 @@ const fakeBucket = { key: "contact:1.2.3.4", count: 3, resetAt: Date.now() + 60_
 beforeEach(() => {
   vi.clearAllMocks();
   fakeUser.getIdToken.mockResolvedValue("tok");
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("AdminRateLimitsPanel", () => {
@@ -61,6 +66,42 @@ describe("AdminRateLimitsPanel", () => {
       "/api/admin/rate-limits",
       expect.objectContaining({ headers: { Authorization: "Bearer tok" } })
     );
+  });
+
+  it("exports the loaded buckets as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ buckets: [fakeBucket] }) })
+    );
+
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminRateLimitsPanel />);
+    await screen.findByText("contact:1.2.3.4");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^rate-limits-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Key,Count,Reset At");
+    expect(capturedContent).toContain(`contact:1.2.3.4,3,${new Date(fakeBucket.resetAt).toISOString()}`);
+
+    createElementSpy.mockRestore();
   });
 
   it("shows a not-authorized message on a 403", async () => {

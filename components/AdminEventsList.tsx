@@ -3,14 +3,31 @@
 import { useEffect, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
+import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 import type { CalendarEvent, EventRsvp } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 type RsvpLoadState = "loading" | "error" | "ready";
 
+function getRsvpSearchText(rsvp: EventRsvp): string {
+  return [rsvp.name, rsvp.email, rsvp.phone].filter(Boolean).join(" ");
+}
+
+function rsvpsToCsv(rsvps: EventRsvp[]): string {
+  return toCsv(
+    ["Name", "Email", "Phone", "Guest Count"],
+    rsvps.map((r) => [r.name, r.email, r.phone ?? "", String(r.guestCount)])
+  );
+}
+
 function EventRsvps({ user, eventId }: { user: User; eventId: string }) {
   const [rsvps, setRsvps] = useState<EventRsvp[]>([]);
   const [state, setState] = useState<RsvpLoadState>("loading");
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
+    rsvps,
+    getRsvpSearchText
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -50,19 +67,68 @@ function EventRsvps({ user, eventId }: { user: User; eventId: string }) {
 
   const totalGuests = rsvps.reduce((sum, r) => sum + r.guestCount, 0);
 
+  function exportCsv() {
+    downloadCsv(`event-${eventId}-rsvps`, rsvpsToCsv(filtered));
+  }
+
   return (
     <div className="mt-2.5 border-t border-line pt-2.5">
-      <p className="text-xs text-slate mb-1.5">
-        {rsvps.length} {rsvps.length === 1 ? "RSVP" : "RSVPs"} · {totalGuests} {totalGuests === 1 ? "guest" : "guests"}
-      </p>
-      <ul className="flex flex-col gap-1">
-        {rsvps.map((r) => (
-          <li key={r.id} className="text-xs text-ink">
-            {r.name} · {r.email}
-            {r.phone ? ` · ${r.phone}` : ""} · {r.guestCount} {r.guestCount === 1 ? "guest" : "guests"}
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center justify-between gap-3 mb-1.5">
+        <p className="text-xs text-slate mb-0">
+          {rsvps.length} {rsvps.length === 1 ? "RSVP" : "RSVPs"} · {totalGuests} {totalGuests === 1 ? "guest" : "guests"}
+        </p>
+        {filtered.length > 0 && (
+          <button type="button" onClick={exportCsv} className="btn btn-ghost btn-sm">
+            Export CSV
+          </button>
+        )}
+      </div>
+
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search by name, email, or phone…"
+        aria-label="Search RSVPs"
+        className="w-full text-xs rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+      />
+
+      {filtered.length === 0 && <p className="text-xs text-slate mt-2">No matching RSVPs.</p>}
+
+      {paged.length > 0 && (
+        <ul className="flex flex-col gap-1 mt-2">
+          {paged.map((r) => (
+            <li key={r.id} className="text-xs text-ink">
+              {r.name} · {r.email}
+              {r.phone ? ` · ${r.phone}` : ""} · {r.guestCount} {r.guestCount === 1 ? "guest" : "guests"}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-2">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
+      )}
     </div>
   );
 }

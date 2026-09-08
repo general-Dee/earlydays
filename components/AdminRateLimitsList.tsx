@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -10,6 +11,13 @@ type RateLimitBucket = { key: string; count: number; resetAt: number };
 
 function getSearchText(bucket: RateLimitBucket): string {
   return bucket.key;
+}
+
+function rateLimitBucketsToCsv(buckets: RateLimitBucket[]): string {
+  return toCsv(
+    ["Key", "Count", "Reset At"],
+    buckets.map((b) => [b.key, String(b.count), new Date(b.resetAt).toISOString()])
+  );
 }
 
 export default function AdminRateLimitsList({ user }: { user: User }) {
@@ -20,6 +28,10 @@ export default function AdminRateLimitsList({ user }: { user: User }) {
     buckets,
     getSearchText
   );
+
+  function exportCsv() {
+    downloadCsv("rate-limits", rateLimitBucketsToCsv(filtered));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -59,11 +71,18 @@ export default function AdminRateLimitsList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
-      <div className="mb-1">
-        <h4 className="font-display text-xl mb-0.5">Rate Limits</h4>
-        <p className="text-[0.85rem] text-slate">
-          Active throttle buckets keyed by route and IP or actor email. Most recent 500.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <div>
+          <h4 className="font-display text-xl mb-0.5">Rate Limits</h4>
+          <p className="text-[0.85rem] text-slate">
+            Active throttle buckets keyed by route and IP or actor email. Most recent 500.
+          </p>
+        </div>
+        {state === "ready" && filtered.length > 0 && (
+          <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+            Export CSV
+          </button>
+        )}
       </div>
 
       {state === "loading" && <p className="text-sm text-slate mt-5">Loading rate-limit buckets…</p>}

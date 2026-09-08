@@ -152,4 +152,103 @@ describe("AdminEventsPanel", () => {
       await screen.findByText("You’re logged in, but this account isn’t authorized to manage events.")
     ).toBeInTheDocument();
   });
+
+  describe("RSVPs", () => {
+    const fakeRsvp = { id: "r1", name: "Aisha", email: "parent@example.com", guestCount: 2, createdAt: Date.now() };
+
+    function stubEventsAndRsvps(rsvps: unknown[]) {
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url === "/api/admin/events/e1/rsvps") {
+          return Promise.resolve({ ok: true, status: 200, json: async () => ({ rsvps }) });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ events: [sampleEvent] }) });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      return fetchMock;
+    }
+
+    it("loads and renders RSVPs when View RSVPs is clicked", async () => {
+      useAuth.mockReturnValue({ user: fakeUser, loading: false });
+      stubEventsAndRsvps([fakeRsvp]);
+
+      render(<AdminEventsPanel />);
+      await screen.findByText("Term Starts");
+      await userEvent.click(screen.getByRole("button", { name: "View RSVPs" }));
+
+      expect(await screen.findByText(/Aisha · parent@example\.com/)).toBeInTheDocument();
+    });
+
+    it("filters RSVPs by search query", async () => {
+      useAuth.mockReturnValue({ user: fakeUser, loading: false });
+      const otherRsvp = { id: "r2", name: "Chidi", email: "chidi@example.com", guestCount: 1, createdAt: Date.now() };
+      stubEventsAndRsvps([fakeRsvp, otherRsvp]);
+
+      render(<AdminEventsPanel />);
+      await screen.findByText("Term Starts");
+      await userEvent.click(screen.getByRole("button", { name: "View RSVPs" }));
+      await screen.findByText(/Chidi · chidi@example\.com/);
+
+      await userEvent.type(screen.getByRole("textbox", { name: "Search RSVPs" }), "Aisha");
+
+      expect(screen.getByText(/Aisha · parent@example\.com/)).toBeInTheDocument();
+      expect(screen.queryByText(/Chidi · chidi@example\.com/)).not.toBeInTheDocument();
+    });
+
+    it("shows pagination controls with more than 20 RSVPs", async () => {
+      useAuth.mockReturnValue({ user: fakeUser, loading: false });
+      const manyRsvps = Array.from({ length: 25 }, (_, i) => ({
+        id: `r${i}`,
+        name: `Guest ${i}`,
+        email: `guest${i}@example.com`,
+        guestCount: 1,
+        createdAt: Date.now(),
+      }));
+      stubEventsAndRsvps(manyRsvps);
+
+      render(<AdminEventsPanel />);
+      await screen.findByText("Term Starts");
+      await userEvent.click(screen.getByRole("button", { name: "View RSVPs" }));
+      await screen.findByText("Page 1 of 2");
+
+      expect(screen.queryByText(/Guest 20 ·/)).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Next ›" }));
+
+      expect(await screen.findByText(/Guest 20 ·/)).toBeInTheDocument();
+    });
+
+    it("exports the loaded RSVPs as a CSV download", async () => {
+      useAuth.mockReturnValue({ user: fakeUser, loading: false });
+      stubEventsAndRsvps([fakeRsvp]);
+
+      let capturedContent = "";
+      const RealBlob = globalThis.Blob;
+      vi.stubGlobal(
+        "Blob",
+        vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+          capturedContent = parts.join("");
+          return new RealBlob(parts, options);
+        })
+      );
+      URL.createObjectURL = vi.fn(() => "blob:fake-url");
+      URL.revokeObjectURL = vi.fn();
+
+      render(<AdminEventsPanel />);
+      await screen.findByText("Term Starts");
+      await userEvent.click(screen.getByRole("button", { name: "View RSVPs" }));
+      await screen.findByText(/Aisha · parent@example\.com/);
+
+      const link = document.createElement("a");
+      const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+      const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+      await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+      expect(clickSpy).toHaveBeenCalled();
+      expect(link.download).toMatch(/^event-e1-rsvps-\d{4}-\d{2}-\d{2}\.csv$/);
+      expect(capturedContent).toContain("Name,Email,Phone,Guest Count");
+      expect(capturedContent).toContain("Aisha,parent@example.com,,2");
+
+      createElementSpy.mockRestore();
+    });
+  });
 });
