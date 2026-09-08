@@ -85,6 +85,46 @@ describe("sendNewReportEmail", () => {
   });
 });
 
+describe("sendNewEventEmail", () => {
+  it("includes the title, date, description, and a link back to the portal", async () => {
+    const { sendNewEventEmail } = await import("@/lib/email/notify");
+    const { site } = await import("@/lib/data");
+
+    const sent = await sendNewEventEmail(
+      { guardianName: "Aisha", email: "a@b.com" },
+      { title: "Sports Day", date: "2026-09-08", desc: "Bring a water bottle." }
+    );
+
+    expect(sent).toBe(true);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "a@b.com",
+        subject: expect.stringContaining("Sports Day"),
+        text: expect.stringContaining("2026-09-08"),
+      })
+    );
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining("Bring a water bottle.") })
+    );
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining(`${site.url}/portal`) })
+    );
+  });
+
+  it("does nothing when Resend isn't configured", async () => {
+    delete process.env.RESEND_API_KEY;
+    const { sendNewEventEmail } = await import("@/lib/email/notify");
+
+    const sent = await sendNewEventEmail(
+      { guardianName: "Aisha", email: "a@b.com" },
+      { title: "Sports Day", date: "2026-09-08", desc: "Bring a water bottle." }
+    );
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendNewAnnouncementEmail", () => {
   it("includes the title, body, and a link back to the portal", async () => {
     const { sendNewAnnouncementEmail } = await import("@/lib/email/notify");
