@@ -16,8 +16,14 @@ export default function ContactForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("submitting");
     setError(null);
+
+    if (!email.trim() && !phone.trim()) {
+      setError("Provide an email or phone number so we can reply.");
+      return;
+    }
+
+    setStatus("submitting");
 
     try {
       const res = await fetch("/api/contact", {

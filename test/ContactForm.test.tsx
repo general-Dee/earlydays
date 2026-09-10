@@ -5,6 +5,7 @@ import ContactForm from "@/components/ContactForm";
 
 async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Name"), "Aisha B.");
+  await user.type(screen.getByLabelText("Email"), "aisha@example.com");
   await user.type(screen.getByLabelText("Message"), "I'd like to book a tour.");
 }
 
@@ -58,6 +59,23 @@ describe("ContactForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Send Message" }));
 
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not submit when neither email nor phone is provided", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    render(<ContactForm />);
+
+    await user.type(screen.getByLabelText("Name"), "Aisha B.");
+    await user.type(screen.getByLabelText("Message"), "I'd like to book a tour.");
+    await user.click(screen.getByRole("button", { name: "Send Message" }));
+
+    expect(
+      await screen.findByText("Provide an email or phone number so we can reply.")
+    ).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
