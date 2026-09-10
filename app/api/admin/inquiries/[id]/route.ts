@@ -19,7 +19,13 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
-    await getAdminDb().collection(COLLECTIONS.inquiries).doc(params.id).update({ status });
+    const ref = getAdminDb().collection(COLLECTIONS.inquiries).doc(params.id);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) {
+      return NextResponse.json({ error: "Inquiry not found" }, { status: 404 });
+    }
+
+    await ref.update({ status });
 
     await logAdminAction({
       action: "inquiry.status_changed",

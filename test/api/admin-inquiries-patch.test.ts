@@ -5,6 +5,7 @@ const verifyIdToken = vi.fn();
 const getUser = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
+const get = vi.fn();
 const update = vi.fn();
 let docCalls = 0;
 
@@ -14,7 +15,7 @@ vi.mock("@/lib/firebase/admin", () => ({
 }));
 
 collection.mockImplementation(() => ({ doc }));
-doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update }));
+doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { get, update }));
 
 function request(headers: Record<string, string> = {}, body?: unknown) {
   return new NextRequest("http://localhost/api/admin/inquiries/i1", {
@@ -33,7 +34,8 @@ beforeEach(() => {
   getUser.mockResolvedValue({ disabled: false });
   collection.mockImplementation(() => ({ doc }));
   docCalls = 0;
-  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update }));
+  doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { get, update }));
+  get.mockResolvedValue({ exists: true });
   update.mockResolvedValue(undefined);
 });
 
@@ -86,6 +88,18 @@ describe("PATCH /api/admin/inquiries/[id]", () => {
       context()
     );
     expect(res.status).toBe(400);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("404s when the inquiry doesn't exist", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    get.mockResolvedValue({ exists: false });
+
+    const { PATCH } = await import("@/app/api/admin/inquiries/[id]/route");
+    const res = await PATCH(request({ authorization: "Bearer ok" }, { status: "resolved" }), context());
+
+    expect(res.status).toBe(404);
     expect(update).not.toHaveBeenCalled();
   });
 

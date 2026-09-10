@@ -8,6 +8,7 @@ const doc = vi.fn();
 const reportsCollection = vi.fn();
 const orderBy = vi.fn();
 const get = vi.fn();
+const parentGet = vi.fn();
 let docCalls = 0;
 
 vi.mock("@/lib/firebase/admin", () => ({
@@ -19,7 +20,9 @@ function resetChain() {
   collection.mockImplementation(() => ({ doc }));
   docCalls = 0;
   doc.mockImplementation(() =>
-    docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { collection: reportsCollection }
+    docCalls++ === 0
+      ? { get: () => Promise.resolve({ exists: false }) }
+      : { get: parentGet, collection: reportsCollection }
   );
   reportsCollection.mockImplementation(() => ({ orderBy }));
   orderBy.mockImplementation(() => ({ get }));
@@ -39,6 +42,7 @@ beforeEach(() => {
   resetChain();
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+  parentGet.mockResolvedValue({ exists: true });
 });
 
 afterEach(() => {
@@ -60,6 +64,16 @@ describe("GET /api/admin/reports/[parentUid]", () => {
     const res = await GET(request({ authorization: "Bearer ok" }), context());
     expect(res.status).toBe(403);
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it("404s when the parent doesn't exist", async () => {
+    parentGet.mockResolvedValue({ exists: false });
+
+    const { GET } = await import("@/app/api/admin/reports/[parentUid]/route");
+    const res = await GET(request({ authorization: "Bearer ok" }), context());
+
+    expect(res.status).toBe(404);
+    expect(orderBy).not.toHaveBeenCalled();
   });
 
   it("returns reports for the given parent, newest first", async () => {
