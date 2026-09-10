@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminEventsPanel from "@/components/AdminEventsPanel";
@@ -115,6 +115,37 @@ describe("AdminEventsPanel", () => {
       })
     );
     expect(await screen.findByText("Term Starts")).toBeInTheDocument();
+  });
+
+  it("edits an event's title and updates the list in place", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/admin/events/e1" && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ...sampleEvent, title: "Term Starts (Rescheduled)" }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ events: [sampleEvent] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminEventsPanel />);
+    const row = (await screen.findByText("Term Starts")).closest("li") as HTMLElement;
+
+    await userEvent.click(within(row).getByRole("button", { name: "Edit" }));
+    const titleInput = within(row).getByPlaceholderText("Title");
+    await userEvent.clear(titleInput);
+    await userEvent.type(titleInput, "Term Starts (Rescheduled)");
+    await userEvent.click(within(row).getByRole("button", { name: "Save" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/events/e1",
+      expect.objectContaining({ method: "PATCH" })
+    );
+    expect(within(row).queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    expect(await within(row).findByText("Term Starts (Rescheduled)")).toBeInTheDocument();
   });
 
   it("deletes an event", async () => {

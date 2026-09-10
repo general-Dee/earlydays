@@ -10,6 +10,12 @@ import type { CalendarEvent, EventRsvp } from "@/lib/firebase/types";
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 type RsvpLoadState = "loading" | "error" | "ready";
 
+type EditForm = { title: string; date: string; tag: string; desc: string };
+
+function blankEditForm(e: CalendarEvent): EditForm {
+  return { title: e.title, date: e.date, tag: e.tag, desc: e.desc };
+}
+
 function getRsvpSearchText(rsvp: EventRsvp): string {
   return [rsvp.name, rsvp.email, rsvp.phone].filter(Boolean).join(" ");
 }
@@ -146,6 +152,11 @@ export default function AdminEventsList({ user }: { user: User }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [openRsvpsId, setOpenRsvpsId] = useState<string | null>(null);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   async function createEvent(e: React.FormEvent) {
     e.preventDefault();
     setPosting(true);
@@ -180,6 +191,53 @@ export default function AdminEventsList({ user }: { user: User }) {
       setPostError("Couldn't add this event. Please try again.");
     } finally {
       setPosting(false);
+    }
+  }
+
+  function startEdit(e: CalendarEvent) {
+    setEditingId(e.id);
+    setEditForm(blankEditForm(e));
+    setEditError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditForm(null);
+    setEditError(null);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editForm) return;
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/events/${id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editForm),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setEditError(data.error ?? "Couldn't save these changes. Please try again.");
+        return;
+      }
+
+      const updated = (await res.json()) as CalendarEvent;
+      setEvents((current) =>
+        current.map((e) => (e.id === id ? updated : e)).sort((a, b) => a.date.localeCompare(b.date))
+      );
+      setEditingId(null);
+      setEditForm(null);
+    } catch {
+      setEditError("Couldn't save these changes. Please try again.");
+    } finally {
+      setEditSubmitting(false);
     }
   }
 
@@ -317,41 +375,104 @@ export default function AdminEventsList({ user }: { user: User }) {
 
       {state === "ready" && events.length > 0 && (
         <ul className="flex flex-col gap-2.5 mt-5">
-          {events.map((event) => (
-            <li key={event.id} className="px-3.5 py-3 rounded-lg bg-chalk">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{event.title}</span>
-                <span className="text-xs text-slate">
-                  {new Date(`${event.date}T00:00:00`).toLocaleDateString("en-NG", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-              <p className="text-sm mt-2 mb-0">{event.desc}</p>
-              <div className="flex items-center justify-between gap-2.5 mt-2.5">
-                <span className="text-xs text-slate">{event.tag}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setOpenRsvpsId(openRsvpsId === event.id ? null : event.id)}
-                    className="btn btn-ghost btn-sm"
-                  >
-                    {openRsvpsId === event.id ? "Hide RSVPs" : "View RSVPs"}
-                  </button>
-                  <button
-                    onClick={() => deleteEvent(event.id)}
-                    disabled={deletingId === event.id}
-                    className="btn btn-ghost btn-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-              {openRsvpsId === event.id && <EventRsvps user={user} eventId={event.id} />}
-            </li>
-          ))}
+          {events.map((event) => {
+            const isEditing = editingId === event.id;
+
+            return (
+              <li key={event.id} className="px-3.5 py-3 rounded-lg bg-chalk">
+                {isEditing && editForm ? (
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="text"
+                      placeholder="Title"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm((form) => (form ? { ...form, title: e.target.value } : form))}
+                      required
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                    />
+                    <input
+                      type="date"
+                      value={editForm.date}
+                      onChange={(e) => setEditForm((form) => (form ? { ...form, date: e.target.value } : form))}
+                      required
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Tag (e.g. All Stages, Nursery, Admissions)"
+                      value={editForm.tag}
+                      onChange={(e) => setEditForm((form) => (form ? { ...form, tag: e.target.value } : form))}
+                      required
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                    />
+                    <textarea
+                      placeholder="Event details"
+                      value={editForm.desc}
+                      onChange={(e) => setEditForm((form) => (form ? { ...form, desc: e.target.value } : form))}
+                      required
+                      rows={3}
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                    />
+                    {editError && <p className="text-[0.8rem] text-clay mb-0">{editError}</p>}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => saveEdit(event.id)}
+                        disabled={editSubmitting}
+                        className="btn btn-primary btn-sm"
+                      >
+                        {editSubmitting ? "Saving…" : "Save"}
+                      </button>
+                      <button type="button" onClick={cancelEdit} className="btn btn-ghost btn-sm">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold">{event.title}</span>
+                      <span className="text-xs text-slate">
+                        {new Date(`${event.date}T00:00:00`).toLocaleDateString("en-NG", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm mt-2 mb-0">{event.desc}</p>
+                    <div className="flex items-center justify-between gap-2.5 mt-2.5">
+                      <span className="text-xs text-slate">{event.tag}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOpenRsvpsId(openRsvpsId === event.id ? null : event.id)}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          {openRsvpsId === event.id ? "Hide RSVPs" : "View RSVPs"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(event)}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteEvent(event.id)}
+                          disabled={deletingId === event.id}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    {openRsvpsId === event.id && <EventRsvps user={user} eventId={event.id} />}
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

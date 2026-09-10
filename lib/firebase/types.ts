@@ -162,6 +162,7 @@ export type CalendarEvent = {
   desc: string;
   createdBy: string;
   createdAt: number;
+  updatedAt?: number;
 };
 
 export type ProgressReport = {
