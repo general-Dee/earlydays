@@ -26,15 +26,21 @@ export default function PortalDashboard({ user }: { user: User }) {
   const [parent, setParent] = useState<Parent | null>(null);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const [paymentsError, setPaymentsError] = useState(false);
 
   const reloadPayments = useCallback(async () => {
-    const paymentsSnap = await getDocs(
-      query(
-        collection(getFirebaseDb(), COLLECTIONS.parents, user.uid, COLLECTIONS.payments),
-        orderBy("createdAt", "desc")
-      )
-    );
-    setPayments(paymentsSnap.docs.map((d) => d.data() as PaymentRecord));
+    try {
+      const paymentsSnap = await getDocs(
+        query(
+          collection(getFirebaseDb(), COLLECTIONS.parents, user.uid, COLLECTIONS.payments),
+          orderBy("createdAt", "desc")
+        )
+      );
+      setPayments(paymentsSnap.docs.map((d) => d.data() as PaymentRecord));
+      setPaymentsError(false);
+    } catch {
+      setPaymentsError(true);
+    }
   }, [user.uid]);
 
   useEffect(() => {
@@ -131,6 +137,11 @@ export default function PortalDashboard({ user }: { user: User }) {
 
           <div className="mt-6">
             <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">Payment history</h5>
+            {paymentsError && (
+              <div className="mb-2.5 px-3.5 py-3 rounded-lg bg-clay-soft text-clay text-[0.85rem] font-semibold">
+                Couldn&rsquo;t refresh your payment history. Please refresh the page.
+              </div>
+            )}
             {payments.length === 0 ? (
               <p className="text-sm text-slate">No payments yet.</p>
             ) : (

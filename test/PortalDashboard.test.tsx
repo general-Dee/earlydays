@@ -168,6 +168,23 @@ describe("PortalDashboard", () => {
     expect(await screen.findByText("Zainab — Term 3")).toBeInTheDocument();
   });
 
+  it("shows an inline error when the payment-history reload fails", async () => {
+    getDoc.mockResolvedValue({ exists: () => true, data: () => fakeParent });
+    getDocs.mockResolvedValue({ docs: [] });
+
+    render(<PortalDashboard user={fakeUser} />);
+
+    expect(await screen.findByText("Zainab")).toBeInTheDocument();
+
+    getDocs.mockRejectedValueOnce(new Error("permission-denied"));
+    await userEvent.click(screen.getByRole("button", { name: "trigger-paid" }));
+
+    expect(
+      await screen.findByText("Couldn’t refresh your payment history. Please refresh the page.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Zainab")).toBeInTheDocument();
+  });
+
   it("logs out when the Log Out button is clicked", async () => {
     getDoc.mockResolvedValue({ exists: () => true, data: () => fakeParent });
     getDocs.mockResolvedValue({ docs: [] });
