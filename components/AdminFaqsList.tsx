@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Faq } from "@/lib/firebase/types";
+import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -11,6 +13,17 @@ type EditForm = { question: string; answer: string; order: string };
 
 function blankEditForm(f: Faq): EditForm {
   return { question: f.question, answer: f.answer, order: String(f.order) };
+}
+
+function getSearchText(faq: Faq): string {
+  return [faq.question, faq.answer].filter(Boolean).join(" ");
+}
+
+function faqsToCsv(faqs: Faq[]): string {
+  return toCsv(
+    ["Question", "Answer", "Order", "Created By", "Created At"],
+    faqs.map((f) => [f.question, f.answer, String(f.order), f.createdBy, new Date(f.createdAt).toISOString()])
+  );
 }
 
 export default function AdminFaqsList({ user }: { user: User }) {
@@ -29,6 +42,12 @@ export default function AdminFaqsList({ user }: { user: User }) {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(faqs, getSearchText);
+
+  function exportCsv() {
+    downloadCsv("faqs", faqsToCsv(filtered));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -178,9 +197,16 @@ export default function AdminFaqsList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">FAQs</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createFaq} className="mt-5 flex flex-col gap-2.5">
@@ -232,8 +258,23 @@ export default function AdminFaqsList({ user }: { user: User }) {
       {state === "ready" && faqs.length === 0 && <p className="text-sm text-slate mt-5">No FAQs yet.</p>}
 
       {state === "ready" && faqs.length > 0 && (
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search FAQs…"
+          aria-label="Search FAQs"
+          className="w-full mt-5 text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+      )}
+
+      {state === "ready" && faqs.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching FAQs.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
         <ul className="flex flex-col gap-2.5 mt-4">
-          {faqs.map((f) => {
+          {paged.map((f) => {
             const isEditing = editingId === f.id;
 
             return (
@@ -305,6 +346,30 @@ export default function AdminFaqsList({ user }: { user: User }) {
             );
           })}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );

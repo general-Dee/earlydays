@@ -165,6 +165,74 @@ describe("AdminAnnouncementsPanel", () => {
     expect(screen.queryByText("Closed Friday")).not.toBeInTheDocument();
   });
 
+  it("filters the list by search query", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const otherAnnouncement = {
+      id: "a2",
+      title: "Sports Day",
+      body: "Field day this Friday",
+      createdBy: "staff@earlydays.example",
+      createdAt: Date.now(),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ announcements: [fakeAnnouncement, otherAnnouncement] }),
+      })
+    );
+
+    render(<AdminAnnouncementsPanel />);
+    await screen.findByText("Closed Friday");
+    expect(screen.getByText("Sports Day")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search announcements"), "sports");
+
+    expect(screen.getByText("Sports Day")).toBeInTheDocument();
+    expect(screen.queryByText("Closed Friday")).not.toBeInTheDocument();
+  });
+
+  it("exports the loaded announcements as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ announcements: [fakeAnnouncement] }),
+      })
+    );
+
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminAnnouncementsPanel />);
+    await screen.findByText("Closed Friday");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^announcements-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Title,Body,Created By,Created At");
+    expect(capturedContent).toContain("Closed Friday,School closed for a holiday,staff@earlydays.example");
+
+    createElementSpy.mockRestore();
+  });
+
   it("shows a not-authorized message on a 403", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     vi.stubGlobal(

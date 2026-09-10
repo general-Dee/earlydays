@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Testimonial } from "@/lib/firebase/types";
+import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -11,6 +13,25 @@ type EditForm = { quote: string; name: string; area: string; initial: string; or
 
 function blankEditForm(t: Testimonial): EditForm {
   return { quote: t.quote, name: t.name, area: t.area, initial: t.initial, order: String(t.order) };
+}
+
+function getSearchText(testimonial: Testimonial): string {
+  return [testimonial.quote, testimonial.name, testimonial.area].filter(Boolean).join(" ");
+}
+
+function testimonialsToCsv(testimonials: Testimonial[]): string {
+  return toCsv(
+    ["Quote", "Name", "Area", "Initial", "Order", "Created By", "Created At"],
+    testimonials.map((t) => [
+      t.quote,
+      t.name,
+      t.area,
+      t.initial,
+      String(t.order),
+      t.createdBy,
+      new Date(t.createdAt).toISOString(),
+    ])
+  );
 }
 
 export default function AdminTestimonialsList({ user }: { user: User }) {
@@ -31,6 +52,15 @@ export default function AdminTestimonialsList({ user }: { user: User }) {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
+    testimonials,
+    getSearchText
+  );
+
+  function exportCsv() {
+    downloadCsv("testimonials", testimonialsToCsv(filtered));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -184,9 +214,16 @@ export default function AdminTestimonialsList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Testimonials</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createTestimonial} className="mt-5 flex flex-col gap-2.5">
@@ -257,8 +294,23 @@ export default function AdminTestimonialsList({ user }: { user: User }) {
       )}
 
       {state === "ready" && testimonials.length > 0 && (
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search testimonials…"
+          aria-label="Search testimonials"
+          className="w-full mt-5 text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+      )}
+
+      {state === "ready" && testimonials.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching testimonials.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
         <ul className="flex flex-col gap-2.5 mt-4">
-          {testimonials.map((t) => {
+          {paged.map((t) => {
             const isEditing = editingId === t.id;
 
             return (
@@ -349,6 +401,30 @@ export default function AdminTestimonialsList({ user }: { user: User }) {
             );
           })}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );

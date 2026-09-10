@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { BlogPost } from "@/lib/firebase/types";
+import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -18,6 +20,17 @@ function blankEditForm(post: BlogPost): EditForm {
     body: post.body.join("\n\n"),
     order: String(post.order),
   };
+}
+
+function getSearchText(post: BlogPost): string {
+  return [post.title, post.excerpt, post.category, post.slug].filter(Boolean).join(" ");
+}
+
+function postsToCsv(posts: BlogPost[]): string {
+  return toCsv(
+    ["Title", "Slug", "Category", "Excerpt", "Order"],
+    posts.map((p) => [p.title, p.slug, p.category, p.excerpt, String(p.order)])
+  );
 }
 
 export default function AdminBlogList({ user }: { user: User }) {
@@ -42,6 +55,12 @@ export default function AdminBlogList({ user }: { user: User }) {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(posts, getSearchText);
+
+  function exportCsv() {
+    downloadCsv("blog-posts", postsToCsv(filtered));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -208,9 +227,16 @@ export default function AdminBlogList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Blog Posts</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createPost} className="mt-5 flex flex-col gap-2.5">
@@ -300,8 +326,23 @@ export default function AdminBlogList({ user }: { user: User }) {
       )}
 
       {state === "ready" && posts.length > 0 && (
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search blog posts…"
+          aria-label="Search blog posts"
+          className="w-full mt-5 text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+      )}
+
+      {state === "ready" && posts.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching blog posts.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
         <ul className="flex flex-col gap-2.5 mt-4">
-          {posts.map((post) => {
+          {paged.map((post) => {
             const isEditing = editingId === post.id;
 
             return (
@@ -418,6 +459,30 @@ export default function AdminBlogList({ user }: { user: User }) {
             );
           })}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Staff } from "@/lib/firebase/types";
+import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -11,6 +13,17 @@ type EditForm = { name: string; role: string; bio: string; order: string };
 
 function blankEditForm(staff: Staff): EditForm {
   return { name: staff.name, role: staff.role, bio: staff.bio, order: String(staff.order) };
+}
+
+function getSearchText(member: Staff): string {
+  return [member.name, member.role, member.bio].filter(Boolean).join(" ");
+}
+
+function staffToCsv(members: Staff[]): string {
+  return toCsv(
+    ["Name", "Role", "Bio", "Order", "Created By", "Created At"],
+    members.map((m) => [m.name, m.role, m.bio, String(m.order), m.createdBy, new Date(m.createdAt).toISOString()])
+  );
 }
 
 export default function AdminStaffList({ user }: { user: User }) {
@@ -32,6 +45,12 @@ export default function AdminStaffList({ user }: { user: User }) {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(staff, getSearchText);
+
+  function exportCsv() {
+    downloadCsv("staff", staffToCsv(filtered));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -190,9 +209,16 @@ export default function AdminStaffList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Staff Profiles</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createStaff} className="mt-5 flex flex-col gap-2.5">
@@ -260,8 +286,23 @@ export default function AdminStaffList({ user }: { user: User }) {
       )}
 
       {state === "ready" && staff.length > 0 && (
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search staff profiles…"
+          aria-label="Search staff profiles"
+          className="w-full mt-5 text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+      )}
+
+      {state === "ready" && staff.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching staff profiles.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
         <ul className="flex flex-col gap-2.5 mt-4">
-          {staff.map((member) => {
+          {paged.map((member) => {
             const isEditing = editingId === member.id;
 
             return (
@@ -362,6 +403,30 @@ export default function AdminStaffList({ user }: { user: User }) {
             );
           })}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );

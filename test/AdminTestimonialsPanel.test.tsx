@@ -139,6 +139,68 @@ describe("AdminTestimonialsPanel", () => {
     expect(screen.queryByText("Aisha B. · Parent, Barnawa")).not.toBeInTheDocument();
   });
 
+  it("filters the list by search query", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const otherTestimonial = { ...sampleTestimonial, id: "t2", quote: "Wonderful teachers.", name: "Bala C.", area: "Parent, Kawo" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ testimonials: [sampleTestimonial, otherTestimonial] }),
+      })
+    );
+
+    render(<AdminTestimonialsPanel />);
+    await screen.findByText("Aisha B. · Parent, Barnawa");
+    expect(screen.getByText("Bala C. · Parent, Kawo")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search testimonials"), "wonderful");
+
+    expect(screen.getByText("Bala C. · Parent, Kawo")).toBeInTheDocument();
+    expect(screen.queryByText("Aisha B. · Parent, Barnawa")).not.toBeInTheDocument();
+  });
+
+  it("exports the loaded testimonials as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ testimonials: [sampleTestimonial] }),
+      })
+    );
+
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminTestimonialsPanel />);
+    await screen.findByText("Aisha B. · Parent, Barnawa");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^testimonials-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Quote,Name,Area,Initial,Order,Created By,Created At");
+    expect(capturedContent).toContain('Great school.,Aisha B.,"Parent, Barnawa",A,0,staff@earlydays.example');
+
+    createElementSpy.mockRestore();
+  });
+
   it("shows a not-authorized message on a 403", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     vi.stubGlobal(

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { GalleryPhoto } from "@/lib/firebase/types";
+import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -13,6 +15,25 @@ type EditForm = { alt: string; category: GalleryPhoto["category"]; tall: boolean
 
 function blankEditForm(photo: GalleryPhoto): EditForm {
   return { alt: photo.alt, category: photo.category, tall: Boolean(photo.tall), order: String(photo.order) };
+}
+
+function getSearchText(photo: GalleryPhoto): string {
+  return [photo.alt, photo.category].filter(Boolean).join(" ");
+}
+
+function photosToCsv(photos: GalleryPhoto[]): string {
+  return toCsv(
+    ["Alt Text", "Category", "Tall", "Photo URL", "Order", "Created By", "Created At"],
+    photos.map((p) => [
+      p.alt,
+      p.category,
+      p.tall ? "Yes" : "No",
+      p.photoUrl,
+      String(p.order),
+      p.createdBy,
+      new Date(p.createdAt).toISOString(),
+    ])
+  );
 }
 
 export default function AdminGalleryList({ user }: { user: User }) {
@@ -34,6 +55,12 @@ export default function AdminGalleryList({ user }: { user: User }) {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(photos, getSearchText);
+
+  function exportCsv() {
+    downloadCsv("gallery-photos", photosToCsv(filtered));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -191,9 +218,16 @@ export default function AdminGalleryList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Gallery Photos</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {state === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={createPhoto} className="mt-5 flex flex-col gap-2.5">
@@ -261,8 +295,23 @@ export default function AdminGalleryList({ user }: { user: User }) {
       )}
 
       {state === "ready" && photos.length > 0 && (
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search gallery photos…"
+          aria-label="Search gallery photos"
+          className="w-full mt-5 text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+        />
+      )}
+
+      {state === "ready" && photos.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-slate mt-4">No matching gallery photos.</p>
+      )}
+
+      {state === "ready" && paged.length > 0 && (
         <ul className="flex flex-col gap-2.5 mt-4">
-          {photos.map((photo) => {
+          {paged.map((photo) => {
             const isEditing = editingId === photo.id;
 
             return (
@@ -357,6 +406,30 @@ export default function AdminGalleryList({ user }: { user: User }) {
             );
           })}
         </ul>
+      )}
+
+      {state === "ready" && totalPages > 1 && (
+        <div className="flex items-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={page <= 1}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-xs text-slate">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages}
+            className="btn btn-ghost btn-sm disabled:opacity-40"
+          >
+            Next ›
+          </button>
+        </div>
       )}
     </div>
   );

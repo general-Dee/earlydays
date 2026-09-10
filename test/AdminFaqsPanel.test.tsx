@@ -155,6 +155,60 @@ describe("AdminFaqsPanel", () => {
     expect(screen.queryByText("What ages do you take?")).not.toBeInTheDocument();
   });
 
+  it("filters the list by search query", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const otherFaq = { ...sampleFaq, id: "f2", question: "Do you offer transport?", answer: "Yes, a school bus service." };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ faqs: [sampleFaq, otherFaq] }) })
+    );
+
+    render(<AdminFaqsPanel />);
+    await screen.findByText("What ages do you take?");
+    expect(screen.getByText("Do you offer transport?")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search FAQs"), "transport");
+
+    expect(screen.getByText("Do you offer transport?")).toBeInTheDocument();
+    expect(screen.queryByText("What ages do you take?")).not.toBeInTheDocument();
+  });
+
+  it("exports the loaded FAQs as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ faqs: [sampleFaq] }) })
+    );
+
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminFaqsPanel />);
+    await screen.findByText("What ages do you take?");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^faqs-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(capturedContent).toContain("Question,Answer,Order,Created By,Created At");
+    expect(capturedContent).toContain("What ages do you take?,Creche through Primary 6.,0,staff@earlydays.example");
+
+    createElementSpy.mockRestore();
+  });
+
   it("shows a not-authorized message on a 403", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     vi.stubGlobal(
