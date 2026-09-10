@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminAnnouncementsPanel from "@/components/AdminAnnouncementsPanel";
@@ -110,6 +110,37 @@ describe("AdminAnnouncementsPanel", () => {
       })
     );
     expect(screen.getByText("Announcement posted — emailed 3 parents.")).toBeInTheDocument();
+  });
+
+  it("edits an announcement's title and updates the list in place", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === "/api/admin/announcements/a1" && init?.method === "PATCH") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ...fakeAnnouncement, title: "Updated Notice" }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ announcements: [fakeAnnouncement] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminAnnouncementsPanel />);
+    const row = (await screen.findByText("Closed Friday")).closest("li") as HTMLElement;
+
+    await userEvent.click(within(row).getByRole("button", { name: "Edit" }));
+    const titleInput = within(row).getByPlaceholderText("Title");
+    await userEvent.clear(titleInput);
+    await userEvent.type(titleInput, "Updated Notice");
+    await userEvent.click(within(row).getByRole("button", { name: "Save" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/announcements/a1",
+      expect.objectContaining({ method: "PATCH" })
+    );
+    expect(within(row).queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    expect(await within(row).findByText("Updated Notice")).toBeInTheDocument();
   });
 
   it("deletes an announcement via the delete button", async () => {

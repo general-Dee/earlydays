@@ -151,6 +151,7 @@ export type Announcement = {
   body: string;
   createdBy: string;
   createdAt: number;
+  updatedAt?: number;
 };
 
 export type CalendarEvent = {

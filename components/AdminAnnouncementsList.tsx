@@ -7,6 +7,12 @@ import type { Announcement } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
+type EditForm = { title: string; body: string };
+
+function blankEditForm(a: Announcement): EditForm {
+  return { title: a.title, body: a.body };
+}
+
 export default function AdminAnnouncementsList({ user }: { user: User }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -16,6 +22,11 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
   const [postError, setPostError] = useState<string | null>(null);
   const [emailsSent, setEmailsSent] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   async function createAnnouncement(e: React.FormEvent) {
     e.preventDefault();
@@ -49,6 +60,51 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
       setPostError("Couldn't post this announcement. Please try again.");
     } finally {
       setPosting(false);
+    }
+  }
+
+  function startEdit(a: Announcement) {
+    setEditingId(a.id);
+    setEditForm(blankEditForm(a));
+    setEditError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditForm(null);
+    setEditError(null);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editForm) return;
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/announcements/${id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: editForm.title, body: editForm.body }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setEditError(data.error ?? "Couldn't save these changes. Please try again.");
+        return;
+      }
+
+      const updated = (await res.json()) as Announcement;
+      setAnnouncements((current) => current.map((a) => (a.id === id ? updated : a)));
+      setEditingId(null);
+      setEditForm(null);
+    } catch {
+      setEditError("Couldn't save these changes. Please try again.");
+    } finally {
+      setEditSubmitting(false);
     }
   }
 
@@ -171,27 +227,77 @@ export default function AdminAnnouncementsList({ user }: { user: User }) {
 
       {state === "ready" && announcements.length > 0 && (
         <ul className="flex flex-col gap-2.5 mt-5">
-          {announcements.map((announcement) => (
-            <li key={announcement.id} className="px-3.5 py-3 rounded-lg bg-chalk">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{announcement.title}</span>
-                <span className="text-xs text-slate">
-                  {new Date(announcement.createdAt).toLocaleString("en-NG")}
-                </span>
-              </div>
-              <p className="text-sm mt-2 mb-0">{announcement.body}</p>
-              <div className="flex items-center justify-between gap-2.5 mt-2.5">
-                <span className="text-xs text-slate">{announcement.createdBy}</span>
-                <button
-                  onClick={() => deleteAnnouncement(announcement.id)}
-                  disabled={deletingId === announcement.id}
-                  className="btn btn-ghost btn-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
+          {announcements.map((announcement) => {
+            const isEditing = editingId === announcement.id;
+
+            return (
+              <li key={announcement.id} className="px-3.5 py-3 rounded-lg bg-chalk">
+                {isEditing && editForm ? (
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="text"
+                      placeholder="Title"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm((form) => (form ? { ...form, title: e.target.value } : form))}
+                      required
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                    />
+                    <textarea
+                      placeholder="Announcement details"
+                      value={editForm.body}
+                      onChange={(e) => setEditForm((form) => (form ? { ...form, body: e.target.value } : form))}
+                      required
+                      rows={3}
+                      className="text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                    />
+                    {editError && <p className="text-[0.8rem] text-clay mb-0">{editError}</p>}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => saveEdit(announcement.id)}
+                        disabled={editSubmitting}
+                        className="btn btn-primary btn-sm"
+                      >
+                        {editSubmitting ? "Saving…" : "Save"}
+                      </button>
+                      <button type="button" onClick={cancelEdit} className="btn btn-ghost btn-sm">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold">{announcement.title}</span>
+                      <span className="text-xs text-slate">
+                        {new Date(announcement.createdAt).toLocaleString("en-NG")}
+                      </span>
+                    </div>
+                    <p className="text-sm mt-2 mb-0">{announcement.body}</p>
+                    <div className="flex items-center justify-between gap-2.5 mt-2.5">
+                      <span className="text-xs text-slate">{announcement.createdBy}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(announcement)}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteAnnouncement(announcement.id)}
+                          disabled={deletingId === announcement.id}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
