@@ -7,10 +7,10 @@ export const site = {
   name: "Earlydays",
   fullName: "Earlydays Nursery & Primary School",
   location: "Kaduna, Nigeria",
-  whatsapp: "2340000000000", // TODO: replace with real WhatsApp number
-  phone: "+234 000 000 0000", // TODO: replace
-  email: "hello@earlydays.example", // TODO: replace
-  url: "https://earlydays.example", // TODO: replace with the real domain
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2340000000000", // TODO: replace with real WhatsApp number
+  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "+234 000 000 0000", // TODO: replace
+  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@earlydays.example", // TODO: replace
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://earlydays.example", // TODO: replace with the real domain
 };
 
 export function waLink(message: string) {
