@@ -40,7 +40,18 @@ const fakeReport = {
   fileName: "report.pdf",
   storagePath: "reports/u1/r1.pdf",
   uploadedBy: "staff@earlydays.example",
-  createdAt: Date.now(),
+  createdAt: Date.parse("2026-01-15T10:00:00.000Z"),
+};
+
+const otherFakeReport = {
+  id: "r2",
+  childId: "c1",
+  childName: "Zainab",
+  term: "Term 1",
+  fileName: "midterm.pdf",
+  storagePath: "reports/u1/r2.pdf",
+  uploadedBy: "staff@earlydays.example",
+  createdAt: Date.parse("2026-02-01T10:00:00.000Z"),
 };
 
 beforeEach(() => {
@@ -158,5 +169,84 @@ describe("AdminReportsPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     expect(await screen.findByText("report.pdf")).toBeInTheDocument();
+  });
+
+  it("filters reports by search text", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/admin/reports") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
+      }
+      if (url === "/api/admin/reports/u1") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ reports: [fakeReport, otherFakeReport] }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminReportsPanel />);
+
+    const select = await screen.findByDisplayValue("Select a parent…");
+    await userEvent.selectOptions(select, "u1");
+
+    expect(await screen.findByText("report.pdf")).toBeInTheDocument();
+    expect(screen.getByText("midterm.pdf")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByPlaceholderText("Search by child, term, or file name…"), "Term 3");
+
+    expect(screen.getByText("report.pdf")).toBeInTheDocument();
+    expect(screen.queryByText("midterm.pdf")).not.toBeInTheDocument();
+  });
+
+  it("exports the selected parent's reports as a CSV download", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/admin/reports") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
+      }
+      if (url === "/api/admin/reports/u1") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ reports: [fakeReport] }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    // jsdom's Blob shim doesn't implement .text()/.arrayBuffer(), so capture
+    // the CSV content at construction time instead of reading it back off a Blob.
+    let capturedContent = "";
+    const RealBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      vi.fn((parts: BlobPart[], options?: BlobPropertyBag) => {
+        capturedContent = parts.join("");
+        return new RealBlob(parts, options);
+      })
+    );
+    URL.createObjectURL = vi.fn(() => "blob:fake-url");
+    URL.revokeObjectURL = vi.fn();
+
+    render(<AdminReportsPanel />);
+
+    const select = await screen.findByDisplayValue("Select a parent…");
+    await userEvent.selectOptions(select, "u1");
+    await screen.findByText("report.pdf");
+
+    const link = document.createElement("a");
+    const clickSpy = vi.spyOn(link, "click").mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(link);
+
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(link.download).toMatch(/^reports-\d{4}-\d{2}-\d{2}\.csv$/);
+
+    expect(capturedContent).toContain("Child,Term,File Name,Uploaded By,Uploaded At");
+    expect(capturedContent).toContain("Zainab,Term 3,report.pdf,staff@earlydays.example,2026-01-15T10:00:00.000Z");
+
+    createElementSpy.mockRestore();
   });
 });

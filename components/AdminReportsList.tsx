@@ -5,11 +5,24 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
 import { TERMS } from "@/lib/data";
+import { useListFilter } from "@/lib/useListFilter";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 type ParentOption = { uid: string; guardianName: string; email: string; children: ChildRecord[] };
 
 type ParentsState = "loading" | "forbidden" | "error" | "ready";
 type ReportsState = "idle" | "loading" | "error" | "ready";
+
+function getSearchText(report: ProgressReport): string {
+  return [report.childName, report.term, report.fileName].join(" ");
+}
+
+function reportsToCsv(reports: ProgressReport[]): string {
+  return toCsv(
+    ["Child", "Term", "File Name", "Uploaded By", "Uploaded At"],
+    reports.map((r) => [r.childName, r.term, r.fileName, r.uploadedBy, new Date(r.createdAt).toISOString()])
+  );
+}
 
 export default function AdminReportsList({ user }: { user: User }) {
   const [parents, setParents] = useState<ParentOption[]>([]);
@@ -22,6 +35,8 @@ export default function AdminReportsList({ user }: { user: User }) {
 
   const [reports, setReports] = useState<ProgressReport[]>([]);
   const [reportsState, setReportsState] = useState<ReportsState>("idle");
+
+  const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(reports, getSearchText);
 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -107,6 +122,12 @@ export default function AdminReportsList({ user }: { user: User }) {
     setSelectedParentUid(uid);
     const parent = parents.find((p) => p.uid === uid);
     setSelectedChildId(parent?.children[0]?.id ?? "");
+    setQuery("");
+    setPage(1);
+  }
+
+  function exportCsv() {
+    downloadCsv("reports", reportsToCsv(filtered));
   }
 
   async function uploadReport(e: React.FormEvent) {
@@ -182,9 +203,16 @@ export default function AdminReportsList({ user }: { user: User }) {
           <h4 className="font-display text-xl mb-0.5">Progress Reports</h4>
           <p className="text-[0.85rem] text-slate">{user.email}</p>
         </div>
-        <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
-          Log Out
-        </button>
+        <div className="flex items-center gap-2">
+          {reportsState === "ready" && filtered.length > 0 && (
+            <button onClick={exportCsv} className="btn btn-ghost btn-sm">
+              Export CSV
+            </button>
+          )}
+          <button onClick={() => signOut(getFirebaseAuth())} className="btn btn-ghost btn-sm">
+            Log Out
+          </button>
+        </div>
       </div>
 
       {parentsState === "loading" && <p className="text-sm text-slate mt-5">Loading parents…</p>}
@@ -268,8 +296,23 @@ export default function AdminReportsList({ user }: { user: User }) {
               )}
 
               {reportsState === "ready" && reports.length > 0 && (
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by child, term, or file name…"
+                  aria-label="Search reports"
+                  className="w-full mb-2.5 text-sm rounded-md border border-slate/20 bg-chalk text-ink px-3 py-2"
+                />
+              )}
+
+              {reportsState === "ready" && reports.length > 0 && filtered.length === 0 && (
+                <p className="text-sm text-slate">No matching reports.</p>
+              )}
+
+              {reportsState === "ready" && paged.length > 0 && (
                 <ul className="flex flex-col gap-2.5">
-                  {reports.map((report) => (
+                  {paged.map((report) => (
                     <li key={report.id} className="px-3.5 py-3 rounded-lg bg-chalk">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-semibold">
@@ -289,6 +332,30 @@ export default function AdminReportsList({ user }: { user: User }) {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {reportsState === "ready" && totalPages > 1 && (
+                <div className="flex items-center gap-2.5 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setPage(page - 1)}
+                    disabled={page <= 1}
+                    className="btn btn-ghost btn-sm disabled:opacity-40"
+                  >
+                    ‹ Prev
+                  </button>
+                  <span className="text-xs text-slate">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage(page + 1)}
+                    disabled={page >= totalPages}
+                    className="btn btn-ghost btn-sm disabled:opacity-40"
+                  >
+                    Next ›
+                  </button>
+                </div>
               )}
             </div>
           )}
