@@ -3,6 +3,7 @@ import SectionHeader from "@/components/SectionHeader";
 import PathwayVisualizer from "@/components/PathwayVisualizer";
 import SafetyGrid from "@/components/SafetyGrid";
 import TestimonialRow from "@/components/TestimonialRow";
+import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 import Button from "@/components/Button";
 import { waLink, howItWorksSteps } from "@/lib/data";
 import { getTestimonials } from "@/lib/testimonials";
@@ -74,6 +75,15 @@ export default async function HomePage() {
         <div className="wrap">
           <SectionHeader eyebrow="Parent Voices" title="What Kaduna parents say" center />
           <TestimonialRow testimonials={testimonials} />
+        </div>
+      </section>
+
+      <section className="py-24">
+        <div className="wrap max-w-2xl">
+          <SectionHeader eyebrow="Stay Updated" title="Get updates from Earlydays" center />
+          <div className="card p-8 mt-6">
+            <NewsletterSignupForm />
+          </div>
         </div>
       </section>
 
