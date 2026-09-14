@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { logAdminAction } from "@/lib/audit";
@@ -34,6 +35,13 @@ export const GET = withAdminRoute("parents", "GET /api/admin/parents", async (re
 });
 
 export const POST = withAdminRoute("parents", "POST /api/admin/parents", async (req: NextRequest, admin) => {
+  // Creates a Firebase Auth user and sends an invite email per call, so this
+  // gets the same throttling as the privilege-escalation surface in
+  // admin/access — keyed by actor since the caller is already authenticated.
+  if (!(await checkRateLimit(`admin-parents-write:${admin.email}`, { max: 30, windowMs: 10 * 60 * 1000 }))) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const { guardianName, email, phone, children } = (await req.json()) as {
     guardianName?: string;
     email?: string;

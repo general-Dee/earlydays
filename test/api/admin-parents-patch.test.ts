@@ -15,6 +15,11 @@ vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ collection }),
 }));
 
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
+}));
+
 collection.mockImplementation(() => ({ doc }));
 doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update }));
 
@@ -41,6 +46,7 @@ beforeEach(() => {
   revokeRefreshTokens.mockResolvedValue(undefined);
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+  checkRateLimit.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -61,6 +67,16 @@ describe("PATCH /api/admin/parents/[uid]", () => {
     const { PATCH } = await import("@/app/api/admin/parents/[uid]/route");
     const res = await PATCH(request({ authorization: "Bearer ok" }, { phone: "080" }), context());
     expect(res.status).toBe(403);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("429s and skips the update when rate limited", async () => {
+    checkRateLimit.mockResolvedValue(false);
+
+    const { PATCH } = await import("@/app/api/admin/parents/[uid]/route");
+    const res = await PATCH(request({ authorization: "Bearer ok" }, { phone: "080" }), context());
+
+    expect(res.status).toBe(429);
     expect(update).not.toHaveBeenCalled();
   });
 

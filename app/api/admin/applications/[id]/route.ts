@@ -4,6 +4,7 @@ import { sendApplicationStatusEmail } from "@/lib/email/notify";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { logRouteError } from "@/lib/api/errors";
 import { logAdminAction } from "@/lib/audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 
@@ -15,6 +16,10 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
   "applications",
   "PATCH /api/admin/applications/[id]",
   async (req: NextRequest, admin, { params }) => {
+    if (!(await checkRateLimit(`admin-applications-write:${admin.email}`, { max: 40, windowMs: 10 * 60 * 1000 }))) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    }
+
     const { status } = (await req.json()) as { status?: string };
 
     if (!status || !VALID_STATUSES.includes(status as ApplicationStatus)) {
@@ -61,6 +66,10 @@ export const DELETE = withAdminRoute<{ params: { id: string } }>(
   "applications",
   "DELETE /api/admin/applications/[id]",
   async (req: NextRequest, admin, { params }) => {
+    if (!(await checkRateLimit(`admin-applications-write:${admin.email}`, { max: 20, windowMs: 10 * 60 * 1000 }))) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    }
+
     const ref = getAdminDb().collection(COLLECTIONS.applications).doc(params.id);
 
     // Read before deleting so the audit entry names the child rather than an

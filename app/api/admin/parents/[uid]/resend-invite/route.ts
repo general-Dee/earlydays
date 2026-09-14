@@ -5,6 +5,7 @@ import { logRouteError } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { sendParentInviteEmail } from "@/lib/email/notify";
 import { logAdminAction } from "@/lib/audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { site } from "@/lib/data";
 import type { Parent } from "@/lib/firebase/types";
 
@@ -14,6 +15,12 @@ export const POST = withAdminRoute<{ params: { uid: string } }>(
   "parents",
   "POST /api/admin/parents/[uid]/resend-invite",
   async (req: NextRequest, admin, { params }) => {
+    // Tighter than other admin/parents writes since this sends an email per
+    // call — the risk here is invite-email spam/cost, not just data writes.
+    if (!(await checkRateLimit(`admin-parents-invite:${admin.email}`, { max: 10, windowMs: 10 * 60 * 1000 }))) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    }
+
     const snapshot = await getAdminDb().collection(COLLECTIONS.parents).doc(params.uid).get();
     if (!snapshot.exists) {
       return NextResponse.json({ error: "Parent account not found" }, { status: 404 });

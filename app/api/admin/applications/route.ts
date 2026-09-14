@@ -5,6 +5,7 @@ import { COLLECTIONS } from "@/lib/firebase/collections";
 import { validateRequiredString } from "@/lib/validation";
 import { generateReferenceCode } from "@/lib/referenceCode";
 import { logAdminAction } from "@/lib/audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { stages } from "@/lib/data";
 
 export const runtime = "nodejs";
@@ -21,6 +22,10 @@ export const GET = withAdminRoute("applications", "GET /api/admin/applications",
 });
 
 export const POST = withAdminRoute("applications", "POST /api/admin/applications", async (req: NextRequest, admin) => {
+  if (!(await checkRateLimit(`admin-applications-write:${admin.email}`, { max: 30, windowMs: 10 * 60 * 1000 }))) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const { childName, childDob, desiredStage, guardianName, email, phone, notes } = (await req.json()) as {
     childName?: string;
     childDob?: string;

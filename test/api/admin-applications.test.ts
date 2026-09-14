@@ -14,6 +14,11 @@ vi.mock("@/lib/firebase/admin", () => ({
   getAdminDb: () => ({ collection }),
 }));
 
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
+}));
+
 collection.mockImplementation(() => ({ orderBy, add, doc }));
 orderBy.mockImplementation(() => ({ get }));
 
@@ -44,6 +49,7 @@ beforeEach(() => {
   getUser.mockResolvedValue({ disabled: false });
   collection.mockImplementation(() => ({ orderBy, add, doc }));
   orderBy.mockImplementation(() => ({ get }));
+  checkRateLimit.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -170,6 +176,18 @@ describe("POST /api/admin/applications", () => {
     const { POST } = await import("@/app/api/admin/applications/route");
     const res = await POST(postRequest({ authorization: "Bearer ok" }, validApplication));
     expect(res.status).toBe(403);
+    expect(add).not.toHaveBeenCalled();
+  });
+
+  it("429s and skips creation when rate limited", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    checkRateLimit.mockResolvedValue(false);
+
+    const { POST } = await import("@/app/api/admin/applications/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, validApplication));
+
+    expect(res.status).toBe(429);
     expect(add).not.toHaveBeenCalled();
   });
 

@@ -18,6 +18,11 @@ vi.mock("@/lib/email/notify", () => ({
   sendApplicationStatusEmail: vi.fn(),
 }));
 
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
+}));
+
 // Call order per request: (1) resolveAdminIdentity's `adminUsers/{uid}` lookup
 // — "no doc" so the ADMIN_EMAILS* env fallback applies; (2) the application
 // doc itself, read (for the audit entry's child name/email) then deleted; (3)
@@ -58,6 +63,7 @@ beforeEach(() => {
   resetChain();
   deleteFn.mockResolvedValue(undefined);
   auditSet.mockResolvedValue(undefined);
+  checkRateLimit.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -85,6 +91,16 @@ describe("DELETE /api/admin/applications/[id]", () => {
     const { DELETE } = await import("@/app/api/admin/applications/[id]/route");
     const res = await DELETE(request({ authorization: "Bearer ok" }), context());
     expect(res.status).toBe(403);
+    expect(deleteFn).not.toHaveBeenCalled();
+  });
+
+  it("429s and skips the delete when rate limited", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    checkRateLimit.mockResolvedValue(false);
+    const { DELETE } = await import("@/app/api/admin/applications/[id]/route");
+    const res = await DELETE(request({ authorization: "Bearer ok" }), context("a1"));
+    expect(res.status).toBe(429);
     expect(deleteFn).not.toHaveBeenCalled();
   });
 

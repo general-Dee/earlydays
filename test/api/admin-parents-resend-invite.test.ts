@@ -19,6 +19,11 @@ vi.mock("@/lib/email/notify", () => ({
   sendParentInviteEmail: (...args: unknown[]) => sendParentInviteEmail(...args),
 }));
 
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
+}));
+
 collection.mockImplementation(() => ({ doc }));
 doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { get }));
 
@@ -38,6 +43,7 @@ beforeEach(() => {
   doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { get }));
   process.env.ADMIN_EMAILS = "staff@earlydays.example";
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+  checkRateLimit.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -58,6 +64,16 @@ describe("POST /api/admin/parents/[uid]/resend-invite", () => {
     const { POST } = await import("@/app/api/admin/parents/[uid]/resend-invite/route");
     const res = await POST(request({ authorization: "Bearer ok" }), context());
     expect(res.status).toBe(403);
+    expect(generatePasswordResetLink).not.toHaveBeenCalled();
+  });
+
+  it("429s and skips the lookup when rate limited", async () => {
+    checkRateLimit.mockResolvedValue(false);
+
+    const { POST } = await import("@/app/api/admin/parents/[uid]/resend-invite/route");
+    const res = await POST(request({ authorization: "Bearer ok" }), context());
+
+    expect(res.status).toBe(429);
     expect(generatePasswordResetLink).not.toHaveBeenCalled();
   });
 

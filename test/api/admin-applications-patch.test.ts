@@ -19,6 +19,11 @@ vi.mock("@/lib/email/notify", () => ({
   sendApplicationStatusEmail: (...args: unknown[]) => sendApplicationStatusEmail(...args),
 }));
 
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
+}));
+
 collection.mockImplementation(() => ({ doc }));
 doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { update, get }));
 
@@ -50,6 +55,7 @@ beforeEach(() => {
   update.mockResolvedValue(undefined);
   get.mockResolvedValue({ exists: true, data: () => sampleApplication });
   sendApplicationStatusEmail.mockResolvedValue(true);
+  checkRateLimit.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -80,6 +86,16 @@ describe("PATCH /api/admin/applications/[id]", () => {
       context()
     );
     expect(res.status).toBe(403);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("429s and skips the update when rate limited", async () => {
+    process.env.ADMIN_EMAILS = "staff@earlydays.example";
+    verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
+    checkRateLimit.mockResolvedValue(false);
+    const { PATCH } = await import("@/app/api/admin/applications/[id]/route");
+    const res = await PATCH(request({ authorization: "Bearer ok" }, { status: "accepted" }), context());
+    expect(res.status).toBe(429);
     expect(update).not.toHaveBeenCalled();
   });
 

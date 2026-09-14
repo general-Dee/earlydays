@@ -24,6 +24,11 @@ vi.mock("@/lib/email/notify", () => ({
   sendParentInviteEmail: (...args: unknown[]) => sendParentInviteEmail(...args),
 }));
 
+const checkRateLimit = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: (...args: unknown[]) => checkRateLimit(...args),
+}));
+
 collection.mockImplementation(() => ({ orderBy, doc }));
 orderBy.mockImplementation(() => ({ get }));
 doc.mockImplementation(() => (docCalls++ === 0 ? { get: () => Promise.resolve({ exists: false }) } : { set }));
@@ -58,6 +63,7 @@ beforeEach(() => {
   verifyIdToken.mockResolvedValue({ email: "staff@earlydays.example" });
   deleteUser.mockResolvedValue(undefined);
   getUsers.mockResolvedValue({ users: [] });
+  checkRateLimit.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -160,6 +166,16 @@ describe("POST /api/admin/parents", () => {
     const { POST } = await import("@/app/api/admin/parents/route");
     const res = await POST(postRequest({ authorization: "Bearer ok" }, validBody));
     expect(res.status).toBe(403);
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
+  it("429s and skips creation when rate limited", async () => {
+    checkRateLimit.mockResolvedValue(false);
+
+    const { POST } = await import("@/app/api/admin/parents/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, validBody));
+
+    expect(res.status).toBe(429);
     expect(createUser).not.toHaveBeenCalled();
   });
 

@@ -3,6 +3,7 @@ import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { withAdminRoute } from "@/lib/firebase/admin-auth";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { logAdminAction } from "@/lib/audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { validateChildren, validateEmail, validateGuardianName, validatePhone } from "../validation";
 
 export const runtime = "nodejs";
@@ -11,6 +12,10 @@ export const PATCH = withAdminRoute<{ params: { uid: string } }>(
   "parents",
   "PATCH /api/admin/parents/[uid]",
   async (req: NextRequest, admin, { params }) => {
+    if (!(await checkRateLimit(`admin-parents-write:${admin.email}`, { max: 30, windowMs: 10 * 60 * 1000 }))) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    }
+
     const { guardianName, email, phone, children, disabled } = (await req.json()) as {
       guardianName?: string;
       email?: string;
