@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { TERMS } from "@/lib/data";
@@ -35,26 +34,6 @@ const statusStyle: Record<ApplicationStatus, string> = {
   waitlisted: "bg-chalk text-slate",
   declined: "bg-clay-soft text-clay",
 };
-
-const QUICK_LINKS = [
-  { href: "/admin/applications", label: "Applications" },
-  { href: "/admin/parents", label: "Parents" },
-  { href: "/admin/payments", label: "Payments" },
-  { href: "/admin/inquiries", label: "Inquiries" },
-  { href: "/admin/reports", label: "Reports" },
-  { href: "/admin/announcements", label: "Announcements" },
-  { href: "/admin/events", label: "Events" },
-  { href: "/admin/staff", label: "Staff" },
-  { href: "/admin/blog", label: "Blog" },
-  { href: "/admin/gallery", label: "Gallery" },
-  { href: "/admin/testimonials", label: "Testimonials" },
-  { href: "/admin/faqs", label: "FAQs" },
-  { href: "/admin/subscribers", label: "Subscribers" },
-  { href: "/admin/access", label: "Admin Access" },
-  { href: "/admin/audit", label: "Audit Log" },
-  { href: "/admin/rate-limits", label: "Rate Limits" },
-  { href: "/admin/cron-runs", label: "Cron Runs" },
-];
 
 export default function AdminDashboardOverview({ user }: { user: User }) {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -397,19 +376,6 @@ export default function AdminDashboardOverview({ user }: { user: User }) {
               </span>
               <div className="text-2xl font-display font-semibold mt-1.5">{data.newInquiries}</div>
             </div>
-          </div>
-
-          <div className="mt-6">
-            <h5 className="text-[0.78rem] font-medium text-slate uppercase tracking-wider mb-2.5">
-              Go to
-            </h5>
-            <nav className="flex flex-wrap gap-2">
-              {QUICK_LINKS.map((link) => (
-                <Link key={link.href} href={link.href} className="btn btn-ghost btn-sm">
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
           </div>
         </>
       )}
