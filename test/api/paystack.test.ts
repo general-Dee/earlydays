@@ -365,6 +365,45 @@ describe("POST /api/paystack/webhook", () => {
     expect(sendPaymentReceiptEmail).not.toHaveBeenCalled();
   });
 
+  it("marks a pending payment failed from a validly signed charge.failed event", async () => {
+    process.env.PAYSTACK_SECRET_KEY = "sk_test";
+    docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ status: "pending", childName: "Kid", term: "Term 1" }),
+    });
+
+    const { POST } = await import("@/app/api/paystack/webhook/route");
+    const req = signedRequest("sk_test", {
+      event: "charge.failed",
+      data: { reference: "edy_1", metadata: { uid: "u1" } },
+    });
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.received).toBe(true);
+    expect(docSet).toHaveBeenCalledWith({ status: "failed" }, { merge: true });
+    expect(sendPaymentReceiptEmail).not.toHaveBeenCalled();
+  });
+
+  it("doesn't overwrite an already-successful payment on a late charge.failed event", async () => {
+    process.env.PAYSTACK_SECRET_KEY = "sk_test";
+    docGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ status: "success", childName: "Kid", term: "Term 1" }),
+    });
+
+    const { POST } = await import("@/app/api/paystack/webhook/route");
+    const req = signedRequest("sk_test", {
+      event: "charge.failed",
+      data: { reference: "edy_1", metadata: { uid: "u1" } },
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(docSet).not.toHaveBeenCalled();
+  });
+
   it("still returns received:true when the receipt email fails to send", async () => {
     process.env.PAYSTACK_SECRET_KEY = "sk_test";
     docGet

@@ -63,6 +63,18 @@ export const POST = withRouteErrorHandling("POST /api/paystack/webhook", async (
         }
       }
     }
+  } else if (event.event === "charge.failed") {
+    const { reference, metadata } = event.data;
+    const uid = metadata?.uid;
+
+    if (uid && reference) {
+      const paymentRef = getAdminDb().doc(paths.payment(uid, reference));
+      const existing = await paymentRef.get();
+
+      if (existing.exists && (existing.data() as PaymentRecord).status === "pending") {
+        await paymentRef.set({ status: "failed" }, { merge: true });
+      }
+    }
   }
 
   return NextResponse.json({ received: true });
