@@ -13,7 +13,25 @@ describe("logRouteError", () => {
 
     logRouteError("POST /api/x", "failed to do thing", err);
 
-    expect(consoleSpy).toHaveBeenCalledWith("[api] POST /api/x failed to do thing", err);
+    expect(consoleSpy).toHaveBeenCalledWith("[api] POST /api/x failed to do thing", {
+      name: "Error",
+      message: "boom",
+      stack: err.stack,
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("redacts email- and phone-shaped substrings from the error message", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = new Error("failed for parent@example.com at +234 801 234 5678");
+
+    logRouteError("POST /api/x", "failed to do thing", err);
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[api] POST /api/x failed to do thing",
+      expect.objectContaining({ message: "failed for [redacted-email] at [redacted-phone]" })
+    );
 
     consoleSpy.mockRestore();
   });
@@ -29,7 +47,11 @@ describe("handleRouteError", () => {
 
     expect(res.status).toBe(500);
     expect(json).toEqual({ error: "Something went wrong. Please try again." });
-    expect(consoleSpy).toHaveBeenCalledWith("[api] GET /api/test failed", err);
+    expect(consoleSpy).toHaveBeenCalledWith("[api] GET /api/test failed", {
+      name: "Error",
+      message: "boom",
+      stack: err.stack,
+    });
 
     consoleSpy.mockRestore();
   });

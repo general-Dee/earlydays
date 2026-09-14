@@ -26,7 +26,13 @@ export const POST = withRouteErrorHandling("POST /api/paystack/webhook", async (
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  const event = JSON.parse(rawBody);
+  let event: { event?: string; data?: any };
+  try {
+    event = JSON.parse(rawBody);
+  } catch (err) {
+    logRouteError("POST /api/paystack/webhook", "malformed JSON body", err);
+    return NextResponse.json({ error: "Malformed request body" }, { status: 400 });
+  }
 
   if (event.event === "charge.success") {
     const { reference, amount, channel, metadata } = event.data;
