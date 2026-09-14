@@ -2,8 +2,11 @@
 
 import { track } from "@vercel/analytics";
 import { waLink } from "@/lib/data";
+import { useSiteSettings } from "@/lib/firebase/site-settings-context";
 
 export default function ProspectusCard() {
+  const { whatsapp } = useSiteSettings();
+
   return (
     <div className="bg-ground-card border border-line rounded-card p-8 flex flex-col justify-between">
       <div>
@@ -20,7 +23,7 @@ export default function ProspectusCard() {
         Download Prospectus
       </a>
       <a
-        href={waLink("Hi, I'd like to start an admission inquiry")}
+        href={waLink(whatsapp, "Hi, I'd like to start an admission inquiry")}
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => track("book_visit_click", { source: "prospectus_card" })}

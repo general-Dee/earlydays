@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { site, stages } from "@/lib/data";
+import { getSiteSettings } from "@/lib/siteSettings";
 import { formatNaira } from "@/lib/currency";
 import type { ApplicationStatus, EventRsvp } from "@/lib/firebase/types";
 
@@ -29,10 +30,10 @@ async function sendEmail(to: string, subject: string, text: string): Promise<boo
 // Same as sendEmail, but for the three "notify the school" senders below,
 // whose recipient is CONTACT_NOTIFY_EMAIL rather than a parent's address.
 async function sendSchoolNotification(subject: string, text: string): Promise<void> {
-  const to = process.env.CONTACT_NOTIFY_EMAIL;
-  if (!to) return;
+  const { notifyEmail } = await getSiteSettings();
+  if (!notifyEmail) return;
 
-  await sendEmail(to, subject, text);
+  await sendEmail(notifyEmail, subject, text);
 }
 
 type ContactInquiry = {

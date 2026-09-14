@@ -3,6 +3,10 @@
 // pages read from this single source of truth.
 // ============================================================
 
+// whatsapp/phone/email below are only the fallback defaults now — the live
+// values are admin-editable at /admin/settings (see lib/siteSettings.ts) and
+// stored in Firestore, with these env vars as what a fresh install falls
+// back to before an admin has ever saved a value there.
 export const site = {
   name: "Earlydays",
   fullName: "Earlydays Nursery & Primary School",
@@ -13,8 +17,8 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://earlydays.example", // TODO: replace with the real domain
 };
 
-export function waLink(message: string) {
-  return `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(message)}`;
+export function waLink(whatsapp: string, message: string) {
+  return `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
 }
 
 export type Stage = {

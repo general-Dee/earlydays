@@ -5,6 +5,7 @@ import ProspectusCard from "@/components/ProspectusCard";
 import PayPanel from "@/components/PayPanel";
 import Button from "@/components/Button";
 import { waLink } from "@/lib/data";
+import { getSiteSettings } from "@/lib/siteSettings";
 
 export const metadata: Metadata = {
   title: "Admissions & Fees — Earlydays",
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
 // periodically so a price change shows up here without a redeploy.
 export const revalidate = 300;
 
-export default function AdmissionsPage() {
+export default async function AdmissionsPage() {
+  const { whatsapp } = await getSiteSettings();
+
   return (
     <main>
       <section className="py-20 pb-0">
@@ -28,7 +31,7 @@ export default function AdmissionsPage() {
           />
           <div className="flex gap-3.5 flex-wrap">
             <Button href="/admissions/apply">Start Application →</Button>
-            <Button href={waLink("Hi, I'd like to ask a few questions before applying")} variant="ghost" external>
+            <Button href={waLink(whatsapp, "Hi, I'd like to ask a few questions before applying")} variant="ghost" external>
               Ask on WhatsApp First
             </Button>
           </div>

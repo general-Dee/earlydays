@@ -4,9 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { track } from "@vercel/analytics";
 import { site, waLink } from "@/lib/data";
+import { useSiteSettings } from "@/lib/firebase/site-settings-context";
 import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 
 export default function Footer() {
+  const { whatsapp, phone } = useSiteSettings();
+
   return (
     <footer className="pt-16 pb-8">
       <div className="wrap">
@@ -27,15 +30,15 @@ export default function Footer() {
           <div>
             <h2 className="text-ink text-sm font-medium mb-3.5">Visit</h2>
             <a
-              href={waLink("Hi, I'd like to know more about Earlydays")}
+              href={waLink(whatsapp, "Hi, I'd like to know more about Earlydays")}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track("book_visit_click", { source: "footer" })}
               className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors"
             >
-              WhatsApp: {site.phone}
+              WhatsApp: {phone}
             </a>
-            <a href={`tel:${site.phone.replace(/\s/g, "")}`} className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">
+            <a href={`tel:${phone.replace(/\s/g, "")}`} className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">
               Call the office
             </a>
             <span className="block text-ink-soft text-sm mb-2.5">{site.location}</span>

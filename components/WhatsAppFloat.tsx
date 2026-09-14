@@ -2,12 +2,15 @@
 
 import { track } from "@vercel/analytics";
 import { waLink } from "@/lib/data";
+import { useSiteSettings } from "@/lib/firebase/site-settings-context";
 
 export default function WhatsAppFloat() {
+  const { whatsapp } = useSiteSettings();
+
   return (
     <aside aria-label="Chat on WhatsApp">
       <a
-        href={waLink("Hi, I'd like to know more about Earlydays")}
+        href={waLink(whatsapp, "Hi, I'd like to know more about Earlydays")}
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => track("book_visit_click", { source: "whatsapp_float" })}

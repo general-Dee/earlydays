@@ -4,8 +4,11 @@ import Image from "next/image";
 import { track } from "@vercel/analytics";
 import Button from "./Button";
 import { waLink } from "@/lib/data";
+import { useSiteSettings } from "@/lib/firebase/site-settings-context";
 
 export default function Hero() {
+  const { whatsapp } = useSiteSettings();
+
   return (
     <section className="pt-16 pb-10">
       <div className="wrap grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center">
@@ -21,7 +24,7 @@ export default function Hero() {
           </p>
           <div className="flex gap-3.5 flex-wrap mt-6">
             <Button
-              href={waLink("Hi, I'd like to book a tour")}
+              href={waLink(whatsapp, "Hi, I'd like to book a tour")}
               external
               onClick={() => track("book_visit_click", { source: "hero" })}
             >

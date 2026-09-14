@@ -7,13 +7,14 @@ import NewsletterSignupForm from "@/components/NewsletterSignupForm";
 import Button from "@/components/Button";
 import { waLink, howItWorksSteps } from "@/lib/data";
 import { getTestimonials } from "@/lib/testimonials";
+import { getSiteSettings } from "@/lib/siteSettings";
 
 // Testimonials are admin-editable (see /admin/testimonials) — revalidate
 // periodically so a new or edited quote shows up here without a redeploy.
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const testimonials = await getTestimonials();
+  const [testimonials, { whatsapp }] = await Promise.all([getTestimonials(), getSiteSettings()]);
 
   return (
     <main>
@@ -100,7 +101,7 @@ export default async function HomePage() {
               </p>
             </div>
             <Button
-              href={waLink("Hi, I'd like to book a tour for my child")}
+              href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")}
               external
               variant="primary"
               className="text-accent-light border-accent-light hover:bg-accent-light/[0.12]"

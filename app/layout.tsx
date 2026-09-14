@@ -6,7 +6,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { AuthProvider } from "@/lib/firebase/AuthProvider";
+import { SiteSettingsProvider } from "@/lib/firebase/site-settings-context";
 import { site } from "@/lib/data";
+import { getSiteSettings } from "@/lib/siteSettings";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,16 +34,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// WhatsApp/phone/email are admin-editable (see /admin/settings) — revalidate
+// periodically so a change shows up sitewide without a redeploy.
+export const revalidate = 300;
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { whatsapp, phone, email } = await getSiteSettings();
+
   return (
     <html lang="en" className={inter.variable}>
       <body className="font-body">
-        <AuthProvider>
-          <Navbar />
-          {children}
-          <Footer />
-          <WhatsAppFloat />
-        </AuthProvider>
+        <SiteSettingsProvider value={{ whatsapp, phone, email }}>
+          <AuthProvider>
+            <Navbar />
+            {children}
+            <Footer />
+            <WhatsAppFloat />
+          </AuthProvider>
+        </SiteSettingsProvider>
         <Analytics />
       </body>
     </html>

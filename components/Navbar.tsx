@@ -6,10 +6,12 @@ import Link from "next/link";
 import { List, X } from "@phosphor-icons/react";
 import { track } from "@vercel/analytics";
 import { navLinks, waLink } from "@/lib/data";
+import { useSiteSettings } from "@/lib/firebase/site-settings-context";
 import Button from "./Button";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { whatsapp } = useSiteSettings();
 
   return (
     <header className="sticky top-0 z-50 bg-chalk/85 backdrop-blur-md border-b border-line">
@@ -31,7 +33,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
           <Button
-            href={waLink("Hi, I'd like to book a tour for my child")}
+            href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")}
             external
             size="sm"
             onClick={() => track("book_visit_click", { source: "navbar" })}
