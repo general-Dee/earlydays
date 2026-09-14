@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
+import { redact } from "@/lib/redact";
 
 type RouteErrorOptions = { status?: number; message?: string };
-
-const EMAIL_PATTERN = /[^\s@]+@[^\s@]+\.[^\s@]+/g;
-const PHONE_PATTERN = /\+?\d[\d\s-]{7,}\d/g;
-
-function redact(text: string): string {
-  return text.replace(EMAIL_PATTERN, "[redacted-email]").replace(PHONE_PATTERN, "[redacted-phone]");
-}
 
 // Logs only an error's name/message (message redacted for email/phone-shaped
 // substrings), never arbitrary extra properties a caller might have attached
@@ -26,10 +21,15 @@ function safeLogError(err: unknown): { name?: string; message: string; stack?: s
 
 export function logRouteError(route: string, message: string, err: unknown): void {
   console.error(`[api] ${route} ${message}`, safeLogError(err));
+  // No-ops until NEXT_PUBLIC_SENTRY_DSN is set; the beforeSend hooks in
+  // sentry.server.config.ts / sentry.edge.config.ts redact PII before this
+  // is actually sent anywhere.
+  Sentry.captureException(err, { tags: { route }, extra: { message } });
 }
 
 export function handleRouteError(err: unknown, route: string, options: RouteErrorOptions = {}): NextResponse {
   console.error(`[api] ${route} failed`, safeLogError(err));
+  Sentry.captureException(err, { tags: { route } });
   return NextResponse.json(
     { error: options.message ?? "Something went wrong. Please try again." },
     { status: options.status ?? 500 }
