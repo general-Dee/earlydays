@@ -162,6 +162,7 @@ describe("AdminEventsPanel", () => {
 
     await screen.findByText("Term Starts");
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/events/e1",

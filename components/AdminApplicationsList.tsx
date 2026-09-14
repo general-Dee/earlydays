@@ -6,7 +6,9 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Application, ApplicationStatus } from "@/lib/firebase/types";
 import { stages } from "@/lib/data";
 import { useListFilter } from "@/lib/useListFilter";
+import { useConfirm } from "@/lib/useConfirm";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -63,6 +65,7 @@ export default function AdminApplicationsList({ user }: { user: User }) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
+  const { confirmMessage, confirm, respond } = useConfirm();
 
   const [childName, setChildName] = useState("");
   const [childDob, setChildDob] = useState("");
@@ -120,6 +123,8 @@ export default function AdminApplicationsList({ user }: { user: User }) {
   }
 
   async function deleteApplication(id: string) {
+    if (!(await confirm("Delete this application? This can't be undone."))) return;
+
     const previous = applications;
     setDeletingId(id);
     setApplications((current) => current.filter((app) => app.id !== id));
@@ -209,6 +214,7 @@ export default function AdminApplicationsList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+      <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
           <h4 className="font-display text-xl mb-0.5">Applications</h4>

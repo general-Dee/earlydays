@@ -120,6 +120,7 @@ describe("AdminStaffPanel", () => {
     render(<AdminStaffPanel />);
     await screen.findByText("Mrs. Grace A. · Head of Nursery");
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/staff/s1",

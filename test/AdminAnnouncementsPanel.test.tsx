@@ -157,6 +157,7 @@ describe("AdminAnnouncementsPanel", () => {
 
     await screen.findByText("Closed Friday");
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/announcements/a1",

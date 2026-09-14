@@ -148,6 +148,7 @@ describe("AdminBlogPanel", () => {
     render(<AdminBlogPanel />);
     await screen.findByText("Helping a shy child through the first week · Settling In");
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/blog/p1",

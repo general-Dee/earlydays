@@ -167,6 +167,7 @@ describe("AdminReportsPanel", () => {
     await screen.findByText("report.pdf");
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(await screen.findByText("report.pdf")).toBeInTheDocument();
   });

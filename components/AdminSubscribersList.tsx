@@ -5,7 +5,9 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Subscriber } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { useConfirm } from "@/lib/useConfirm";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -23,6 +25,7 @@ function subscribersToCsv(subscribers: Subscriber[]): string {
 export default function AdminSubscribersList({ user }: { user: User }) {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const { confirmMessage, confirm, respond } = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [subject, setSubject] = useState("");
@@ -111,6 +114,8 @@ export default function AdminSubscribersList({ user }: { user: User }) {
   }
 
   async function deleteSubscriber(id: string) {
+    if (!(await confirm("Remove this subscriber? This can't be undone."))) return;
+
     const previous = subscribers;
     setDeletingId(id);
     setSubscribers((current) => current.filter((s) => s.id !== id));
@@ -134,6 +139,7 @@ export default function AdminSubscribersList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+      <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
           <h4 className="font-display text-xl mb-0.5">Subscribers</h4>

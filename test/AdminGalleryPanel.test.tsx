@@ -125,6 +125,7 @@ describe("AdminGalleryPanel", () => {
     render(<AdminGalleryPanel />);
     await screen.findByText(fakePhoto.alt);
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/gallery/g1",

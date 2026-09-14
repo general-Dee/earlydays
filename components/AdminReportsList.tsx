@@ -6,7 +6,9 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
 import { TERMS } from "@/lib/data";
 import { useListFilter } from "@/lib/useListFilter";
+import { useConfirm } from "@/lib/useConfirm";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type ParentOption = { uid: string; guardianName: string; email: string; children: ChildRecord[] };
 
@@ -25,6 +27,7 @@ function reportsToCsv(reports: ProgressReport[]): string {
 }
 
 export default function AdminReportsList({ user }: { user: User }) {
+  const { confirmMessage, confirm, respond } = useConfirm();
   const [parents, setParents] = useState<ParentOption[]>([]);
   const [parentsState, setParentsState] = useState<ParentsState>("loading");
 
@@ -175,6 +178,8 @@ export default function AdminReportsList({ user }: { user: User }) {
   }
 
   async function deleteReport(reportId: string) {
+    if (!(await confirm("Delete this report? This can't be undone."))) return;
+
     const previous = reports;
     setDeletingId(reportId);
     setReports((current) => current.filter((r) => r.id !== reportId));
@@ -198,6 +203,7 @@ export default function AdminReportsList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+      <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
           <h4 className="font-display text-xl mb-0.5">Progress Reports</h4>

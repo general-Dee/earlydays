@@ -5,7 +5,9 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ADMIN_AREAS, type AdminArea, type AdminUser } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { useConfirm } from "@/lib/useConfirm";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -88,6 +90,7 @@ function adminsToCsv(admins: AdminRow[]): string {
 export default function AdminAccessList({ user }: { user: User }) {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const { confirmMessage, confirm, respond } = useConfirm();
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -254,6 +257,8 @@ export default function AdminAccessList({ user }: { user: User }) {
   }
 
   async function removeAdmin(admin: AdminRow) {
+    if (!(await confirm(`Remove admin access for ${admin.email}? This can't be undone.`))) return;
+
     setRowState((current) => ({ ...current, [admin.uid]: { status: "pending" } }));
 
     try {
@@ -324,6 +329,7 @@ export default function AdminAccessList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+      <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
           <h4 className="font-display text-xl mb-0.5">Admin Accounts</h4>

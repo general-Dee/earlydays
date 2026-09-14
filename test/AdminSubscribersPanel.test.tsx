@@ -101,6 +101,7 @@ describe("AdminSubscribersPanel", () => {
     await screen.findByText("parent@example.com");
 
     await userEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/subscribers/s1",

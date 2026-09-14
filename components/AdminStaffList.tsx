@@ -5,7 +5,9 @@ import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import type { Staff } from "@/lib/firebase/types";
 import { useListFilter } from "@/lib/useListFilter";
+import { useConfirm } from "@/lib/useConfirm";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -29,6 +31,7 @@ function staffToCsv(members: Staff[]): string {
 export default function AdminStaffList({ user }: { user: User }) {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const { confirmMessage, confirm, respond } = useConfirm();
 
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -181,6 +184,8 @@ export default function AdminStaffList({ user }: { user: User }) {
   }
 
   async function deleteStaff(id: string) {
+    if (!(await confirm("Delete this staff member? This can't be undone."))) return;
+
     const previous = staff;
     setDeletingId(id);
     setStaff((current) => current.filter((m) => m.id !== id));
@@ -204,6 +209,7 @@ export default function AdminStaffList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+      <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
           <h4 className="font-display text-xl mb-0.5">Staff Profiles</h4>

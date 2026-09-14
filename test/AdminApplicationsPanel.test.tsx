@@ -330,6 +330,7 @@ describe("AdminApplicationsPanel", () => {
     await screen.findByText(/Femi Okafor/);
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/applications/a1",
@@ -352,6 +353,7 @@ describe("AdminApplicationsPanel", () => {
     await screen.findByText(/Femi Okafor/);
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(await screen.findByText(/Femi Okafor/)).toBeInTheDocument();
   });

@@ -147,6 +147,7 @@ describe("AdminFaqsPanel", () => {
     render(<AdminFaqsPanel />);
     await screen.findByText("What ages do you take?");
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/faqs/f1",

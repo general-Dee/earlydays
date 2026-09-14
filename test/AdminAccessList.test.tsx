@@ -270,6 +270,7 @@ describe("AdminAccessList", () => {
     await screen.findByText("Bola Adeyemi");
 
     await userEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/access/other-1",

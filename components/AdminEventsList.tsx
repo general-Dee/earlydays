@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { signOut, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { useListFilter } from "@/lib/useListFilter";
+import { useConfirm } from "@/lib/useConfirm";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import type { CalendarEvent, EventRsvp } from "@/lib/firebase/types";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
@@ -142,6 +144,7 @@ function EventRsvps({ user, eventId }: { user: User; eventId: string }) {
 export default function AdminEventsList({ user }: { user: User }) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const { confirmMessage, confirm, respond } = useConfirm();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [tag, setTag] = useState("");
@@ -242,6 +245,8 @@ export default function AdminEventsList({ user }: { user: User }) {
   }
 
   async function deleteEvent(id: string) {
+    if (!(await confirm("Delete this event? This can't be undone."))) return;
+
     const previous = events;
     setDeletingId(id);
     setEvents((current) => current.filter((e) => e.id !== id));
@@ -301,6 +306,7 @@ export default function AdminEventsList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+      <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
           <h4 className="font-display text-xl mb-0.5">Events</h4>

@@ -304,6 +304,7 @@ describe("AdminInquiriesPanel", () => {
     await screen.findByText("Aisha");
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/inquiries/i1",
@@ -326,6 +327,7 @@ describe("AdminInquiriesPanel", () => {
     await screen.findByText("Aisha");
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(await screen.findByText("Aisha")).toBeInTheDocument();
   });

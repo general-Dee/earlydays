@@ -131,6 +131,7 @@ describe("AdminTestimonialsPanel", () => {
     render(<AdminTestimonialsPanel />);
     await screen.findByText("Aisha B. · Parent, Barnawa");
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/testimonials/t1",

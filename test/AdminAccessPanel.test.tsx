@@ -185,6 +185,7 @@ describe("AdminAccessPanel", () => {
     const row = (await screen.findByText("Musa Ibrahim")).closest("li") as HTMLElement;
 
     await userEvent.click(within(row).getByRole("button", { name: "Remove" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/access/u2",

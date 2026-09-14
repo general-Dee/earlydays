@@ -344,12 +344,32 @@ describe("AdminApplicationsList", () => {
     await screen.findByText(/Femi Okafor/);
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/applications/a1",
       expect.objectContaining({ method: "DELETE", headers: { Authorization: "Bearer tok" } })
     );
     expect(screen.queryByText(/Femi Okafor/)).not.toBeInTheDocument();
+  });
+
+  it("doesn't delete when the confirm dialog is cancelled", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "DELETE") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ applications: [sampleApplication] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminApplicationsList user={fakeUser} />);
+    await screen.findByText(/Femi Okafor/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/admin/applications/a1", expect.objectContaining({ method: "DELETE" }));
+    expect(screen.getByText(/Femi Okafor/)).toBeInTheDocument();
   });
 
   it("restores the application if delete fails", async () => {
@@ -365,6 +385,7 @@ describe("AdminApplicationsList", () => {
     await screen.findByText(/Femi Okafor/);
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(await screen.findByText(/Femi Okafor/)).toBeInTheDocument();
   });
