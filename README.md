@@ -11,6 +11,9 @@ npm run dev
 
 Open http://localhost:3000
 
+`npm install` also sets up a Husky pre-commit hook (via `lint-staged`) that
+runs `eslint --fix` on staged files — no separate setup step needed.
+
 ## Environment setup (Firebase + Paystack)
 
 The parent portal (login, children, payment history) runs on Firebase Auth
