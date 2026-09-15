@@ -3,6 +3,7 @@ import { timingSafeEqual } from "crypto";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { sendEventReminderEmail } from "@/lib/email/notify";
 import { recordCronRun } from "@/lib/cronRuns";
+import { recordNotificationFailure } from "@/lib/notificationFailures";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import type { CalendarEvent, EventRsvp } from "@/lib/firebase/types";
@@ -47,10 +48,26 @@ export const GET = withRouteErrorHandling("GET /api/cron/event-reminders", async
             { name: rsvp.name, email: rsvp.email },
             { title: event.title, date: event.date, desc: event.desc }
           );
-          if (sent) emailsSent++;
+          if (sent) {
+            emailsSent++;
+          } else {
+            failures++;
+            await recordNotificationFailure({
+              job: "event-reminders",
+              channel: "email",
+              recipientLabel: rsvp.name,
+              reason: "Email wasn't sent (Resend may not be configured)",
+            });
+          }
         } catch (err) {
           failures++;
           logRouteError("GET /api/cron/event-reminders", "failed to send event reminder email", err);
+          await recordNotificationFailure({
+            job: "event-reminders",
+            channel: "email",
+            recipientLabel: rsvp.name,
+            reason: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }

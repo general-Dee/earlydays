@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/audit", label: "Audit Log" },
   { href: "/admin/rate-limits", label: "Rate Limits" },
   { href: "/admin/cron-runs", label: "Cron Runs" },
+  { href: "/admin/notification-failures", label: "Notification Failures" },
 ];
 
 export default function AdminNav() {

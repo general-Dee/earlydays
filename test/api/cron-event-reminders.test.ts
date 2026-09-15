@@ -20,6 +20,11 @@ vi.mock("@/lib/cronRuns", () => ({
   recordCronRun: (...args: unknown[]) => recordCronRun(...args),
 }));
 
+const recordNotificationFailure = vi.fn();
+vi.mock("@/lib/notificationFailures", () => ({
+  recordNotificationFailure: (...args: unknown[]) => recordNotificationFailure(...args),
+}));
+
 function collectionImpl(path: string) {
   return path === "events" ? { where } : { get: rsvpsGet };
 }
@@ -117,7 +122,39 @@ describe("GET /api/cron/event-reminders", () => {
       counts: { eventsChecked: 1, emailsSent: 0 },
       failures: 1,
     });
+    expect(recordNotificationFailure).toHaveBeenCalledWith({
+      job: "event-reminders",
+      channel: "email",
+      recipientLabel: "Aisha Bello",
+      reason: "resend down",
+    });
 
     consoleSpy.mockRestore();
+  });
+
+  it("records a notification failure when a send returns false instead of throwing", async () => {
+    eventsGet.mockResolvedValue({ docs: [{ id: "e1", data: () => tomorrowEvent }] });
+    rsvpsGet.mockResolvedValue({
+      docs: [{ data: () => ({ id: "r1", name: "Aisha Bello", email: "aisha@example.com", guestCount: 1, createdAt: 1 }) }],
+    });
+    sendEventReminderEmail.mockResolvedValue(false);
+
+    const { GET } = await import("@/app/api/cron/event-reminders/route");
+    const res = await GET(request({ authorization: "Bearer test-secret" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ ok: true, eventsChecked: 1, emailsSent: 0 });
+    expect(recordCronRun).toHaveBeenCalledWith({
+      job: "event-reminders",
+      counts: { eventsChecked: 1, emailsSent: 0 },
+      failures: 1,
+    });
+    expect(recordNotificationFailure).toHaveBeenCalledWith({
+      job: "event-reminders",
+      channel: "email",
+      recipientLabel: "Aisha Bello",
+      reason: "Email wasn't sent (Resend may not be configured)",
+    });
   });
 });

@@ -43,6 +43,11 @@ vi.mock("@/lib/cronRuns", () => ({
   recordCronRun: (...args: unknown[]) => recordCronRun(...args),
 }));
 
+const recordNotificationFailure = vi.fn();
+vi.mock("@/lib/notificationFailures", () => ({
+  recordNotificationFailure: (...args: unknown[]) => recordNotificationFailure(...args),
+}));
+
 function request(headers: Record<string, string> = {}) {
   return new NextRequest("http://localhost/api/cron/fee-reminders", { headers });
 }
@@ -242,6 +247,47 @@ describe("GET /api/cron/fee-reminders", () => {
       job: "fee-reminders",
       counts: { emailsSent: 1, whatsappSent: 0, smsSent: 1 },
       failures: 1,
+    });
+    expect(recordNotificationFailure).toHaveBeenCalledWith({
+      job: "fee-reminders",
+      channel: "whatsapp",
+      recipientUid: "u1",
+      recipientLabel: "Aisha",
+      reason: "graph api down",
+    });
+  });
+
+  it("records a notification failure when a channel returns false instead of throwing", async () => {
+    sendSmsFeeReminder.mockResolvedValue(false);
+    parentsGet.mockResolvedValue({
+      docs: [
+        parentDoc("u1", {
+          guardianName: "Aisha",
+          email: "a@b.com",
+          phone: "08012345678",
+          children: [{ id: "c1", name: "Kid", stage: "N1" }],
+        }),
+      ],
+    });
+    paymentsGet.mockResolvedValue({ docs: [] });
+
+    const { GET } = await import("@/app/api/cron/fee-reminders/route");
+    const res = await GET(request({ authorization: "Bearer test-secret" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ ok: true, emailsSent: 1, whatsappSent: 1, smsSent: 0 });
+    expect(recordCronRun).toHaveBeenCalledWith({
+      job: "fee-reminders",
+      counts: { emailsSent: 1, whatsappSent: 1, smsSent: 0 },
+      failures: 1,
+    });
+    expect(recordNotificationFailure).toHaveBeenCalledWith({
+      job: "fee-reminders",
+      channel: "sms",
+      recipientUid: "u1",
+      recipientLabel: "Aisha",
+      reason: "SMS wasn't sent (not configured, or the API call failed)",
     });
   });
 });

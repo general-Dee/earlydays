@@ -7,6 +7,7 @@ import { sendSmsFeeReminder } from "@/lib/sms";
 import { getCurrentTerm } from "@/lib/termSettings";
 import { feeKoboByStageCode, getFeeAmounts } from "@/lib/feeSettings";
 import { recordCronRun } from "@/lib/cronRuns";
+import { recordNotificationFailure } from "@/lib/notificationFailures";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS, paths } from "@/lib/firebase/collections";
 import type { Parent, PaymentRecord } from "@/lib/firebase/types";
@@ -58,10 +59,28 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
           CURRENT_TERM,
           feesByStage
         );
-        if (sent) emailsSent++;
+        if (sent) {
+          emailsSent++;
+        } else {
+          failures++;
+          await recordNotificationFailure({
+            job: "fee-reminders",
+            channel: "email",
+            recipientUid: parentDoc.id,
+            recipientLabel: parent.guardianName,
+            reason: "Email wasn't sent (Resend may not be configured)",
+          });
+        }
       } catch (err) {
         failures++;
         logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder email", err);
+        await recordNotificationFailure({
+          job: "fee-reminders",
+          channel: "email",
+          recipientUid: parentDoc.id,
+          recipientLabel: parent.guardianName,
+          reason: err instanceof Error ? err.message : String(err),
+        });
       }
 
       if (parent.phone) {
@@ -72,10 +91,28 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
             CURRENT_TERM,
             feesByStage
           );
-          if (sent) whatsappSent++;
+          if (sent) {
+            whatsappSent++;
+          } else {
+            failures++;
+            await recordNotificationFailure({
+              job: "fee-reminders",
+              channel: "whatsapp",
+              recipientUid: parentDoc.id,
+              recipientLabel: parent.guardianName,
+              reason: "WhatsApp message wasn't sent (not configured, or the API call failed)",
+            });
+          }
         } catch (err) {
           failures++;
           logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder WhatsApp message", err);
+          await recordNotificationFailure({
+            job: "fee-reminders",
+            channel: "whatsapp",
+            recipientUid: parentDoc.id,
+            recipientLabel: parent.guardianName,
+            reason: err instanceof Error ? err.message : String(err),
+          });
         }
 
         try {
@@ -85,10 +122,28 @@ export const GET = withRouteErrorHandling("GET /api/cron/fee-reminders", async (
             CURRENT_TERM,
             feesByStage
           );
-          if (sent) smsSent++;
+          if (sent) {
+            smsSent++;
+          } else {
+            failures++;
+            await recordNotificationFailure({
+              job: "fee-reminders",
+              channel: "sms",
+              recipientUid: parentDoc.id,
+              recipientLabel: parent.guardianName,
+              reason: "SMS wasn't sent (not configured, or the API call failed)",
+            });
+          }
         } catch (err) {
           failures++;
           logRouteError("GET /api/cron/fee-reminders", "failed to send fee reminder SMS", err);
+          await recordNotificationFailure({
+            job: "fee-reminders",
+            channel: "sms",
+            recipientUid: parentDoc.id,
+            recipientLabel: parent.guardianName,
+            reason: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }

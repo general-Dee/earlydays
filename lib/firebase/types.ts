@@ -83,6 +83,21 @@ export type CronRunRecord = {
   failures: number;
 };
 
+export type NotificationChannel = "email" | "whatsapp" | "sms";
+
+// One doc per failed send from a cron job — cronRuns only has an aggregate
+// failure count, this has the per-recipient/channel detail an admin needs to
+// actually act on it.
+export type NotificationFailure = {
+  id: string;
+  job: CronJobName;
+  channel: NotificationChannel;
+  recipientUid?: string; // parentUid for fee-reminders; omitted for event-reminders (no parent doc)
+  recipientLabel: string; // guardian name or RSVP name, for display — never raw email/phone
+  reason: string; // redacted error message, or a fixed string for a soft failure
+  createdAt: number;
+};
+
 export type ChildRecord = {
   id: string;
   name: string;

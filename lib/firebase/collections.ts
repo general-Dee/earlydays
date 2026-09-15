@@ -18,6 +18,7 @@ export const COLLECTIONS = {
   adminUsers: "adminUsers",
   auditLog: "auditLog",
   cronRuns: "cronRuns",
+  notificationFailures: "notificationFailures",
 } as const;
 
 export const paths = {
