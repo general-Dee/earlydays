@@ -4,10 +4,9 @@ import { sendContactNotification } from "@/lib/email/notify";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logRouteError, withRouteErrorHandling } from "@/lib/api/errors";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { contactSchema } from "./validation";
 
 export const runtime = "nodejs";
-
-const MAX_MESSAGE_LENGTH = 2000;
 
 export const POST = withRouteErrorHandling("POST /api/contact", async (req: NextRequest) => {
   const ip = getClientIp(req);
@@ -15,51 +14,36 @@ export const POST = withRouteErrorHandling("POST /api/contact", async (req: Next
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
-  const { name, email, phone, message, hp } = (await req.json()) as {
-    name?: string;
-    email?: string;
-    phone?: string;
-    message?: string;
-    hp?: string;
-  };
+  const body = (await req.json()) as { hp?: string } & Record<string, unknown>;
 
   // Honeypot: real visitors never fill this hidden field.
-  if (hp) {
+  if (body.hp) {
     return NextResponse.json({ ok: true });
   }
 
-  const trimmedName = name?.trim() ?? "";
-  const trimmedEmail = email?.trim() ?? "";
-  const trimmedPhone = phone?.trim() ?? "";
-  const trimmedMessage = message?.trim() ?? "";
-
-  if (!trimmedName || !trimmedMessage) {
-    return NextResponse.json({ error: "Name and message are required" }, { status: 400 });
+  const parsed = contactSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
-  if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
-    return NextResponse.json({ error: "Message is too long" }, { status: 400 });
-  }
-  if (!trimmedEmail && !trimmedPhone) {
-    return NextResponse.json({ error: "Provide an email or phone number so we can reply" }, { status: 400 });
-  }
+  const { name, email, phone, message } = parsed.data;
 
   await getAdminDb()
     .collection(COLLECTIONS.inquiries)
     .add({
-      name: trimmedName,
-      email: trimmedEmail || null,
-      phone: trimmedPhone || null,
-      message: trimmedMessage,
+      name,
+      email: email || null,
+      phone: phone || null,
+      message,
       status: "new",
       createdAt: Date.now(),
     });
 
   try {
     await sendContactNotification({
-      name: trimmedName,
-      email: trimmedEmail || null,
-      phone: trimmedPhone || null,
-      message: trimmedMessage,
+      name,
+      email: email || null,
+      phone: phone || null,
+      message,
     });
   } catch (err) {
     logRouteError("POST /api/contact", "failed to send contact notification email", err);
