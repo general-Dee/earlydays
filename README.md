@@ -144,6 +144,10 @@ test/, e2e/                  Vitest unit tests (component behavior, admin API
                             routes, auth, payments) and Playwright smoke tests.
 ```
 
+See [`docs/architecture.md`](docs/architecture.md) for the conceptual view
+(data model, auth model, request/payment lifecycles) and
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for workflow and conventions.
+
 ## Before you launch — replace these
 
 1. **`lib/data.ts` → `site.whatsapp`** — swap in the real WhatsApp number (digits only, country code first, no `+`).
