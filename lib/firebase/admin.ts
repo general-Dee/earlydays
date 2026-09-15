@@ -38,3 +38,13 @@ export function getAdminBucket() {
   if (!cachedBucket) cachedBucket = getStorage(getAdminApp()).bucket();
   return cachedBucket;
 }
+
+// For calling Google APIs firebase-admin itself doesn't wrap (e.g. Firestore's
+// managed export/import REST endpoints) — reuses the same service-account
+// credential getAdminAuth()/getAdminDb() already authenticate with.
+export async function getAdminAccessToken(): Promise<string> {
+  const credential = getAdminApp().options.credential;
+  if (!credential) throw new Error("Firebase Admin credential not configured");
+  const { access_token } = await credential.getAccessToken();
+  return access_token;
+}

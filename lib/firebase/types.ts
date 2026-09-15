@@ -70,7 +70,7 @@ export type AuditLogEntry = {
   createdAt: number;
 };
 
-export type CronJobName = "event-reminders" | "fee-reminders";
+export type CronJobName = "event-reminders" | "fee-reminders" | "firestore-backup";
 
 export type CronRunRecord = {
   id: string;
