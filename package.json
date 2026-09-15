@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/validate-env.mjs && next build",
+    "analyze": "cross-env ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@firebase/rules-unit-testing": "^3.0.4",
+    "@next/bundle-analyzer": "^14.2.35",
     "@playwright/test": "1.46.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "6.4.8",
@@ -44,6 +46,7 @@
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "autoprefixer": "10.4.19",
+    "cross-env": "^10.1.0",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.35",
     "firebase-tools": "^15.28.2",

@@ -1,4 +1,5 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -14,7 +15,16 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+// Opt-in only (npm run analyze) — a no-op wrapper otherwise, so the normal
+// build/dev path is completely unaffected. openAnalyzer is false so it never
+// tries to shell out and launch a browser; the static HTML reports it always
+// writes to .next/analyze/ can be opened manually.
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: false,
+});
+
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // Only used for uploading source maps on build — silently skipped with a
   // warning (not a build failure) when SENTRY_AUTH_TOKEN isn't set, so this
   // is safe to ship ahead of creating a Sentry project.

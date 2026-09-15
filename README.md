@@ -148,6 +148,18 @@ See [`docs/architecture.md`](docs/architecture.md) for the conceptual view
 (data model, auth model, request/payment lifecycles) and
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for workflow and conventions.
 
+## Bundle analysis
+
+```bash
+npm run analyze
+```
+
+Builds with `@next/bundle-analyzer` turned on and writes static HTML reports
+to `.next/analyze/client.html` and `.next/analyze/server.html` — open either
+directly in a browser. A normal `npm run build`/`npm run dev` is completely
+unaffected; this is opt-in only. As a baseline for noticing a regression:
+`First Load JS shared by all` is currently ~145 kB.
+
 ## Before you launch — replace these
 
 1. **`lib/data.ts` → `site.whatsapp`** — swap in the real WhatsApp number (digits only, country code first, no `+`).
