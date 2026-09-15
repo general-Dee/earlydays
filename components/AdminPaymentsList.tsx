@@ -64,6 +64,8 @@ export default function AdminPaymentsList({ user }: { user: User }) {
   const [state, setState] = useState<LoadState>("loading");
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">("all");
   const [termFilter, setTermFilter] = useState<string>("all");
+  const [reconcilingRef, setReconcilingRef] = useState<string | null>(null);
+  const [reconcileError, setReconcileError] = useState<{ reference: string; message: string } | null>(null);
 
   const statusFiltered =
     statusFilter === "all" ? payments : payments.filter((payment) => payment.status === statusFilter);
@@ -76,6 +78,44 @@ export default function AdminPaymentsList({ user }: { user: User }) {
 
   function exportCsv() {
     downloadCsv("payments", paymentsToCsv(filtered));
+  }
+
+  async function reconcile(payment: AdminPaymentRow) {
+    setReconcilingRef(payment.reference);
+    setReconcileError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/payments/${payment.reference}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ uid: payment.parentUid }),
+      });
+      const data = (await res.json()) as { status?: PaymentStatus; error?: string };
+
+      if (!res.ok || !data.status) {
+        setReconcileError({
+          reference: payment.reference,
+          message: data.error ?? "Couldn't re-verify this payment. Please try again.",
+        });
+        return;
+      }
+
+      setPayments((current) =>
+        current.map((p) =>
+          p.reference === payment.reference && p.parentUid === payment.parentUid
+            ? { ...p, status: data.status! }
+            : p
+        )
+      );
+    } catch {
+      setReconcileError({ reference: payment.reference, message: "Couldn't re-verify this payment. Please try again." });
+    } finally {
+      setReconcilingRef(null);
+    }
   }
 
   useEffect(() => {
@@ -221,7 +261,20 @@ export default function AdminPaymentsList({ user }: { user: User }) {
                     View Receipt
                   </Link>
                 )}
+                {payment.status === "pending" && (
+                  <button
+                    type="button"
+                    onClick={() => reconcile(payment)}
+                    disabled={reconcilingRef === payment.reference}
+                    className="btn btn-ghost btn-sm ml-auto disabled:opacity-40"
+                  >
+                    {reconcilingRef === payment.reference ? "Re-verifying…" : "Re-verify"}
+                  </button>
+                )}
               </div>
+              {reconcileError?.reference === payment.reference && (
+                <p className="text-xs text-clay mt-1.5">{reconcileError.message}</p>
+              )}
             </li>
           ))}
         </ul>

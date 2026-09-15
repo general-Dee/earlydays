@@ -158,6 +158,66 @@ describe("AdminPaymentsList", () => {
     expect(links[0]).toHaveAttribute("href", "/admin/payments/ref-1?uid=p1");
   });
 
+  it("shows a Re-verify button only for pending payments", async () => {
+    const pending = { ...samplePayment, reference: "ref-2", guardianName: "Bola Adeyemi", status: "pending" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ payments: [samplePayment, pending] }) })
+    );
+
+    render(<AdminPaymentsList user={fakeUser} />);
+    await screen.findByText(/Aisha Okafor/);
+
+    const buttons = screen.getAllByRole("button", { name: "Re-verify" });
+    expect(buttons).toHaveLength(1);
+  });
+
+  it("re-verifies a pending payment and updates its status on success", async () => {
+    const pending = { ...samplePayment, reference: "ref-2", guardianName: "Bola Adeyemi", status: "pending" };
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/admin/payments/ref-2") {
+        return Promise.resolve({ ok: true, json: async () => ({ status: "success", emailSent: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ payments: [samplePayment, pending] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminPaymentsList user={fakeUser} />);
+    await screen.findByText(/Bola Adeyemi/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Re-verify" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/payments/ref-2",
+      expect.objectContaining({
+        method: "POST",
+        headers: { Authorization: "Bearer tok", "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: "p1" }),
+      })
+    );
+    expect(await screen.findAllByText("success")).not.toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Re-verify" })).not.toBeInTheDocument();
+  });
+
+  it("shows an inline error when re-verification fails", async () => {
+    const pending = { ...samplePayment, reference: "ref-2", guardianName: "Bola Adeyemi", status: "pending" };
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/admin/payments/ref-2") {
+        return Promise.resolve({ ok: false, json: async () => ({ error: "Only pending payments can be reconciled" }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ payments: [pending] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminPaymentsList user={fakeUser} />);
+    await screen.findByText(/Bola Adeyemi/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Re-verify" }));
+
+    expect(await screen.findByText("Only pending payments can be reconciled")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Re-verify" })).toBeInTheDocument();
+  });
+
   it("exports only the status-filtered payments as a CSV download", async () => {
     const pending = { ...samplePayment, reference: "ref-2", guardianName: "Bola Adeyemi", status: "pending" };
     vi.stubGlobal(

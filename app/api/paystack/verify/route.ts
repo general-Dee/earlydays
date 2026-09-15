@@ -3,6 +3,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { handleRouteError } from "@/lib/api/errors";
 import { withAuthenticatedRoute } from "@/lib/firebase/admin-auth";
 import { paths } from "@/lib/firebase/collections";
+import { verifyPaystackTransaction, type PaystackVerifyResult } from "@/lib/paystack";
 
 export const runtime = "nodejs";
 
@@ -21,30 +22,20 @@ export const POST = withAuthenticatedRoute(
     }
     const payment = paymentSnap.data()!;
 
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) {
-      return NextResponse.json({ error: "Payments aren't configured yet" }, { status: 500 });
-    }
-
-    let paystackRes: Response;
-    let paystackData: any;
+    let result: PaystackVerifyResult;
     try {
-      paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-        headers: { Authorization: `Bearer ${secretKey}` },
-      });
-      paystackData = await paystackRes.json();
+      result = await verifyPaystackTransaction(reference);
     } catch (err) {
+      if (err instanceof Error && err.message === "Payments aren't configured yet") {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+      }
       return handleRouteError(err, "POST /api/paystack/verify", {
         status: 502,
         message: "Could not verify payment with Paystack",
       });
     }
 
-    const verified =
-      paystackRes.ok &&
-      paystackData.status &&
-      paystackData.data.status === "success" &&
-      paystackData.data.amount === payment.amountKobo;
+    const verified = result.ok && result.status === "success" && result.amountKobo === payment.amountKobo;
 
     if (!verified) {
       await paymentRef.set({ status: "failed" }, { merge: true });
@@ -55,7 +46,7 @@ export const POST = withAuthenticatedRoute(
       {
         status: "success",
         paidAt: Date.now(),
-        channel: paystackData.data.channel,
+        channel: result.channel,
       },
       { merge: true }
     );
