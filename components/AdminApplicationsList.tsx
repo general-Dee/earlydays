@@ -149,7 +149,11 @@ export default function AdminApplicationsList({ user }: { user: User }) {
   async function updateStatus(id: string, status: ApplicationStatus) {
     const previous = applications;
     setUpdatingId(id);
-    setApplications((current) => current.map((app) => (app.id === id ? { ...app, status } : app)));
+    setApplications((current) =>
+      current.map((app) =>
+        app.id === id ? { ...app, status, updatedAt: Date.now(), updatedBy: user.email ?? undefined } : app
+      )
+    );
 
     try {
       const idToken = await user.getIdToken();
@@ -362,6 +366,12 @@ export default function AdminApplicationsList({ user }: { user: User }) {
                 {[app.email, app.phone].filter(Boolean).join(" · ") || "No contact info given"}
               </div>
               {app.notes && <p className="text-sm mt-2 mb-0">{app.notes}</p>}
+              {app.updatedBy && (
+                <p className="text-xs text-slate mt-0.5 mb-0">
+                  Last edited by {app.updatedBy}
+                  {app.updatedAt ? ` · ${new Date(app.updatedAt).toLocaleString("en-NG")}` : ""}
+                </p>
+              )}
               <div className="flex items-center gap-2.5 mt-2.5">
                 <span className={`text-[0.7rem] font-bold px-2.5 py-1 rounded-full ${statusStyle[app.status]}`}>
                   {app.status}

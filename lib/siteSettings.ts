@@ -7,6 +7,8 @@ export type SiteSettings = {
   phone: string;
   email: string;
   notifyEmail: string;
+  updatedAt?: number;
+  updatedBy?: string;
 };
 
 export function defaultSiteSettings(): SiteSettings {

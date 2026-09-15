@@ -355,6 +355,56 @@ describe("AdminParentsList", () => {
     expect(await screen.findByText("Femi Renamed (CR)")).toBeInTheDocument();
   });
 
+  it("shows a Last edited line when a parent has updatedBy/updatedAt", async () => {
+    const edited = { ...sampleParent, updatedBy: "boss@earlydays.example", updatedAt: Date.now() };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ parents: [edited] }) })
+    );
+
+    render(<AdminParentsList user={fakeUser} />);
+
+    expect(await screen.findByText(/Last edited by boss@earlydays.example/)).toBeInTheDocument();
+  });
+
+  it("doesn't show a Last edited line when a parent has never been edited", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ parents: [sampleParent] }) })
+    );
+
+    render(<AdminParentsList user={fakeUser} />);
+
+    await screen.findByText("Aisha Okafor");
+    expect(screen.queryByText(/Last edited by/)).not.toBeInTheDocument();
+  });
+
+  it("shows the Last edited line from the PATCH response after saving an edit", async () => {
+    const updated = {
+      guardianName: "Aisha Okafor",
+      email: "aisha@example.com",
+      phone: "08010000000",
+      children: sampleParent.children,
+      updatedAt: Date.now(),
+      updatedBy: "staff@earlydays.example",
+    };
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => updated });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [sampleParent] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminParentsList user={fakeUser} />);
+    await screen.findByText("Aisha Okafor");
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText(/Last edited by staff@earlydays\.example/)).toBeInTheDocument();
+  });
+
   it("signs out via the Log Out button", async () => {
     const { signOut } = await import("firebase/auth");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ parents: [] }) }));

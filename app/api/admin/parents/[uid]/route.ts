@@ -93,6 +93,8 @@ export const PATCH = withAdminRoute<{ params: { uid: string } }>(
     }
 
     if (Object.keys(patch).length > 0) {
+      patch.updatedAt = Date.now();
+      patch.updatedBy = admin.email;
       await getAdminDb().collection(COLLECTIONS.parents).doc(params.uid).update(patch);
     }
 

@@ -51,6 +51,24 @@ describe("AdminSettingsOverview", () => {
     vi.unstubAllGlobals();
   });
 
+  it("shows a Last updated line when settings have updatedBy/updatedAt", async () => {
+    const withMeta = { ...fakeSettings, updatedBy: "boss@earlydays.example", updatedAt: Date.now() };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => withMeta }));
+    render(<AdminSettingsOverview user={fakeUser} />);
+
+    expect(await screen.findByText(/Last updated by boss@earlydays.example/)).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
+  it("doesn't show a Last updated line when settings have never been saved", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => fakeSettings }));
+    render(<AdminSettingsOverview user={fakeUser} />);
+
+    await screen.findByDisplayValue("2348012345678");
+    expect(screen.queryByText(/Last updated by/)).not.toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
   it("saves updated settings", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
       if (init?.method === "PATCH") {

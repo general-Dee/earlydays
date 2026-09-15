@@ -331,6 +331,52 @@ describe("AdminApplicationsList", () => {
     expect(await screen.findByDisplayValue("new")).toBeInTheDocument();
   });
 
+  it("shows a Last edited line when an application has updatedBy/updatedAt", async () => {
+    const edited = { ...sampleApplication, updatedBy: "boss@earlydays.example", updatedAt: Date.now() };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ applications: [edited] }) })
+    );
+
+    render(<AdminApplicationsList user={fakeUser} />);
+
+    expect(await screen.findByText(/Last edited by boss@earlydays.example/)).toBeInTheDocument();
+  });
+
+  it("doesn't show a Last edited line when an application has never been edited", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ applications: [sampleApplication] }) })
+    );
+
+    render(<AdminApplicationsList user={fakeUser} />);
+
+    await screen.findByText(/Femi Okafor/);
+    expect(screen.queryByText(/Last edited by/)).not.toBeInTheDocument();
+  });
+
+  it("shows a Last edited line for the current admin right after changing status", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true, emailSent: true }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ applications: [sampleApplication] }),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminApplicationsList user={fakeUser} />);
+
+    await screen.findByText(/Femi Okafor/);
+    const select = screen.getByRole("combobox", { name: "Status for Femi Okafor" });
+    await userEvent.selectOptions(select, "accepted");
+
+    expect(await screen.findByText(/Last edited by staff@earlydays\.example/)).toBeInTheDocument();
+  });
+
   it("deletes an application via the delete button", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
       if (init?.method === "DELETE") {

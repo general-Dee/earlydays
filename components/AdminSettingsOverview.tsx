@@ -6,7 +6,14 @@ import { getFirebaseAuth } from "@/lib/firebase/client";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
-type SiteSettingsForm = { whatsapp: string; phone: string; email: string; notifyEmail: string };
+type SiteSettingsForm = {
+  whatsapp: string;
+  phone: string;
+  email: string;
+  notifyEmail: string;
+  updatedAt?: number;
+  updatedBy?: string;
+};
 
 const BLANK: SiteSettingsForm = { whatsapp: "", phone: "", email: "", notifyEmail: "" };
 
@@ -110,6 +117,13 @@ export default function AdminSettingsOverview({ user }: { user: User }) {
         <div className="mt-4 px-3.5 py-3 rounded-lg bg-clay-soft text-clay text-[0.85rem] font-semibold">
           Couldn&rsquo;t load settings. Please try again.
         </div>
+      )}
+
+      {state === "ready" && draft.updatedBy && (
+        <p className="text-xs text-slate mt-4 mb-0">
+          Last updated by {draft.updatedBy}
+          {draft.updatedAt ? ` · ${new Date(draft.updatedAt).toLocaleString("en-NG")}` : ""}
+        </p>
       )}
 
       {state === "ready" && (

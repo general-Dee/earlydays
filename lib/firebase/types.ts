@@ -112,6 +112,11 @@ export type Parent = {
   phone?: string;
   children: ChildRecord[];
   createdAt: number;
+  // Set only on an admin-initiated field edit (guardianName/email/phone/
+  // children) — not on a disabled/enabled toggle, which has no Firestore
+  // patch of its own and is already traceable via the audit log.
+  updatedAt?: number;
+  updatedBy?: string;
   // Live Firebase Auth account status — only ever populated by GET
   // /api/admin/parents; never stored in Firestore or present on
   // client-side portal reads.
@@ -158,6 +163,8 @@ export type Application = {
   status: ApplicationStatus;
   referenceCode: string;
   createdAt: number;
+  updatedAt?: number;
+  updatedBy?: string;
 };
 
 export type Announcement = {

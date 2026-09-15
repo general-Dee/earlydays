@@ -32,7 +32,7 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
       return NextResponse.json({ error: "Application not found" }, { status: 404 });
     }
 
-    await ref.update({ status });
+    await ref.update({ status, updatedAt: Date.now(), updatedBy: admin.email });
 
     const application = snapshot.data() as Application;
 

@@ -105,8 +105,17 @@ describe("PATCH /api/admin/parents/[uid]", () => {
     expect(res.status).toBe(200);
     expect(collection).toHaveBeenCalledWith("parents");
     expect(doc).toHaveBeenCalledWith("u1");
-    expect(update).toHaveBeenCalledWith({ phone: "0801234567" });
-    expect(json).toEqual({ uid: "u1", phone: "0801234567" });
+    expect(update).toHaveBeenCalledWith({
+      phone: "0801234567",
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
+    });
+    expect(json).toEqual({
+      uid: "u1",
+      phone: "0801234567",
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
+    });
   });
 
   it("replaces children, preserving an existing id and assigning a new one", async () => {
@@ -131,6 +140,8 @@ describe("PATCH /api/admin/parents/[uid]", () => {
         { id: "existing-1", name: "Zainab", stage: "N1" },
         expect.objectContaining({ id: expect.any(String), name: "Musa", stage: "P1" }),
       ],
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
     });
     expect(json.children[0].id).toBe("existing-1");
     expect(json.children[1].id).not.toBe("existing-1");
@@ -146,8 +157,17 @@ describe("PATCH /api/admin/parents/[uid]", () => {
 
     expect(res.status).toBe(200);
     expect(updateUser).toHaveBeenCalledWith("u1", { email: "new@example.com" });
-    expect(update).toHaveBeenCalledWith({ email: "new@example.com" });
-    expect(json).toEqual({ uid: "u1", email: "new@example.com" });
+    expect(update).toHaveBeenCalledWith({
+      email: "new@example.com",
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
+    });
+    expect(json).toEqual({
+      uid: "u1",
+      email: "new@example.com",
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
+    });
   });
 
   it("409s when the new email already belongs to another account, without touching Firestore", async () => {

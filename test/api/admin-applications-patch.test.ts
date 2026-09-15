@@ -134,7 +134,11 @@ describe("PATCH /api/admin/applications/[id]", () => {
     expect(json).toEqual({ ok: true, emailSent: true });
     expect(collection).toHaveBeenCalledWith("applications");
     expect(doc).toHaveBeenCalledWith("a1");
-    expect(update).toHaveBeenCalledWith({ status: "accepted" });
+    expect(update).toHaveBeenCalledWith({
+      status: "accepted",
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
+    });
     expect(sendApplicationStatusEmail).toHaveBeenCalledWith(
       {
         guardianName: "Aisha Bello",
@@ -174,6 +178,10 @@ describe("PATCH /api/admin/applications/[id]", () => {
 
     expect(res.status).toBe(200);
     expect(json).toEqual({ ok: true, emailSent: false });
-    expect(update).toHaveBeenCalledWith({ status: "declined" });
+    expect(update).toHaveBeenCalledWith({
+      status: "declined",
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
+    });
   });
 });

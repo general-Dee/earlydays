@@ -282,6 +282,8 @@ export default function AdminParentsList({ user }: { user: User }) {
         email: string;
         phone: string;
         children: Parent["children"];
+        updatedAt?: number;
+        updatedBy?: string;
       };
       setParents((current) =>
         current.map((parent) =>
@@ -292,6 +294,8 @@ export default function AdminParentsList({ user }: { user: User }) {
                 email: updated.email,
                 phone: updated.phone,
                 children: updated.children,
+                updatedAt: updated.updatedAt,
+                updatedBy: updated.updatedBy,
               }
             : parent
         )
@@ -628,6 +632,12 @@ export default function AdminParentsList({ user }: { user: User }) {
                         </span>
                       )}
                     </p>
+                    {parent.updatedBy && (
+                      <p className="text-xs text-slate mt-0.5 mb-0">
+                        Last edited by {parent.updatedBy}
+                        {parent.updatedAt ? ` · ${new Date(parent.updatedAt).toLocaleString("en-NG")}` : ""}
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-1.5 mt-2.5">
                       {parent.children.map((child) => (
                         <span key={child.id} className="text-xs font-semibold px-2.5 py-1 rounded-full bg-chalk text-ink">
