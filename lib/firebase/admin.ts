@@ -10,6 +10,15 @@ import { getStorage } from "firebase-admin/storage";
 function getAdminApp() {
   if (getApps().length) return getApps()[0];
 
+  // firebase emulators:exec sets this for its whole child-process tree
+  // (used by `npm run test:e2e`) — every Firestore call gets routed to the
+  // local emulator, which never authenticates, so no credential is needed
+  // (and cert() would throw on the placeholder/missing values anyway, since
+  // it actually parses the private key as a real PEM certificate).
+  if (process.env.FIRESTORE_EMULATOR_HOST) {
+    return initializeApp({ projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || "demo-earlydays" });
+  }
+
   return initializeApp({
     credential: cert({
       projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,

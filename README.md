@@ -45,13 +45,21 @@ real sign-in and payments won't work until you provide real credentials.
 npm test           # Vitest — component behavior, admin API routes, auth, and payment flows (all mocked)
 npm run test:watch
 npm run typecheck   # tsc --noEmit
-npm run test:e2e    # Playwright smoke test across all routes (starts the dev server automatically)
+npm run test:e2e    # Playwright: route smoke tests + a full admissions submission
 ```
 
 Playwright needs browser binaries installed once via `npx playwright
 install`. Vitest tests don't touch real Firebase/Paystack — Firestore,
 Storage, and outbound Paystack calls are all mocked; they test route
 logic and component behavior only.
+
+`test:e2e` runs against the **Firestore emulator** (like `test:rules` does),
+started automatically via `firebase emulators:exec` — no real credentials
+needed, and nothing it does touches production data. If you already have
+`npm run dev` running on port 3000 when you run it, stop that first:
+Playwright reuses an already-running server outside CI, and one started
+without the emulator wrapper won't have a working Firestore connection for
+the admissions test.
 
 ## Structure
 
