@@ -67,6 +67,7 @@ export const POST = withSuperAdminRoute("POST /api/admin/access", async (req: Ne
   const trimmedEmail = emailResult.value;
 
   let uid: string;
+  let adopted = false;
   try {
     const userRecord = await getAdminAuth().createUser({
       email: trimmedEmail,
@@ -75,10 +76,29 @@ export const POST = withSuperAdminRoute("POST /api/admin/access", async (req: Ne
     });
     uid = userRecord.uid;
   } catch (err) {
-    if (err instanceof Error && "code" in err && err.code === "auth/email-already-exists") {
-      return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+    if (!(err instanceof Error && "code" in err && err.code === "auth/email-already-exists")) {
+      return NextResponse.json({ error: "Couldn't create the account. Please try again." }, { status: 500 });
     }
-    return NextResponse.json({ error: "Couldn't create the account. Please try again." }, { status: 500 });
+
+    // The email already has a Firebase Auth account — most likely someone
+    // currently granted access only via ADMIN_EMAILS*/ADMIN_EMAILS_<AREA>,
+    // being migrated to a real, revocable adminUsers record. Adopt the
+    // existing account instead of failing; their login is untouched.
+    let existingUser;
+    try {
+      existingUser = await getAdminAuth().getUserByEmail(trimmedEmail);
+    } catch (lookupErr) {
+      logRouteError("POST /api/admin/access", "failed to look up the existing account", lookupErr);
+      return NextResponse.json({ error: "Couldn't look up the existing account. Please try again." }, { status: 500 });
+    }
+
+    const existingDoc = await getAdminDb().collection(COLLECTIONS.adminUsers).doc(existingUser.uid).get();
+    if (existingDoc.exists && !(existingDoc.data() as AdminUser).revoked) {
+      return NextResponse.json({ error: "This user is already an admin" }, { status: 409 });
+    }
+
+    uid = existingUser.uid;
+    adopted = true;
   }
 
   const adminUser: AdminUser = {
@@ -94,36 +114,42 @@ export const POST = withSuperAdminRoute("POST /api/admin/access", async (req: Ne
   try {
     await getAdminDb().collection(COLLECTIONS.adminUsers).doc(uid).set(adminUser);
   } catch (err) {
-    logRouteError("POST /api/admin/access", `failed to save adminUsers doc; rolling back Auth user ${uid}`, err);
-    await getAdminAuth()
-      .deleteUser(uid)
-      .catch(() => {});
+    logRouteError("POST /api/admin/access", `failed to save adminUsers doc for ${uid}`, err);
+    // Only roll back an Auth account we just created this request — never
+    // delete a pre-existing real user's account over a Firestore hiccup.
+    if (!adopted) {
+      await getAdminAuth()
+        .deleteUser(uid)
+        .catch(() => {});
+    }
     return NextResponse.json({ error: "Couldn't save this admin. Please try again." }, { status: 500 });
   }
 
   let resetLink: string | null = null;
-  try {
-    resetLink = await getAdminAuth().generatePasswordResetLink(trimmedEmail, { url: `${site.url}/admin` });
-  } catch (err) {
-    logRouteError("POST /api/admin/access", "failed to generate a password reset link", err);
-  }
-
   let emailSent = false;
-  if (resetLink) {
+  if (!adopted) {
     try {
-      emailSent = await sendAdminInviteEmail({ displayName: trimmedDisplayName, email: trimmedEmail }, resetLink);
+      resetLink = await getAdminAuth().generatePasswordResetLink(trimmedEmail, { url: `${site.url}/admin` });
     } catch (err) {
-      logRouteError("POST /api/admin/access", "failed to send admin invite email", err);
+      logRouteError("POST /api/admin/access", "failed to generate a password reset link", err);
+    }
+
+    if (resetLink) {
+      try {
+        emailSent = await sendAdminInviteEmail({ displayName: trimmedDisplayName, email: trimmedEmail }, resetLink);
+      } catch (err) {
+        logRouteError("POST /api/admin/access", "failed to send admin invite email", err);
+      }
     }
   }
 
   await logAdminAction({
-    action: "admin.created",
+    action: adopted ? "admin.adopted" : "admin.created",
     actorEmail: actor.email,
     targetUid: uid,
     targetEmail: trimmedEmail,
     detail: superAdminFlag ? "superadmin" : areasResult.value.join(", "),
   });
 
-  return NextResponse.json({ ...adminUser, resetLink, emailSent });
+  return NextResponse.json({ ...adminUser, resetLink, emailSent, adopted });
 });

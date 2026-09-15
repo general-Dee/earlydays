@@ -13,7 +13,7 @@ type LoadState = "loading" | "forbidden" | "error" | "ready";
 
 type AdminRow = AdminUser & { disabled: boolean };
 
-type LastCreated = { resetLink: string | null; emailSent: boolean };
+type LastCreated = { resetLink: string | null; emailSent: boolean; adopted: boolean };
 
 type EditForm = { displayName: string; isSuperAdmin: boolean; areas: AdminArea[] };
 
@@ -22,9 +22,18 @@ type RowActionState = { status: "pending" } | { status: "error"; message: string
 function InviteBanner({
   emailSent,
   resetLink,
+  adopted,
   onCopy,
   copied,
 }: LastCreated & { onCopy: () => void; copied: boolean }) {
+  if (adopted) {
+    return (
+      <>
+        This email already had an account — admin access was added to it directly. Their login is unchanged; no
+        email was sent.
+      </>
+    );
+  }
   if (emailSent) {
     return <>Account created — an invite email has been sent.</>;
   }
@@ -142,7 +151,7 @@ export default function AdminAccessList({ user }: { user: User }) {
 
       const created = (await res.json()) as AdminUser & LastCreated;
       setAdmins((current) => [{ ...created, disabled: false }, ...current]);
-      setLastCreated({ resetLink: created.resetLink, emailSent: created.emailSent });
+      setLastCreated({ resetLink: created.resetLink, emailSent: created.emailSent, adopted: created.adopted });
       setDisplayName("");
       setEmail("");
       setIsSuperAdmin(false);

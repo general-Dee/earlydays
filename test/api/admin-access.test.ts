@@ -7,15 +7,22 @@ const createUser = vi.fn();
 const deleteUser = vi.fn();
 const generatePasswordResetLink = vi.fn();
 const getUsers = vi.fn();
+const getUserByEmail = vi.fn();
 const collection = vi.fn();
 const doc = vi.fn();
 const docGet = vi.fn();
+// The actor's own adminUsers/{uid} lookup (during requireSuperAdmin) and the
+// "does the target uid already have an adminUsers doc" check (in the new
+// adopt-existing-user path) both call .doc(uid).get() within one request —
+// keyed by uid so setting up one doesn't clobber the other. Defaults to the
+// actor resolving via the ADMIN_EMAILS env fallback (exists: false).
+const actorDocGet = vi.fn();
 const set = vi.fn();
 const orderBy = vi.fn();
 const listGet = vi.fn();
 
 vi.mock("@/lib/firebase/admin", () => ({
-  getAdminAuth: () => ({ verifyIdToken, getUser, createUser, deleteUser, generatePasswordResetLink, getUsers }),
+  getAdminAuth: () => ({ verifyIdToken, getUser, createUser, deleteUser, generatePasswordResetLink, getUsers, getUserByEmail }),
   getAdminDb: () => ({ collection }),
 }));
 
@@ -51,9 +58,10 @@ const validBody = { displayName: "Musa Ibrahim", email: "musa@earlydays.example"
 beforeEach(() => {
   vi.clearAllMocks();
   collection.mockImplementation(() => ({ doc, orderBy }));
-  doc.mockImplementation(() => ({ get: docGet, set }));
+  doc.mockImplementation((uid: string) => (uid === "actor1" ? { get: actorDocGet, set } : { get: docGet, set }));
   orderBy.mockImplementation(() => ({ get: listGet }));
   docGet.mockResolvedValue({ exists: false });
+  actorDocGet.mockResolvedValue({ exists: false });
   process.env.ADMIN_EMAILS = "boss@earlydays.example";
   verifyIdToken.mockResolvedValue({ uid: "actor1", email: "boss@earlydays.example" });
   getUser.mockResolvedValue({ disabled: false });
@@ -207,14 +215,64 @@ describe("POST /api/admin/access", () => {
     expect(json).toMatchObject({ uid: "newUid", resetLink: "https://earlydays.example/reset", emailSent: true });
   });
 
-  it("409s when the email already has an account", async () => {
+  it("409s when the email already has an account with an active adminUsers doc", async () => {
     createUser.mockRejectedValue(Object.assign(new Error("exists"), { code: "auth/email-already-exists" }));
+    getUserByEmail.mockResolvedValue({ uid: "existingUid" });
+    docGet.mockResolvedValue({ exists: true, data: () => ({ isSuperAdmin: false, areas: ["blog"] }) });
 
     const { POST } = await import("@/app/api/admin/access/route");
     const res = await POST(postRequest({ authorization: "Bearer ok" }, validBody));
 
     expect(res.status).toBe(409);
     expect(set).not.toHaveBeenCalled();
+  });
+
+  it("adopts an existing Auth account with no prior adminUsers doc (migrating an env-var admin)", async () => {
+    createUser.mockRejectedValue(Object.assign(new Error("exists"), { code: "auth/email-already-exists" }));
+    getUserByEmail.mockResolvedValue({ uid: "existingUid" });
+    docGet.mockResolvedValue({ exists: false });
+    set.mockResolvedValue(undefined);
+
+    const { POST } = await import("@/app/api/admin/access/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, validBody));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ uid: "existingUid" }));
+    expect(generatePasswordResetLink).not.toHaveBeenCalled();
+    expect(sendAdminInviteEmail).not.toHaveBeenCalled();
+    expect(logAdminAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "admin.adopted", targetUid: "existingUid", actorEmail: "boss@earlydays.example" })
+    );
+    expect(json).toMatchObject({ uid: "existingUid", adopted: true, resetLink: null, emailSent: false });
+  });
+
+  it("adopts an existing Auth account with a revoked adminUsers doc, un-revoking it", async () => {
+    createUser.mockRejectedValue(Object.assign(new Error("exists"), { code: "auth/email-already-exists" }));
+    getUserByEmail.mockResolvedValue({ uid: "existingUid" });
+    docGet.mockResolvedValue({ exists: true, data: () => ({ isSuperAdmin: false, areas: [], revoked: true }) });
+    set.mockResolvedValue(undefined);
+
+    const { POST } = await import("@/app/api/admin/access/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, validBody));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ uid: "existingUid" }));
+    expect(json).toMatchObject({ adopted: true });
+  });
+
+  it("doesn't roll back the existing Auth account when saving an adopted admin's doc fails", async () => {
+    createUser.mockRejectedValue(Object.assign(new Error("exists"), { code: "auth/email-already-exists" }));
+    getUserByEmail.mockResolvedValue({ uid: "existingUid" });
+    docGet.mockResolvedValue({ exists: false });
+    set.mockRejectedValue(new Error("firestore down"));
+
+    const { POST } = await import("@/app/api/admin/access/route");
+    const res = await POST(postRequest({ authorization: "Bearer ok" }, validBody));
+
+    expect(res.status).toBe(500);
+    expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it("rolls back the Auth user when the Firestore write fails", async () => {
