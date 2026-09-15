@@ -1,5 +1,6 @@
 import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { logRouteError } from "@/lib/api/errors";
 import type { BlogPost } from "@/lib/firebase/types";
 
 // Same three sample posts the site shipped with before blog posts became
@@ -70,7 +71,7 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
     if (snapshot.empty) return defaultBlogPosts();
     return snapshot.docs.map((doc) => doc.data() as BlogPost);
   } catch (err) {
-    console.error("getBlogPosts: failed to load live blog posts, showing defaults", err);
+    logRouteError("getBlogPosts", "failed to load live blog posts, showing defaults", err);
     return defaultBlogPosts();
   }
 }

@@ -1,6 +1,7 @@
 import { FEE_BRACKETS } from "@/lib/fees";
 import { defaultFeeAmounts, getFeeAmounts } from "@/lib/feeSettings";
 import { formatNaira } from "@/lib/currency";
+import { logRouteError } from "@/lib/api/errors";
 
 export default async function FeesTable() {
   // Unlike the payment/cron/admin paths, a public marketing page should
@@ -10,7 +11,7 @@ export default async function FeesTable() {
   try {
     amounts = await getFeeAmounts();
   } catch (err) {
-    console.error("FeesTable: failed to load live fee amounts, showing defaults", err);
+    logRouteError("FeesTable", "failed to load live fee amounts, showing defaults", err);
     amounts = defaultFeeAmounts();
   }
 

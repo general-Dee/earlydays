@@ -1,5 +1,6 @@
 import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { logRouteError } from "@/lib/api/errors";
 import type { Testimonial } from "@/lib/firebase/types";
 
 // Same three sample quotes the site shipped with before testimonials
@@ -57,7 +58,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     if (snapshot.empty) return defaultTestimonials();
     return snapshot.docs.map((doc) => doc.data() as Testimonial);
   } catch (err) {
-    console.error("getTestimonials: failed to load live testimonials, showing defaults", err);
+    logRouteError("getTestimonials", "failed to load live testimonials, showing defaults", err);
     return defaultTestimonials();
   }
 }

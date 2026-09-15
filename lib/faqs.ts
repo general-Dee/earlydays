@@ -1,5 +1,6 @@
 import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { logRouteError } from "@/lib/api/errors";
 import type { Faq } from "@/lib/firebase/types";
 
 // Same reasoning as defaultTestimonials()/getTestimonials() — the public
@@ -62,7 +63,7 @@ export async function getFaqs(): Promise<Faq[]> {
     if (snapshot.empty) return defaultFaqs();
     return snapshot.docs.map((doc) => doc.data() as Faq);
   } catch (err) {
-    console.error("getFaqs: failed to load live FAQs, showing defaults", err);
+    logRouteError("getFaqs", "failed to load live FAQs, showing defaults", err);
     return defaultFaqs();
   }
 }

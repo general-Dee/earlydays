@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
+import * as Sentry from "@sentry/nextjs";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 
 type AuthState = {
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return unsubscribe;
     } catch (err) {
       console.error("Firebase Auth failed to initialize", err);
+      Sentry.captureException(err);
       setLoading(false);
     }
   }, []);
