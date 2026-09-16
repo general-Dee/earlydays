@@ -375,6 +375,29 @@ describe("AdminApplicationsList", () => {
     await userEvent.selectOptions(select, "accepted");
 
     expect(await screen.findByText(/Last edited by staff@earlydays\.example/)).toBeInTheDocument();
+    expect(screen.queryByText(/failed to send/i)).not.toBeInTheDocument();
+  });
+
+  it("warns when the status-change email fails to send", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true, emailSent: false }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ applications: [sampleApplication] }),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminApplicationsList user={fakeUser} />);
+
+    await screen.findByText(/Femi Okafor/);
+    const select = screen.getByRole("combobox", { name: "Status for Femi Okafor" });
+    await userEvent.selectOptions(select, "accepted");
+
+    expect(await screen.findByText(/notification email failed to send/i)).toBeInTheDocument();
   });
 
   it("deletes an application via the delete button", async () => {

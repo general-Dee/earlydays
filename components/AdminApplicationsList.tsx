@@ -65,6 +65,7 @@ export default function AdminApplicationsList({ user }: { user: User }) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
+  const [emailFailedIds, setEmailFailedIds] = useState<Record<string, boolean>>({});
   const { confirmMessage, confirm, respond } = useConfirm();
 
   const [childName, setChildName] = useState("");
@@ -168,6 +169,9 @@ export default function AdminApplicationsList({ user }: { user: User }) {
 
       if (!res.ok) {
         setApplications(previous);
+      } else {
+        const data = (await res.json()) as { emailSent?: boolean };
+        setEmailFailedIds((current) => ({ ...current, [id]: data.emailSent === false }));
       }
     } catch {
       setApplications(previous);
@@ -370,6 +374,11 @@ export default function AdminApplicationsList({ user }: { user: User }) {
                 <p className="text-xs text-slate mt-0.5 mb-0">
                   Last edited by {app.updatedBy}
                   {app.updatedAt ? ` · ${new Date(app.updatedAt).toLocaleString("en-NG")}` : ""}
+                </p>
+              )}
+              {emailFailedIds[app.id] && (
+                <p className="text-xs text-clay mt-0.5 mb-0">
+                  Status updated, but the notification email failed to send.
                 </p>
               )}
               <div className="flex items-center gap-2.5 mt-2.5">
