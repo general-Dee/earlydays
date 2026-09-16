@@ -17,6 +17,13 @@ vi.mock("firebase/auth", () => ({
 
 vi.mock("@/lib/firebase/client", () => ({
   getFirebaseAuth: () => "fake-auth",
+  getFirebaseStorage: () => ({}),
+}));
+
+const getDownloadURL = vi.fn();
+vi.mock("firebase/storage", () => ({
+  ref: () => ({}),
+  getDownloadURL: (...args: unknown[]) => getDownloadURL(...args),
 }));
 
 vi.mock("@/lib/firebase/admin-access-context", () => ({
@@ -111,6 +118,37 @@ describe("AdminReportsPanel", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/reports/u1",
       expect.objectContaining({ headers: { Authorization: "Bearer tok" } })
+    );
+  });
+
+  it("opens a download URL when Download is clicked", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/admin/reports") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ parents: [fakeParent] }) });
+      }
+      if (url === "/api/admin/reports/u1") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ reports: [fakeReport] }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    getDownloadURL.mockResolvedValue("https://storage.example/reports/u1/r1.pdf");
+    vi.stubGlobal("open", vi.fn());
+
+    render(<AdminReportsPanel />);
+
+    const select = await screen.findByDisplayValue("Select a parent…");
+    await userEvent.selectOptions(select, "u1");
+    await screen.findByText("report.pdf");
+
+    await userEvent.click(screen.getByRole("button", { name: "Download" }));
+
+    expect(getDownloadURL).toHaveBeenCalled();
+    expect(window.open).toHaveBeenCalledWith(
+      "https://storage.example/reports/u1/r1.pdf",
+      "_blank",
+      "noopener,noreferrer"
     );
   });
 

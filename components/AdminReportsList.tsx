@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { signOut, type User } from "firebase/auth";
-import { getFirebaseAuth } from "@/lib/firebase/client";
+import { getDownloadURL, ref } from "firebase/storage";
+import { getFirebaseAuth, getFirebaseStorage } from "@/lib/firebase/client";
 import type { ChildRecord, ProgressReport } from "@/lib/firebase/types";
 import { TERMS } from "@/lib/data";
 import { useListFilter } from "@/lib/useListFilter";
@@ -44,6 +45,7 @@ export default function AdminReportsList({ user }: { user: User }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,6 +203,18 @@ export default function AdminReportsList({ user }: { user: User }) {
     }
   }
 
+  async function download(report: ProgressReport) {
+    setDownloadingId(report.id);
+    try {
+      const url = await getDownloadURL(ref(getFirebaseStorage(), report.storagePath));
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      // Swallow — the button just won't open anything if this fails.
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
       <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
@@ -326,7 +340,14 @@ export default function AdminReportsList({ user }: { user: User }) {
                         </span>
                         <span className="text-xs text-slate">{report.fileName}</span>
                       </div>
-                      <div className="flex items-center justify-end mt-2.5">
+                      <div className="flex items-center justify-end gap-2 mt-2.5">
+                        <button
+                          onClick={() => download(report)}
+                          disabled={downloadingId === report.id}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          {downloadingId === report.id ? "Opening…" : "Download"}
+                        </button>
                         <button
                           onClick={() => deleteReport(report.id)}
                           disabled={deletingId === report.id}
