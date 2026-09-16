@@ -119,6 +119,51 @@ describe("AdminInquiriesPanel", () => {
     expect(select).toHaveValue("contacted");
   });
 
+  it("shows a Last edited line when an inquiry has updatedBy/updatedAt", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const edited = { ...sampleInquiry, updatedBy: "boss@earlydays.example", updatedAt: Date.now() };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ inquiries: [edited] }) })
+    );
+
+    render(<AdminInquiriesPanel />);
+
+    expect(await screen.findByText(/Last edited by boss@earlydays\.example/)).toBeInTheDocument();
+  });
+
+  it("doesn't show a Last edited line when an inquiry has never been edited", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ inquiries: [sampleInquiry] }) })
+    );
+
+    render(<AdminInquiriesPanel />);
+
+    await screen.findByText("Aisha");
+    expect(screen.queryByText(/Last edited by/)).not.toBeInTheDocument();
+  });
+
+  it("shows a Last edited line for the current admin right after changing status", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ inquiries: [sampleInquiry] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminInquiriesPanel />);
+
+    await screen.findByText("Aisha");
+    const select = screen.getByRole("combobox", { name: "Status for Aisha" });
+    await userEvent.selectOptions(select, "contacted");
+
+    expect(await screen.findByText(/Last edited by staff@earlydays\.example/)).toBeInTheDocument();
+  });
+
   it("shows a not-authorized message on a 403", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     vi.stubGlobal(

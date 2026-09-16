@@ -25,7 +25,7 @@ export const PATCH = withAdminRoute<{ params: { id: string } }>(
       return NextResponse.json({ error: "Inquiry not found" }, { status: 404 });
     }
 
-    await ref.update({ status });
+    await ref.update({ status, updatedAt: Date.now(), updatedBy: admin.email });
 
     await logAdminAction({
       action: "inquiry.status_changed",

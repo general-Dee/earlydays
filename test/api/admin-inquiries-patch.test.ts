@@ -117,6 +117,10 @@ describe("PATCH /api/admin/inquiries/[id]", () => {
     expect(json).toEqual({ ok: true });
     expect(collection).toHaveBeenCalledWith("inquiries");
     expect(doc).toHaveBeenCalledWith("i1");
-    expect(update).toHaveBeenCalledWith({ status: "resolved" });
+    expect(update).toHaveBeenCalledWith({
+      status: "resolved",
+      updatedAt: expect.any(Number),
+      updatedBy: "staff@earlydays.example",
+    });
   });
 });

@@ -125,7 +125,11 @@ export default function AdminInquiriesList({ user }: { user: User }) {
   async function updateStatus(id: string, status: InquiryStatus) {
     const previous = inquiries;
     setUpdatingId(id);
-    setInquiries((current) => current.map((inquiry) => (inquiry.id === id ? { ...inquiry, status } : inquiry)));
+    setInquiries((current) =>
+      current.map((inquiry) =>
+        inquiry.id === id ? { ...inquiry, status, updatedAt: Date.now(), updatedBy: user.email ?? undefined } : inquiry
+      )
+    );
 
     try {
       const idToken = await user.getIdToken();
@@ -301,6 +305,12 @@ export default function AdminInquiriesList({ user }: { user: User }) {
                 {[inquiry.email, inquiry.phone].filter(Boolean).join(" · ") || "No contact info given"}
               </div>
               <p className="text-sm mt-2 mb-0">{inquiry.message}</p>
+              {inquiry.updatedBy && (
+                <p className="text-xs text-slate mt-0.5 mb-0">
+                  Last edited by {inquiry.updatedBy}
+                  {inquiry.updatedAt ? ` · ${new Date(inquiry.updatedAt).toLocaleString("en-NG")}` : ""}
+                </p>
+              )}
               <div className="flex items-center gap-2.5 mt-2.5">
                 <span className={`text-[0.7rem] font-bold px-2.5 py-1 rounded-full ${statusStyle[inquiry.status]}`}>
                   {inquiry.status}

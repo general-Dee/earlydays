@@ -147,6 +147,8 @@ export type Inquiry = {
   message: string;
   status: InquiryStatus;
   createdAt: number;
+  updatedAt?: number;
+  updatedBy?: string;
 };
 
 export type ApplicationStatus = "new" | "reviewing" | "accepted" | "waitlisted" | "declined";
