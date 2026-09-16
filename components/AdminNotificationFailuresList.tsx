@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useListFilter } from "@/lib/useListFilter";
 import { downloadCsv, toCsv } from "@/lib/csv";
@@ -137,6 +138,14 @@ export default function AdminNotificationFailuresList({ user }: { user: User }) 
               <p className="text-xs mt-1 mb-0 px-2 py-1 inline-block rounded bg-clay-soft text-clay font-semibold">
                 {failure.reason}
               </p>
+              {failure.recipientUid && (
+                <Link
+                  href={`/admin/parents?q=${encodeURIComponent(failure.recipientLabel)}`}
+                  className="btn btn-ghost btn-sm mt-2"
+                >
+                  View Parent
+                </Link>
+              )}
             </li>
           ))}
         </ul>

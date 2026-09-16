@@ -34,6 +34,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.pushState({}, "", "/");
 });
 
 describe("AdminParentsList", () => {
@@ -59,6 +60,18 @@ describe("AdminParentsList", () => {
       "/api/admin/parents",
       expect.objectContaining({ headers: { Authorization: "Bearer tok" } })
     );
+  });
+
+  it("pre-fills the search box from a ?q= URL param", async () => {
+    window.history.pushState({}, "", "/admin/parents?q=Aisha");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ parents: [sampleParent] }) })
+    );
+
+    render(<AdminParentsList user={fakeUser} />);
+
+    expect(await screen.findByLabelText("Search parent accounts")).toHaveValue("Aisha");
   });
 
   it("shows a not-authorized message on a 403", async () => {

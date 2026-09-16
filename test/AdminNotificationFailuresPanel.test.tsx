@@ -73,6 +73,36 @@ describe("AdminNotificationFailuresPanel", () => {
     );
   });
 
+  it("shows a View Parent link for failures with a recipientUid", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ failures: [fakeFailure] }) })
+    );
+
+    render(<AdminNotificationFailuresPanel />);
+
+    await screen.findByText("Aisha Bello");
+    expect(screen.getByRole("link", { name: "View Parent" })).toHaveAttribute(
+      "href",
+      "/admin/parents?q=Aisha%20Bello"
+    );
+  });
+
+  it("hides the View Parent link for failures without a recipientUid", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const eventFailure = { ...fakeFailure, recipientUid: undefined };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ failures: [eventFailure] }) })
+    );
+
+    render(<AdminNotificationFailuresPanel />);
+
+    await screen.findByText("Aisha Bello");
+    expect(screen.queryByRole("link", { name: "View Parent" })).not.toBeInTheDocument();
+  });
+
   it("shows a not-authorized message on a 403", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     vi.stubGlobal(

@@ -428,6 +428,11 @@ export default function AdminParentsList({ user }: { user: User }) {
     };
   }, [user]);
 
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setQuery(q);
+  }, [setQuery]);
+
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
       <div className="flex items-start justify-between gap-4 mb-1">
