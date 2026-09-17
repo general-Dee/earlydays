@@ -104,6 +104,29 @@ describe("AdminRateLimitsPanel", () => {
     createElementSpy.mockRestore();
   });
 
+  it("deletes a bucket via the delete button", async () => {
+    useAuth.mockReturnValue({ user: fakeUser, loading: false });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === `/api/admin/rate-limits/${encodeURIComponent(fakeBucket.key)}` && init?.method === "DELETE") {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ buckets: [fakeBucket] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminRateLimitsPanel />);
+    await screen.findByText("contact:1.2.3.4");
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/admin/rate-limits/${encodeURIComponent(fakeBucket.key)}`,
+      expect.objectContaining({ method: "DELETE" })
+    );
+    expect(screen.queryByText("contact:1.2.3.4")).not.toBeInTheDocument();
+  });
+
   it("shows a not-authorized message on a 403", async () => {
     useAuth.mockReturnValue({ user: fakeUser, loading: false });
     vi.stubGlobal(

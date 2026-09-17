@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { useListFilter } from "@/lib/useListFilter";
+import { useConfirm } from "@/lib/useConfirm";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type LoadState = "loading" | "forbidden" | "error" | "ready";
 
@@ -23,6 +25,8 @@ function rateLimitBucketsToCsv(buckets: RateLimitBucket[]): string {
 export default function AdminRateLimitsList({ user }: { user: User }) {
   const [buckets, setBuckets] = useState<RateLimitBucket[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const { confirmMessage, confirm, respond } = useConfirm();
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
   const { query, setQuery, page, setPage, filtered, paged, totalPages } = useListFilter(
     buckets,
@@ -31,6 +35,30 @@ export default function AdminRateLimitsList({ user }: { user: User }) {
 
   function exportCsv() {
     downloadCsv("rate-limits", rateLimitBucketsToCsv(filtered));
+  }
+
+  async function deleteBucket(key: string) {
+    if (!(await confirm("Delete this rate-limit bucket?"))) return;
+
+    const previous = buckets;
+    setDeletingKey(key);
+    setBuckets((current) => current.filter((b) => b.key !== key));
+
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch(`/api/admin/rate-limits/${encodeURIComponent(key)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!res.ok) {
+        setBuckets(previous);
+      }
+    } catch {
+      setBuckets(previous);
+    } finally {
+      setDeletingKey(null);
+    }
   }
 
   useEffect(() => {
@@ -71,6 +99,7 @@ export default function AdminRateLimitsList({ user }: { user: User }) {
 
   return (
     <div className="card p-8 md:p-9 shadow-[0_20px_50px_-30px_rgba(22,33,62,0.3)]">
+      <ConfirmDialog message={confirmMessage} onConfirm={() => respond(true)} onCancel={() => respond(false)} />
       <div className="flex items-start justify-between gap-4 mb-1">
         <div>
           <h4 className="font-display text-xl mb-0.5">Rate Limits</h4>
@@ -127,6 +156,15 @@ export default function AdminRateLimitsList({ user }: { user: User }) {
                 <span className="text-xs text-slate">Resets {new Date(bucket.resetAt).toLocaleString("en-NG")}</span>
               </div>
               <p className="text-sm mt-1 mb-0 text-slate">{bucket.count} request{bucket.count === 1 ? "" : "s"}</p>
+              <div className="flex items-center justify-end mt-2.5">
+                <button
+                  onClick={() => deleteBucket(bucket.key)}
+                  disabled={deletingKey === bucket.key}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
         </ul>
