@@ -24,8 +24,8 @@ function getRsvpSearchText(rsvp: EventRsvp): string {
 
 function rsvpsToCsv(rsvps: EventRsvp[]): string {
   return toCsv(
-    ["Name", "Email", "Phone", "Guest Count"],
-    rsvps.map((r) => [r.name, r.email, r.phone ?? "", String(r.guestCount)])
+    ["Name", "Email", "Phone", "Guest Count", "Submitted At"],
+    rsvps.map((r) => [r.name, r.email, r.phone ?? "", String(r.guestCount), new Date(r.createdAt).toISOString()])
   );
 }
 
@@ -108,7 +108,8 @@ function EventRsvps({ user, eventId }: { user: User; eventId: string }) {
           {paged.map((r) => (
             <li key={r.id} className="text-xs text-ink">
               {r.name} · {r.email}
-              {r.phone ? ` · ${r.phone}` : ""} · {r.guestCount} {r.guestCount === 1 ? "guest" : "guests"}
+              {r.phone ? ` · ${r.phone}` : ""} · {r.guestCount} {r.guestCount === 1 ? "guest" : "guests"} ·{" "}
+              {new Date(r.createdAt).toLocaleString("en-NG")}
             </li>
           ))}
         </ul>

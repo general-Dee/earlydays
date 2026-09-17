@@ -186,7 +186,13 @@ describe("AdminEventsPanel", () => {
   });
 
   describe("RSVPs", () => {
-    const fakeRsvp = { id: "r1", name: "Aisha", email: "parent@example.com", guestCount: 2, createdAt: Date.now() };
+    const fakeRsvp = {
+      id: "r1",
+      name: "Aisha",
+      email: "parent@example.com",
+      guestCount: 2,
+      createdAt: Date.parse("2026-01-15T10:00:00.000Z"),
+    };
 
     function stubEventsAndRsvps(rsvps: unknown[]) {
       const fetchMock = vi.fn().mockImplementation((url: string) => {
@@ -277,8 +283,8 @@ describe("AdminEventsPanel", () => {
 
       expect(clickSpy).toHaveBeenCalled();
       expect(link.download).toMatch(/^event-e1-rsvps-\d{4}-\d{2}-\d{2}\.csv$/);
-      expect(capturedContent).toContain("Name,Email,Phone,Guest Count");
-      expect(capturedContent).toContain("Aisha,parent@example.com,,2");
+      expect(capturedContent).toContain("Name,Email,Phone,Guest Count,Submitted At");
+      expect(capturedContent).toContain("Aisha,parent@example.com,,2,2026-01-15T10:00:00.000Z");
 
       createElementSpy.mockRestore();
     });
