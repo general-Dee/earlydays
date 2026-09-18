@@ -197,6 +197,44 @@ describe("AdminPaymentsList", () => {
     );
     expect(await screen.findAllByText("success")).not.toHaveLength(0);
     expect(screen.queryByRole("button", { name: "Re-verify" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/receipt email failed to send/i)).not.toBeInTheDocument();
+  });
+
+  it("warns when the receipt email fails to send", async () => {
+    const pending = { ...samplePayment, reference: "ref-2", guardianName: "Bola Adeyemi", status: "pending" };
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/admin/payments/ref-2") {
+        return Promise.resolve({ ok: true, json: async () => ({ status: "success", emailSent: false }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ payments: [pending] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminPaymentsList user={fakeUser} />);
+    await screen.findByText(/Bola Adeyemi/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Re-verify" }));
+
+    expect(await screen.findByText(/receipt email failed to send/i)).toBeInTheDocument();
+  });
+
+  it("doesn't warn about the receipt email when reconciliation fails outright", async () => {
+    const pending = { ...samplePayment, reference: "ref-2", guardianName: "Bola Adeyemi", status: "pending" };
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/admin/payments/ref-2") {
+        return Promise.resolve({ ok: true, json: async () => ({ status: "failed", emailSent: false }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ payments: [pending] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminPaymentsList user={fakeUser} />);
+    await screen.findByText(/Bola Adeyemi/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Re-verify" }));
+
+    expect(await screen.findAllByText("failed")).not.toHaveLength(0);
+    expect(screen.queryByText(/receipt email failed to send/i)).not.toBeInTheDocument();
   });
 
   it("shows an inline error when re-verification fails", async () => {

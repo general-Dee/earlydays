@@ -66,6 +66,7 @@ export default function AdminPaymentsList({ user }: { user: User }) {
   const [termFilter, setTermFilter] = useState<string>("all");
   const [reconcilingRef, setReconcilingRef] = useState<string | null>(null);
   const [reconcileError, setReconcileError] = useState<{ reference: string; message: string } | null>(null);
+  const [emailFailedKeys, setEmailFailedKeys] = useState<Record<string, boolean>>({});
 
   const statusFiltered =
     statusFilter === "all" ? payments : payments.filter((payment) => payment.status === statusFilter);
@@ -94,7 +95,7 @@ export default function AdminPaymentsList({ user }: { user: User }) {
         },
         body: JSON.stringify({ uid: payment.parentUid }),
       });
-      const data = (await res.json()) as { status?: PaymentStatus; error?: string };
+      const data = (await res.json()) as { status?: PaymentStatus; emailSent?: boolean; error?: string };
 
       if (!res.ok || !data.status) {
         setReconcileError({
@@ -103,6 +104,12 @@ export default function AdminPaymentsList({ user }: { user: User }) {
         });
         return;
       }
+
+      const key = `${payment.parentUid}/${payment.reference}`;
+      setEmailFailedKeys((current) => ({
+        ...current,
+        [key]: data.status === "success" && data.emailSent === false,
+      }));
 
       setPayments((current) =>
         current.map((p) =>
@@ -274,6 +281,9 @@ export default function AdminPaymentsList({ user }: { user: User }) {
               </div>
               {reconcileError?.reference === payment.reference && (
                 <p className="text-xs text-clay mt-1.5">{reconcileError.message}</p>
+              )}
+              {emailFailedKeys[`${payment.parentUid}/${payment.reference}`] && (
+                <p className="text-xs text-clay mt-1.5">Payment confirmed, but the receipt email failed to send.</p>
               )}
             </li>
           ))}
