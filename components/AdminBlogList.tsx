@@ -30,8 +30,18 @@ function getSearchText(post: BlogPost): string {
 
 function postsToCsv(posts: BlogPost[]): string {
   return toCsv(
-    ["Title", "Slug", "Category", "Excerpt", "Order"],
-    posts.map((p) => [p.title, p.slug, p.category, p.excerpt, String(p.order)])
+    ["Title", "Slug", "Category", "Excerpt", "Cover Photo URL", "Order", "Created By", "Created At", "Updated At"],
+    posts.map((p) => [
+      p.title,
+      p.slug,
+      p.category,
+      p.excerpt,
+      p.coverPhotoUrl ?? "",
+      String(p.order),
+      p.createdBy,
+      new Date(p.createdAt).toISOString(),
+      p.updatedAt ? new Date(p.updatedAt).toISOString() : "",
+    ])
   );
 }
 

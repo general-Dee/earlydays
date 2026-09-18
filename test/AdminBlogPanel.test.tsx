@@ -205,7 +205,9 @@ describe("AdminBlogPanel", () => {
 
     expect(clickSpy).toHaveBeenCalled();
     expect(link.download).toMatch(/^blog-posts-\d{4}-\d{2}-\d{2}\.csv$/);
-    expect(capturedContent).toContain("Title,Slug,Category,Excerpt,Order");
+    expect(capturedContent).toContain(
+      "Title,Slug,Category,Excerpt,Cover Photo URL,Order,Created By,Created At,Updated At"
+    );
     expect(capturedContent).toContain("Helping a shy child through the first week,helping-a-shy-child,Settling In");
 
     createElementSpy.mockRestore();
