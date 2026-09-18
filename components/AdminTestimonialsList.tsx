@@ -23,7 +23,7 @@ function getSearchText(testimonial: Testimonial): string {
 
 function testimonialsToCsv(testimonials: Testimonial[]): string {
   return toCsv(
-    ["Quote", "Name", "Area", "Initial", "Order", "Created By", "Created At"],
+    ["Quote", "Name", "Area", "Initial", "Order", "Created By", "Created At", "Updated At"],
     testimonials.map((t) => [
       t.quote,
       t.name,
@@ -32,6 +32,7 @@ function testimonialsToCsv(testimonials: Testimonial[]): string {
       String(t.order),
       t.createdBy,
       new Date(t.createdAt).toISOString(),
+      t.updatedAt ? new Date(t.updatedAt).toISOString() : "",
     ])
   );
 }

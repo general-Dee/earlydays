@@ -23,8 +23,15 @@ function getSearchText(faq: Faq): string {
 
 function faqsToCsv(faqs: Faq[]): string {
   return toCsv(
-    ["Question", "Answer", "Order", "Created By", "Created At"],
-    faqs.map((f) => [f.question, f.answer, String(f.order), f.createdBy, new Date(f.createdAt).toISOString()])
+    ["Question", "Answer", "Order", "Created By", "Created At", "Updated At"],
+    faqs.map((f) => [
+      f.question,
+      f.answer,
+      String(f.order),
+      f.createdBy,
+      new Date(f.createdAt).toISOString(),
+      f.updatedAt ? new Date(f.updatedAt).toISOString() : "",
+    ])
   );
 }
 

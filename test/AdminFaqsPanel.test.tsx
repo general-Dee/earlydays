@@ -204,7 +204,7 @@ describe("AdminFaqsPanel", () => {
 
     expect(clickSpy).toHaveBeenCalled();
     expect(link.download).toMatch(/^faqs-\d{4}-\d{2}-\d{2}\.csv$/);
-    expect(capturedContent).toContain("Question,Answer,Order,Created By,Created At");
+    expect(capturedContent).toContain("Question,Answer,Order,Created By,Created At,Updated At");
     expect(capturedContent).toContain("What ages do you take?,Creche through Primary 6.,0,staff@earlydays.example");
 
     createElementSpy.mockRestore();
