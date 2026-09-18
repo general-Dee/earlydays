@@ -23,8 +23,16 @@ function getSearchText(member: Staff): string {
 
 function staffToCsv(members: Staff[]): string {
   return toCsv(
-    ["Name", "Role", "Bio", "Order", "Created By", "Created At"],
-    members.map((m) => [m.name, m.role, m.bio, String(m.order), m.createdBy, new Date(m.createdAt).toISOString()])
+    ["Name", "Role", "Bio", "Photo URL", "Order", "Created By", "Created At"],
+    members.map((m) => [
+      m.name,
+      m.role,
+      m.bio,
+      m.photoUrl ?? "",
+      String(m.order),
+      m.createdBy,
+      new Date(m.createdAt).toISOString(),
+    ])
   );
 }
 

@@ -177,8 +177,8 @@ describe("AdminStaffPanel", () => {
 
     expect(clickSpy).toHaveBeenCalled();
     expect(link.download).toMatch(/^staff-\d{4}-\d{2}-\d{2}\.csv$/);
-    expect(capturedContent).toContain("Name,Role,Bio,Order,Created By,Created At");
-    expect(capturedContent).toContain("Mrs. Grace A.,Head of Nursery,Eight years of nursery experience.,0,staff@earlydays.example");
+    expect(capturedContent).toContain("Name,Role,Bio,Photo URL,Order,Created By,Created At");
+    expect(capturedContent).toContain("Mrs. Grace A.,Head of Nursery,Eight years of nursery experience.,,0,staff@earlydays.example");
 
     createElementSpy.mockRestore();
   });
