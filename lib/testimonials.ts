@@ -2,6 +2,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { logRouteError } from "@/lib/api/errors";
 import type { Testimonial } from "@/lib/firebase/types";
+import { showSampleContent, withoutSamples } from "@/lib/sampleContent";
 
 // Same three sample quotes the site shipped with before testimonials
 // became admin-editable. Used as a fallback so the homepage still renders
@@ -55,10 +56,16 @@ export function defaultTestimonials(): Testimonial[] {
 export async function getTestimonials(): Promise<Testimonial[]> {
   try {
     const snapshot = await getAdminDb().collection(COLLECTIONS.testimonials).orderBy("order", "asc").get();
-    if (snapshot.empty) return defaultTestimonials();
-    return snapshot.docs.map((doc) => doc.data() as Testimonial);
+    if (snapshot.empty) return sampleTestimonials();
+    return withoutSamples(snapshot.docs.map((doc) => doc.data() as Testimonial));
   } catch (err) {
     logRouteError("getTestimonials", "failed to load live testimonials, showing defaults", err);
-    return defaultTestimonials();
+    return sampleTestimonials();
   }
+}
+
+// Archived samples are only shown when SHOW_SAMPLE_CONTENT=true; otherwise
+// the homepage hides the testimonials section until real ones are added.
+function sampleTestimonials(): Testimonial[] {
+  return showSampleContent() ? defaultTestimonials() : [];
 }

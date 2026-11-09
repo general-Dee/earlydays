@@ -23,13 +23,15 @@ export default function Hero() {
             Primary 6 on one campus, so the only thing that changes each year is what they&apos;re learning.
           </p>
           <div className="flex gap-3.5 flex-wrap mt-6">
-            <Button
-              href={waLink(whatsapp, "Hi, I'd like to book a tour")}
-              external
-              onClick={() => track("book_visit_click", { source: "hero" })}
-            >
-              Book a Visit on WhatsApp
-            </Button>
+            {whatsapp && (
+              <Button
+                href={waLink(whatsapp, "Hi, I'd like to book a tour")}
+                external
+                onClick={() => track("book_visit_click", { source: "hero" })}
+              >
+                Book a Visit on WhatsApp
+              </Button>
+            )}
             <Button href="#plan" variant="ghost">
               See How It Works
             </Button>

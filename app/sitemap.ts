@@ -17,7 +17,6 @@ const routes: Route[] = [
   { path: "/gallery", changeFrequency: "monthly", priority: 0.7 },
   { path: "/contact", changeFrequency: "monthly", priority: 0.7 },
   { path: "/events", changeFrequency: "weekly", priority: 0.6 },
-  { path: "/blog", changeFrequency: "weekly", priority: 0.6 },
   { path: "/portal", changeFrequency: "monthly", priority: 0.3 },
 ];
 
@@ -39,5 +38,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...blogEntries];
+  const blogIndex = posts.length
+    ? [{ url: `${site.url}/blog`, lastModified, changeFrequency: "weekly" as const, priority: 0.6 }]
+    : [];
+
+  return [...staticEntries, ...blogIndex, ...blogEntries];
 }

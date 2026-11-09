@@ -16,6 +16,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.resetModules();
+  delete process.env.SHOW_SAMPLE_CONTENT;
 });
 
 describe("getBlogPosts", () => {
@@ -33,23 +34,37 @@ describe("getBlogPosts", () => {
     expect(orderBy).toHaveBeenCalledWith("order", "asc");
   });
 
-  it("falls back to the sample posts when the collection is empty", async () => {
+  it("hides the archived sample posts when the collection is empty", async () => {
     get.mockResolvedValue({ empty: true, docs: [] });
 
-    const { getBlogPosts, defaultBlogPosts } = await import("@/lib/blogPosts");
-    const posts = await getBlogPosts();
-
-    expect(posts).toEqual(defaultBlogPosts());
+    const { getBlogPosts } = await import("@/lib/blogPosts");
+    expect(await getBlogPosts()).toEqual([]);
   });
 
-  it("falls back to the sample posts when the live read fails", async () => {
+  it("hides the archived sample posts when the live read fails", async () => {
     get.mockRejectedValue(new Error("Firestore unreachable"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const { getBlogPosts, defaultBlogPosts } = await import("@/lib/blogPosts");
-    const posts = await getBlogPosts();
-
-    expect(posts).toEqual(defaultBlogPosts());
+    const { getBlogPosts } = await import("@/lib/blogPosts");
+    expect(await getBlogPosts()).toEqual([]);
     consoleSpy.mockRestore();
+  });
+
+  it("filters out seeded sample documents from the live collection", async () => {
+    get.mockResolvedValue({
+      empty: false,
+      docs: [{ data: () => ({ id: "seed-1", createdBy: "seed", order: 0 }) }, { data: () => ({ id: "real-1", createdBy: "admin@school", order: 1 }) }],
+    });
+
+    const { getBlogPosts } = await import("@/lib/blogPosts");
+    expect(await getBlogPosts()).toEqual([{ id: "real-1", createdBy: "admin@school", order: 1 }]);
+  });
+
+  it("shows the archived sample posts when SHOW_SAMPLE_CONTENT=true", async () => {
+    process.env.SHOW_SAMPLE_CONTENT = "true";
+    get.mockResolvedValue({ empty: true, docs: [] });
+
+    const { getBlogPosts, defaultBlogPosts } = await import("@/lib/blogPosts");
+    expect(await getBlogPosts()).toEqual(defaultBlogPosts());
   });
 });

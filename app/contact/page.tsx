@@ -20,35 +20,49 @@ export default async function ContactPage() {
           level={1}
           eyebrow="Get in Touch"
           title="We'd love to show you around"
-          desc="The fastest way to reach us is WhatsApp — most inquiries get a same-day reply."
+          desc={whatsapp ? "The fastest way to reach us is WhatsApp — most inquiries get a same-day reply." : undefined}
         />
 
         <div className="card p-8 space-y-5">
-          <div>
-            <span className="font-mono text-[0.7rem] uppercase text-slate">WhatsApp</span>
-            <p className="text-lg font-medium mb-0 text-ink">{phone}</p>
-          </div>
-          <div>
-            <span className="font-mono text-[0.7rem] uppercase text-slate">Phone</span>
-            <p className="text-lg font-medium mb-0 text-ink">{phone}</p>
-          </div>
-          <div>
-            <span className="font-mono text-[0.7rem] uppercase text-slate">Email</span>
-            <p className="text-lg font-medium mb-0 text-ink">{email}</p>
-          </div>
+          {whatsapp && (
+            <div>
+              <span className="font-mono text-[0.7rem] uppercase text-slate">WhatsApp</span>
+              <p className="text-lg font-medium mb-0 text-ink">{phone || `+${whatsapp.replace(/^\+/, "")}`}</p>
+            </div>
+          )}
+          {phone && (
+            <div>
+              <span className="font-mono text-[0.7rem] uppercase text-slate">Phone</span>
+              <p className="text-lg font-medium mb-0 text-ink">{phone}</p>
+            </div>
+          )}
+          {email && (
+            <div>
+              <span className="font-mono text-[0.7rem] uppercase text-slate">Email</span>
+              <p className="text-lg font-medium mb-0 text-ink">
+                <a href={`mailto:${email}`}>{email}</a>
+              </p>
+            </div>
+          )}
           <div>
             <span className="font-mono text-[0.7rem] uppercase text-slate">Location</span>
             <p className="text-lg font-medium mb-0 text-ink">{site.location}</p>
           </div>
 
-          <div className="flex gap-3 flex-wrap pt-2">
-            <Button href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")} external>
-              Chat on WhatsApp
-            </Button>
-            <Button href={`tel:${phone.replace(/\s/g, "")}`} variant="ghost">
-              Call the Office
-            </Button>
-          </div>
+          {(whatsapp || phone) && (
+            <div className="flex gap-3 flex-wrap pt-2">
+              {whatsapp && (
+                <Button href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")} external>
+                  Chat on WhatsApp
+                </Button>
+              )}
+              {phone && (
+                <Button href={`tel:${phone.replace(/\s/g, "")}`} variant="ghost">
+                  Call the Office
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <ContactForm />

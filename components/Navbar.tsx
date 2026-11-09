@@ -9,9 +9,10 @@ import { navLinks, waLink } from "@/lib/data";
 import { useSiteSettings } from "@/lib/firebase/site-settings-context";
 import Button from "./Button";
 
-export default function Navbar() {
+export default function Navbar({ hiddenHrefs = [] }: { hiddenHrefs?: string[] } = {}) {
   const [open, setOpen] = useState(false);
   const { whatsapp } = useSiteSettings();
+  const links = navLinks.filter((l) => !hiddenHrefs.includes(l.href));
 
   return (
     <header className="sticky top-0 z-50 bg-chalk/85 backdrop-blur-md border-b border-line">
@@ -24,7 +25,7 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden lg:flex gap-6 text-sm">
-          {navLinks.map((l) => (
+          {links.map((l) => (
             <Link key={l.href} href={l.href} className="text-ink hover:text-sun transition-colors">
               {l.label}
             </Link>
@@ -32,14 +33,16 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")}
-            external
-            size="sm"
-            onClick={() => track("book_visit_click", { source: "navbar" })}
-          >
-            Book a Visit
-          </Button>
+          {whatsapp && (
+            <Button
+              href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")}
+              external
+              size="sm"
+              onClick={() => track("book_visit_click", { source: "navbar" })}
+            >
+              Book a Visit
+            </Button>
+          )}
 
           <button
             type="button"
@@ -55,7 +58,7 @@ export default function Navbar() {
 
       {open && (
         <nav aria-label="Mobile" className="lg:hidden wrap flex flex-col gap-4 pb-5 text-sm">
-          {navLinks.map((l) => (
+          {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}

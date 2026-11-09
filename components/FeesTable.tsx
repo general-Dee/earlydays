@@ -1,19 +1,26 @@
 import { FEE_BRACKETS } from "@/lib/fees";
-import { defaultFeeAmounts, getFeeAmounts } from "@/lib/feeSettings";
+import { getPublicFeeAmounts, type FeeAmounts } from "@/lib/feeSettings";
 import { formatNaira } from "@/lib/currency";
 import { logRouteError } from "@/lib/api/errors";
 
-export default async function FeesTable() {
-  // Unlike the payment/cron/admin paths, a public marketing page should
-  // degrade to the default prices rather than fail to render if Firestore
-  // is briefly unreachable (or, at build time, has no real credentials yet).
-  let amounts;
+// Loads the fee amounts the public site may show (admin-saved only, unless
+// SHOW_SAMPLE_CONTENT=true). A Firestore error degrades to "nothing to show"
+// rather than failing the page.
+export async function loadPublicFeeAmounts(): Promise<FeeAmounts | null> {
   try {
-    amounts = await getFeeAmounts();
+    return await getPublicFeeAmounts();
   } catch (err) {
-    logRouteError("FeesTable", "failed to load live fee amounts, showing defaults", err);
-    amounts = defaultFeeAmounts();
+    logRouteError("FeesTable", "failed to load live fee amounts, hiding the fees table", err);
+    return null;
   }
+}
+
+export default async function FeesTable({ amounts: given }: { amounts?: FeeAmounts | null } = {}) {
+  const amounts = given === undefined ? await loadPublicFeeAmounts() : given;
+  if (!amounts) return null;
+
+  const rows = FEE_BRACKETS.filter((bracket) => typeof amounts[bracket.id] === "number");
+  if (!rows.length) return null;
 
   return (
     <table className="w-full border-collapse card overflow-hidden">
@@ -25,12 +32,12 @@ export default async function FeesTable() {
         </tr>
       </thead>
       <tbody>
-        {FEE_BRACKETS.map((bracket, i) => (
+        {rows.map((bracket, i) => (
           <tr key={bracket.id}>
-            <td className={`px-4.5 py-4 text-sm ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>{bracket.label}</td>
-            <td className={`px-4.5 py-4 text-sm ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>{bracket.ageRange}</td>
-            <td className={`px-4.5 py-4 text-sm font-medium text-ink ${i < FEE_BRACKETS.length - 1 ? "border-b border-line" : ""}`}>
-              {formatNaira(amounts[bracket.id] ?? bracket.defaultAmountKobo)}
+            <td className={`px-4.5 py-4 text-sm ${i < rows.length - 1 ? "border-b border-line" : ""}`}>{bracket.label}</td>
+            <td className={`px-4.5 py-4 text-sm ${i < rows.length - 1 ? "border-b border-line" : ""}`}>{bracket.ageRange}</td>
+            <td className={`px-4.5 py-4 text-sm font-medium text-ink ${i < rows.length - 1 ? "border-b border-line" : ""}`}>
+              {formatNaira(amounts[bracket.id])}
             </td>
           </tr>
         ))}

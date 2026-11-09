@@ -22,15 +22,17 @@ export default function ProspectusCard() {
       >
         Download Prospectus
       </a>
-      <a
-        href={waLink(whatsapp, "Hi, I'd like to start an admission inquiry")}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => track("book_visit_click", { source: "prospectus_card" })}
-        className="btn btn-ghost btn-sm mt-2.5 justify-center"
-      >
-        Start Inquiry on WhatsApp
-      </a>
+      {whatsapp && (
+        <a
+          href={waLink(whatsapp, "Hi, I'd like to start an admission inquiry")}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track("book_visit_click", { source: "prospectus_card" })}
+          className="btn btn-ghost btn-sm mt-2.5 justify-center"
+        >
+          Start Inquiry on WhatsApp
+        </a>
+      )}
     </div>
   );
 }

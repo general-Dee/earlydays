@@ -1,6 +1,7 @@
 import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { FEE_BRACKETS } from "@/lib/fees";
+import { showSampleContent } from "@/lib/sampleContent";
 
 export type FeeAmounts = Record<string, number>; // bracket id -> kobo
 
@@ -12,6 +13,23 @@ export async function getFeeAmounts(): Promise<FeeAmounts> {
   const snap = await getAdminDb().collection(COLLECTIONS.settings).doc("fees").get();
   const stored = snap.exists ? (snap.data()!.amountsKobo as FeeAmounts) : {};
   return { ...defaultFeeAmounts(), ...stored };
+}
+
+// What the public fees table may show: only amounts an admin has actually
+// saved. The default bracket amounts are samples, shown only when
+// SHOW_SAMPLE_CONTENT=true. Returns null when there is nothing real to show.
+export async function getPublicFeeAmounts(): Promise<FeeAmounts | null> {
+  if (showSampleContent()) {
+    try {
+      return await getFeeAmounts();
+    } catch {
+      return defaultFeeAmounts();
+    }
+  }
+  const snap = await getAdminDb().collection(COLLECTIONS.settings).doc("fees").get();
+  const stored = snap.exists ? ((snap.data()!.amountsKobo ?? {}) as FeeAmounts) : {};
+  const real = Object.fromEntries(Object.entries(stored).filter(([, kobo]) => typeof kobo === "number" && kobo > 0));
+  return Object.keys(real).length ? real : null;
 }
 
 export async function setFeeAmounts(amountsKobo: FeeAmounts, updatedBy: string): Promise<void> {

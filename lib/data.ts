@@ -11,11 +11,24 @@ export const site = {
   name: "Earlydays",
   fullName: "Earlydays Nursery & Primary School",
   location: "Kaduna, Nigeria",
-  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2340000000000", // TODO: replace with real WhatsApp number
-  phone: process.env.NEXT_PUBLIC_CONTACT_PHONE || "+234 000 000 0000", // TODO: replace
-  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@earlydays.example", // TODO: replace
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://earlydays.example", // TODO: replace with the real domain
+  // Empty when unset: the WhatsApp/phone/email UI hides itself rather than
+  // showing a placeholder number.
+  whatsapp: cleanContact(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER),
+  phone: cleanContact(process.env.NEXT_PUBLIC_CONTACT_PHONE),
+  email: cleanContact(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
+  url: (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://earlydays-nextjs.vercel.app").replace(/\/+$/, ""),
 };
+
+// Treats the old placeholder values (+234 000 000 0000, 2340000000000,
+// hello@earlydays.example) as unset, wherever they come from.
+export function cleanContact(value: string | undefined | null): string {
+  const v = (value ?? "").trim();
+  if (!v) return "";
+  if (/@earlydays\.example$/i.test(v)) return "";
+  const digits = v.replace(/\D/g, "");
+  if (!v.includes("@") && /^(234)?0+$/.test(digits)) return "";
+  return v;
+}
 
 export function waLink(whatsapp: string, message: string) {
   return `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;

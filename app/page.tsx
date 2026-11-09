@@ -72,12 +72,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="py-24">
-        <div className="wrap">
-          <SectionHeader eyebrow="Parent Voices" title="What Kaduna parents say" center />
-          <TestimonialRow testimonials={testimonials} />
-        </div>
-      </section>
+      {testimonials.length > 0 && (
+        <section className="py-24">
+          <div className="wrap">
+            <SectionHeader eyebrow="Parent Voices" title="What Kaduna parents say" center />
+            <TestimonialRow testimonials={testimonials} />
+          </div>
+        </section>
+      )}
 
       <section className="py-24">
         <div className="wrap max-w-2xl">
@@ -88,29 +90,31 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="pb-24">
-        <div className="wrap">
-          <div className="rounded-card bg-ground-card border border-line p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="font-display font-medium text-ink text-2xl md:text-3xl mb-1.5">
-                Your child&apos;s next nine years start with one visit
-              </h3>
-              <p className="text-ink/[0.78] mb-0">
-                Book a visit in under a minute — no forms, just WhatsApp. See the campus, meet the team,
-                picture what&apos;s next.
-              </p>
+      {whatsapp && (
+        <section className="pb-24">
+          <div className="wrap">
+            <div className="rounded-card bg-ground-card border border-line p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h3 className="font-display font-medium text-ink text-2xl md:text-3xl mb-1.5">
+                  Your child&apos;s next nine years start with one visit
+                </h3>
+                <p className="text-ink/[0.78] mb-0">
+                  Book a visit in under a minute — no forms, just WhatsApp. See the campus, meet the team,
+                  picture what&apos;s next.
+                </p>
+              </div>
+              <Button
+                href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")}
+                external
+                variant="primary"
+                className="text-accent-light border-accent-light hover:bg-accent-light/[0.12]"
+              >
+                Book a Visit
+              </Button>
             </div>
-            <Button
-              href={waLink(whatsapp, "Hi, I'd like to book a tour for my child")}
-              external
-              variant="primary"
-              className="text-accent-light border-accent-light hover:bg-accent-light/[0.12]"
-            >
-              Book a Visit
-            </Button>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </main>
   );
 }

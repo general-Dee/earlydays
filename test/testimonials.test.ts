@@ -16,6 +16,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.resetModules();
+  delete process.env.SHOW_SAMPLE_CONTENT;
 });
 
 describe("getTestimonials", () => {
@@ -35,23 +36,37 @@ describe("getTestimonials", () => {
     expect(orderBy).toHaveBeenCalledWith("order", "asc");
   });
 
-  it("falls back to the sample testimonials when the collection is empty", async () => {
+  it("hides the archived sample testimonials when the collection is empty", async () => {
     get.mockResolvedValue({ empty: true, docs: [] });
 
-    const { getTestimonials, defaultTestimonials } = await import("@/lib/testimonials");
-    const testimonials = await getTestimonials();
-
-    expect(testimonials).toEqual(defaultTestimonials());
+    const { getTestimonials } = await import("@/lib/testimonials");
+    expect(await getTestimonials()).toEqual([]);
   });
 
-  it("falls back to the sample testimonials when the live read fails", async () => {
+  it("hides the archived sample testimonials when the live read fails", async () => {
     get.mockRejectedValue(new Error("Firestore unreachable"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const { getTestimonials, defaultTestimonials } = await import("@/lib/testimonials");
-    const testimonials = await getTestimonials();
-
-    expect(testimonials).toEqual(defaultTestimonials());
+    const { getTestimonials } = await import("@/lib/testimonials");
+    expect(await getTestimonials()).toEqual([]);
     consoleSpy.mockRestore();
+  });
+
+  it("filters out seeded sample documents from the live collection", async () => {
+    get.mockResolvedValue({
+      empty: false,
+      docs: [{ data: () => ({ id: "seed-1", createdBy: "seed", order: 0 }) }, { data: () => ({ id: "real-1", createdBy: "admin@school", order: 1 }) }],
+    });
+
+    const { getTestimonials } = await import("@/lib/testimonials");
+    expect(await getTestimonials()).toEqual([{ id: "real-1", createdBy: "admin@school", order: 1 }]);
+  });
+
+  it("shows the archived sample testimonials when SHOW_SAMPLE_CONTENT=true", async () => {
+    process.env.SHOW_SAMPLE_CONTENT = "true";
+    get.mockResolvedValue({ empty: true, docs: [] });
+
+    const { getTestimonials, defaultTestimonials } = await import("@/lib/testimonials");
+    expect(await getTestimonials()).toEqual(defaultTestimonials());
   });
 });

@@ -2,6 +2,7 @@ import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { logRouteError } from "@/lib/api/errors";
 import type { BlogPost } from "@/lib/firebase/types";
+import { showSampleContent, withoutSamples } from "@/lib/sampleContent";
 
 // Same three sample posts the site shipped with before blog posts became
 // admin-editable. Used as a fallback so public blog pages still render
@@ -68,10 +69,16 @@ export function defaultBlogPosts(): BlogPost[] {
 export async function getBlogPosts(): Promise<BlogPost[]> {
   try {
     const snapshot = await getAdminDb().collection(COLLECTIONS.blog).orderBy("order", "asc").get();
-    if (snapshot.empty) return defaultBlogPosts();
-    return snapshot.docs.map((doc) => doc.data() as BlogPost);
+    if (snapshot.empty) return sampleBlogPosts();
+    return withoutSamples(snapshot.docs.map((doc) => doc.data() as BlogPost));
   } catch (err) {
     logRouteError("getBlogPosts", "failed to load live blog posts, showing defaults", err);
-    return defaultBlogPosts();
+    return sampleBlogPosts();
   }
+}
+
+// Archived samples are only shown when SHOW_SAMPLE_CONTENT=true; otherwise
+// the blog (page, nav link and sitemap entries) hides until real posts exist.
+function sampleBlogPosts(): BlogPost[] {
+  return showSampleContent() ? defaultBlogPosts() : [];
 }

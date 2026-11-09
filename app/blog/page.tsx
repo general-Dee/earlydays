@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import SectionHeader from "@/components/SectionHeader";
 import BlogSearch from "@/components/BlogSearch";
+import { notFound } from "next/navigation";
 import { getBlogPosts } from "@/lib/blogPosts";
 
 export const metadata: Metadata = {
@@ -14,6 +15,8 @@ export const revalidate = 300;
 
 export default async function BlogPage() {
   const posts = await getBlogPosts();
+  // No real posts yet: the blog is hidden (nav link and sitemap too).
+  if (!posts.length) notFound();
 
   return (
     <main className="py-20">

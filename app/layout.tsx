@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/firebase/AuthProvider";
 import { SiteSettingsProvider } from "@/lib/firebase/site-settings-context";
 import { site } from "@/lib/data";
 import { getSiteSettings } from "@/lib/siteSettings";
+import { getBlogPosts } from "@/lib/blogPosts";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,14 +40,14 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { whatsapp, phone, email } = await getSiteSettings();
+  const [{ whatsapp, phone, email }, blogPosts] = await Promise.all([getSiteSettings(), getBlogPosts()]);
 
   return (
     <html lang="en" className={inter.variable}>
       <body className="font-body">
         <SiteSettingsProvider value={{ whatsapp, phone, email }}>
           <AuthProvider>
-            <Navbar />
+            <Navbar hiddenHrefs={blogPosts.length ? [] : ["/blog"]} />
             {children}
             <Footer />
             <WhatsAppFloat />

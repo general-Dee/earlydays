@@ -1,6 +1,6 @@
 import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
-import { site } from "@/lib/data";
+import { cleanContact, site } from "@/lib/data";
 import { logRouteError } from "@/lib/api/errors";
 
 export type SiteSettings = {
@@ -25,7 +25,13 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const snap = await getAdminDb().collection(COLLECTIONS.settings).doc("site").get();
     const stored = snap.exists ? (snap.data() as Partial<SiteSettings>) : {};
-    return { ...defaultSiteSettings(), ...stored };
+    const merged = { ...defaultSiteSettings(), ...stored };
+    return {
+      ...merged,
+      whatsapp: cleanContact(merged.whatsapp),
+      phone: cleanContact(merged.phone),
+      email: cleanContact(merged.email),
+    };
   } catch (err) {
     logRouteError("getSiteSettings", "failed to load live site settings, showing defaults", err);
     return defaultSiteSettings();

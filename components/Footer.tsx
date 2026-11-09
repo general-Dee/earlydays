@@ -29,18 +29,22 @@ export default function Footer() {
 
           <div>
             <h2 className="text-ink text-sm font-medium mb-3.5">Visit</h2>
-            <a
-              href={waLink(whatsapp, "Hi, I'd like to know more about Earlydays")}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track("book_visit_click", { source: "footer" })}
-              className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors"
-            >
-              WhatsApp: {phone}
-            </a>
-            <a href={`tel:${phone.replace(/\s/g, "")}`} className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">
-              Call the office
-            </a>
+            {whatsapp && (
+              <a
+                href={waLink(whatsapp, "Hi, I'd like to know more about Earlydays")}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track("book_visit_click", { source: "footer" })}
+                className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors"
+              >
+                {phone ? `WhatsApp: ${phone}` : "WhatsApp"}
+              </a>
+            )}
+            {phone && (
+              <a href={`tel:${phone.replace(/\s/g, "")}`} className="block text-ink-soft text-sm mb-2.5 hover:text-sun transition-colors">
+                Call the office
+              </a>
+            )}
             <span className="block text-ink-soft text-sm mb-2.5">{site.location}</span>
           </div>
 

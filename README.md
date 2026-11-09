@@ -162,13 +162,14 @@ unaffected; this is opt-in only. As a baseline for noticing a regression:
 
 ## Before you launch — replace these
 
-1. **`lib/data.ts` → `site.whatsapp`** — swap in the real WhatsApp number (digits only, country code first, no `+`).
-2. ~~`lib/fees.ts` → `FEE_BY_STAGE`~~ — done: termly fees are now admin-editable (`/admin` → Overview → Fee schedule) instead of a code edit. `lib/fees.ts` keeps only the static bracket definitions (labels/ages/which stage codes share a price); real amounts live in Firestore via `lib/feeSettings.ts` and start out at the same sample figures until an admin sets real ones.
+1. **WhatsApp / phone / email** — set `NEXT_PUBLIC_WHATSAPP_NUMBER` (digits only, country code first, no `+`), `NEXT_PUBLIC_CONTACT_PHONE` and `NEXT_PUBLIC_CONTACT_EMAIL`, or save them at `/admin/settings`. Until a value is set, the WhatsApp buttons, phone and email lines hide themselves instead of showing a placeholder.
+2. ~~`lib/fees.ts` → `FEE_BY_STAGE`~~ — done: termly fees are now admin-editable (`/admin` → Overview → Fee schedule) instead of a code edit. `lib/fees.ts` keeps only the static bracket definitions (labels/ages/which stage codes share a price); real amounts live in Firestore via `lib/feeSettings.ts`. The public fees table stays hidden until an admin saves real amounts (the sample figures in `defaultAmountKobo` are only shown when `SHOW_SAMPLE_CONTENT=true`).
 3. **`components/ProspectusCard.tsx`** — points to `/prospectus.pdf`; a placeholder PDF ships in `/public/prospectus.pdf` — replace it with the real prospectus.
 4. ~~`components/TeacherGrid.tsx` / `lib/data.ts` → `teachers`~~ — done: staff profiles (name, role, bio, photo) are now admin-editable (`/admin` → Staff) instead of a code edit. Add real staff through that page — the public Safety page renders whatever's there and shows a placeholder initials square until a photo is uploaded.
 5. ~~`components/Gallery.tsx` / `components/GalleryGrid.tsx`~~ — done: gallery photos (photo, alt text, category) are now admin-editable (`/admin` → Gallery) instead of a code edit. Add real campus photos through that page — the public `/gallery` page and the Safety page teaser grid render whatever's there.
 6. **Firebase + Paystack** — see "Environment setup" above; nothing here is live until real credentials are provided.
-7. **`lib/data.ts` → `site.url`** — placeholder domain; the sitemap, `robots.txt`, and OpenGraph/canonical links all resolve off this, so they won't be correct until it's the real production domain.
+7. **`NEXT_PUBLIC_SITE_URL`** (or `SITE_URL`) — the sitemap, `robots.txt`, and OpenGraph/canonical links resolve off this; it falls back to `https://earlydays-nextjs.vercel.app` when unset.
+8. **Sample content** — the original sample testimonials (`lib/testimonials.ts`), blog posts (`lib/blogPosts.ts`) and fee figures are archived in the repo but hidden from the public site unless `SHOW_SAMPLE_CONTENT=true`. Sections with no real content (testimonials, blog, fees table) disappear until an admin adds real entries.
 
 ## Design tokens
 

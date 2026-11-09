@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import SectionHeader from "@/components/SectionHeader";
-import FeesTable from "@/components/FeesTable";
+import FeesTable, { loadPublicFeeAmounts } from "@/components/FeesTable";
 import ProspectusCard from "@/components/ProspectusCard";
 import PayPanel from "@/components/PayPanel";
 import Button from "@/components/Button";
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function AdmissionsPage() {
-  const { whatsapp } = await getSiteSettings();
+  const [{ whatsapp }, feeAmounts] = await Promise.all([getSiteSettings(), loadPublicFeeAmounts()]);
 
   return (
     <main>
@@ -31,26 +31,36 @@ export default async function AdmissionsPage() {
           />
           <div className="flex gap-3.5 flex-wrap">
             <Button href="/admissions/apply">Start Application →</Button>
-            <Button href={waLink(whatsapp, "Hi, I'd like to ask a few questions before applying")} variant="ghost" external>
-              Ask on WhatsApp First
-            </Button>
+            {whatsapp && (
+              <Button href={waLink(whatsapp, "Hi, I'd like to ask a few questions before applying")} variant="ghost" external>
+                Ask on WhatsApp First
+              </Button>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="wrap">
-          <SectionHeader
-            eyebrow="Admissions"
-            title="Fees by stage"
-            desc="Termly figures shown in Naira."
-          />
-          <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.8fr] gap-10">
-            <FeesTable />
+      {feeAmounts ? (
+        <section className="py-20">
+          <div className="wrap">
+            <SectionHeader
+              eyebrow="Admissions"
+              title="Fees by stage"
+              desc="Termly figures shown in Naira."
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_0.8fr] gap-10">
+              <FeesTable amounts={feeAmounts} />
+              <ProspectusCard />
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="py-20">
+          <div className="wrap max-w-md">
             <ProspectusCard />
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="pb-24">
         <div className="wrap">

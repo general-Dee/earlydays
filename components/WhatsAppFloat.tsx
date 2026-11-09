@@ -6,6 +6,7 @@ import { useSiteSettings } from "@/lib/firebase/site-settings-context";
 
 export default function WhatsAppFloat() {
   const { whatsapp } = useSiteSettings();
+  if (!whatsapp) return null;
 
   return (
     <aside aria-label="Chat on WhatsApp">
